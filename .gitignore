@@ -1,0 +1,10 @@
+# OS / OneDrive
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Config locale Claude Code
+.claude/
+
+# Musique locale (fichiers personnels, non versionnes)
+/Music/

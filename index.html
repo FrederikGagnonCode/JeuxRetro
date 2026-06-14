@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arcade Rétro</title>
+<style>
+  :root{
+    --bg:#0b0b1a;
+    --panel:#13132b;
+    --neon:#4ecca3;
+    --neon2:#ff2e88;
+    --text:#e8e8f0;
+    --muted:#8a8aa8;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;min-height:100%}
+  body{
+    background:
+      radial-gradient(circle at 20% 0%, #1a1a3a 0%, transparent 45%),
+      radial-gradient(circle at 80% 100%, #2a0a2a 0%, transparent 45%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Courier New',monospace;
+    display:flex;flex-direction:column;align-items:center;
+    padding:40px 20px 60px;min-height:100vh;
+  }
+  h1{
+    font-size:clamp(28px,6vw,56px);
+    letter-spacing:4px;margin:0 0 6px;text-align:center;
+    color:#fff;
+    text-shadow:0 0 8px var(--neon),0 0 18px var(--neon),0 0 38px var(--neon);
+    animation:flicker 4s infinite;
+  }
+  .sub{color:var(--muted);letter-spacing:3px;margin-bottom:36px;font-size:13px;text-transform:uppercase}
+  @keyframes flicker{
+    0%,18%,22%,100%{opacity:1}
+    20%{opacity:.55}
+  }
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:26px;width:100%;max-width:920px;
+  }
+  .card{
+    background:var(--panel);
+    border:2px solid #2a2a4a;
+    border-radius:14px;
+    overflow:hidden;
+    text-decoration:none;color:inherit;
+    display:flex;flex-direction:column;
+    transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;
+  }
+  .card:hover{
+    transform:translateY(-6px);
+    border-color:var(--neon);
+    box-shadow:0 0 0 1px var(--neon),0 14px 40px rgba(78,204,163,.25);
+  }
+  .card:hover .play{opacity:1;transform:translateY(0)}
+  .year{
+    text-align:center;font-size:20px;letter-spacing:3px;font-weight:bold;
+    padding:8px 0 6px;color:var(--neon);
+    background:#0d0d22;border-bottom:1px solid #2a2a4a;
+    text-shadow:0 0 6px rgba(78,204,163,.6);
+  }
+  .card:hover .year{color:#7CFFCB}
+  .thumb{position:relative;width:100%;aspect-ratio:4/3;background:#000;display:block}
+  .thumb svg{width:100%;height:100%;display:block;image-rendering:pixelated}
+  .play{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    background:rgba(0,0,0,.45);color:#fff;font-size:18px;letter-spacing:2px;
+    opacity:0;transform:translateY(8px);transition:opacity .18s,transform .18s;
+  }
+  .play span{border:2px solid #fff;border-radius:30px;padding:8px 20px;backdrop-filter:blur(2px)}
+  .meta{padding:14px 16px 16px}
+  .title{font-size:18px;letter-spacing:1px;margin:0 0 4px}
+  .tag{color:var(--muted);font-size:12px;letter-spacing:1px}
+  footer{margin-top:46px;color:var(--muted);font-size:12px;letter-spacing:1px;text-align:center}
+</style>
+</head>
+<body>
+  <h1>★ ARCADE RÉTRO ★</h1>
+  <div class="sub">Choisis ton jeu — Insert Coin</div>
+
+  <div class="grid">
+
+    <!-- PONG -->
+    <a class="card" href="./Pong/index.html">
+      <div class="year">1972</div>
+      <div class="thumb">
+        <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
+          <rect width="80" height="60" fill="#000"/>
+          <!-- filet -->
+          <g stroke="#333" stroke-width="1.5" stroke-dasharray="3 4">
+            <line x1="40" y1="2" x2="40" y2="58"/>
+          </g>
+          <!-- scores -->
+          <text x="30" y="16" fill="#fff" font-family="monospace" font-size="11" text-anchor="middle">3</text>
+          <text x="50" y="16" fill="#fff" font-family="monospace" font-size="11" text-anchor="middle">2</text>
+          <!-- raquettes -->
+          <rect x="6" y="22" width="4" height="18" rx="1" fill="#4ecca3"/>
+          <rect x="70" y="30" width="4" height="18" rx="1" fill="#ff2e88"/>
+          <!-- balle -->
+          <circle cx="46" cy="34" r="3" fill="#fff"/>
+          <!-- trainee -->
+          <circle cx="40" cy="32" r="1.6" fill="#888"/>
+          <circle cx="35" cy="30" r="1" fill="#555"/>
+        </svg>
+        <div class="play"><span>▶ JOUER</span></div>
+      </div>
+      <div class="meta">
+        <p class="title">Pong</p>
+        <p class="tag">Raquettes · Arcade</p>
+      </div>
+    </a>
+
+    <!-- SNAKE -->
+    <a class="card" href="./snake/index.html">
+      <div class="year">1976</div>
+      <div class="thumb">
+        <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
+          <rect width="80" height="60" fill="#1a1a2e"/>
+          <g stroke="#23234a" stroke-width=".5">
+            <path d="M16 0V60M32 0V60M48 0V60M64 0V60M0 15H80M0 30H80M0 45H80"/>
+          </g>
+          <g fill="#4ecca3">
+            <rect x="16" y="30" width="8" height="8" rx="2"/>
+            <rect x="24" y="30" width="8" height="8" rx="2"/>
+            <rect x="32" y="30" width="8" height="8" rx="2"/>
+            <rect x="32" y="22" width="8" height="8" rx="2"/>
+            <rect x="40" y="22" width="8" height="8" rx="2"/>
+          </g>
+          <rect x="48" y="22" width="8" height="8" rx="2" fill="#7CFFCB"/>
+          <circle cx="51" cy="25" r="1" fill="#1a1a2e"/><circle cx="54" cy="25" r="1" fill="#1a1a2e"/>
+          <rect x="58" y="40" width="6" height="6" rx="3" fill="#ff2e88"/>
+        </svg>
+        <div class="play"><span>▶ JOUER</span></div>
+      </div>
+      <div class="meta">
+        <p class="title">Serpent</p>
+        <p class="tag">Snake · Classique</p>
+      </div>
+    </a>
+
+    <!-- SPACE INVADERS -->
+    <a class="card" href="./space-invaders/index.html">
+      <div class="year">1978</div>
+      <div class="thumb">
+        <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
+          <rect width="80" height="60" fill="#000"/>
+          <g fill="#0a3a0a"><circle cx="10" cy="8" r=".7"/><circle cx="70" cy="6" r=".7"/><circle cx="40" cy="4" r=".7"/><circle cx="22" cy="14" r=".7"/><circle cx="60" cy="16" r=".7"/></g>
+          <g fill="#0f0">
+            <g transform="translate(14,12)"><rect x="2" y="0" width="8" height="3"/><rect x="0" y="3" width="12" height="3"/><rect x="0" y="6" width="3" height="3"/><rect x="9" y="6" width="3" height="3"/></g>
+            <g transform="translate(34,12)"><rect x="2" y="0" width="8" height="3"/><rect x="0" y="3" width="12" height="3"/><rect x="0" y="6" width="3" height="3"/><rect x="9" y="6" width="3" height="3"/></g>
+            <g transform="translate(54,12)"><rect x="2" y="0" width="8" height="3"/><rect x="0" y="3" width="12" height="3"/><rect x="0" y="6" width="3" height="3"/><rect x="9" y="6" width="3" height="3"/></g>
+            <g transform="translate(24,26)"><rect x="2" y="0" width="8" height="3"/><rect x="0" y="3" width="12" height="3"/><rect x="0" y="6" width="3" height="3"/><rect x="9" y="6" width="3" height="3"/></g>
+            <g transform="translate(44,26)"><rect x="2" y="0" width="8" height="3"/><rect x="0" y="3" width="12" height="3"/><rect x="0" y="6" width="3" height="3"/><rect x="9" y="6" width="3" height="3"/></g>
+          </g>
+          <rect x="39" y="40" width="2" height="5" fill="#fff"/>
+          <g fill="#0f0" transform="translate(34,48)">
+            <rect x="5" y="0" width="2" height="3"/>
+            <rect x="0" y="3" width="12" height="5" rx="1"/>
+          </g>
+        </svg>
+        <div class="play"><span>▶ JOUER</span></div>
+      </div>
+      <div class="meta">
+        <p class="title">Space Invaders</p>
+        <p class="tag">Tir · Arcade</p>
+      </div>
+    </a>
+
+    <!-- PAC-MAN -->
+    <a class="card" href="./Pacman/index.html">
+      <div class="year">1980</div>
+      <div class="thumb">
+        <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
+          <rect width="80" height="60" fill="#000"/>
+          <g fill="none" stroke="#2121de" stroke-width="2">
+            <rect x="8" y="8" width="64" height="44" rx="6"/>
+            <rect x="20" y="20" width="16" height="8" rx="2"/>
+            <rect x="44" y="20" width="16" height="8" rx="2"/>
+          </g>
+          <g fill="#ffeb3b">
+            <circle cx="14" cy="40" r="1.3"/><circle cx="22" cy="40" r="1.3"/>
+            <circle cx="30" cy="40" r="1.3"/><circle cx="50" cy="40" r="1.3"/>
+            <circle cx="58" cy="40" r="1.3"/><circle cx="66" cy="40" r="1.3"/>
+          </g>
+          <!-- pacman -->
+          <path d="M40 40 L48 35 A9 9 0 1 0 48 45 Z" fill="#ffeb3b"/>
+          <!-- ghost -->
+          <g transform="translate(58,34)">
+            <path d="M0 4 A5 5 0 0 1 10 4 L10 12 L8 10 L6 12 L4 10 L2 12 L0 10 Z" fill="#ff0000"/>
+            <circle cx="3" cy="5" r="1.6" fill="#fff"/><circle cx="7" cy="5" r="1.6" fill="#fff"/>
+            <circle cx="3.4" cy="5" r=".8" fill="#2121de"/><circle cx="7.4" cy="5" r=".8" fill="#2121de"/>
+          </g>
+        </svg>
+        <div class="play"><span>▶ JOUER</span></div>
+      </div>
+      <div class="meta">
+        <p class="title">Pac-Man</p>
+        <p class="tag">Labyrinthe · Arcade</p>
+      </div>
+    </a>
+
+    <!-- DEFENDER -->
+    <a class="card" href="./Defender/index.html">
+      <div class="year">1981</div>
+      <div class="thumb">
+        <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
+          <rect width="80" height="60" fill="#000"/>
+          <!-- radar -->
+          <rect x="6" y="5" width="68" height="10" fill="none" stroke="#555" stroke-width="1"/>
+          <rect x="40" y="6" width="18" height="8" fill="none" stroke="#888" stroke-width=".7"/>
+          <rect x="12" y="9" width="1.6" height="1.6" fill="#4ecca3"/>
+          <rect x="30" y="8" width="1.6" height="1.6" fill="#ff2e88"/>
+          <rect x="48" y="10" width="1.6" height="1.6" fill="#fff"/>
+          <rect x="62" y="9" width="1.6" height="1.6" fill="#ff2e88"/>
+          <!-- stars -->
+          <g fill="#445"><circle cx="20" cy="26" r=".6"/><circle cx="64" cy="22" r=".6"/><circle cx="36" cy="34" r=".6"/></g>
+          <!-- montagnes -->
+          <polyline points="0,52 12,46 22,50 34,43 46,50 58,45 70,51 80,47" fill="none" stroke="#2e7d32" stroke-width="1.5"/>
+          <!-- humanoïdes -->
+          <g fill="#4ecca3"><rect x="18" y="47" width="2" height="4"/><rect x="50" y="48" width="2" height="4"/></g>
+          <!-- lander -->
+          <g transform="translate(58,28)"><path d="M0 -4 L5 0 L0 4 L-5 0 Z" fill="#ff2e88"/><rect x="-1.3" y="-1.3" width="2.6" height="2.6" fill="#ffd54f"/></g>
+          <!-- vaisseau joueur -->
+          <g transform="translate(30,30)" fill="#4ecca3"><path d="M9 0 L1 -4 L-8 -4 L-5 0 L-8 4 L1 4 Z"/></g>
+          <rect x="34" y="29" width="9" height="1.6" fill="#fff"/>
+        </svg>
+        <div class="play"><span>▶ JOUER</span></div>
+      </div>
+      <div class="meta">
+        <p class="title">Defender</p>
+        <p class="tag">Shoot'em up · Arcade</p>
+      </div>
+    </a>
+
+    <!-- DONKEY KONG -->
+    <a class="card" href="./DonkeyKong/index.html">
+      <div class="year">1981</div>
+      <div class="thumb">
+        <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
+          <rect width="80" height="60" fill="#000"/>
+          <!-- poutrelles -->
+          <g fill="#e85d2a">
+            <rect x="6" y="12" width="68" height="3"/>
+            <rect x="6" y="27" width="68" height="3"/>
+            <rect x="6" y="42" width="68" height="3"/>
+            <rect x="6" y="55" width="68" height="3"/>
+          </g>
+          <!-- échelles -->
+          <g stroke="#5ad1e8" stroke-width=".8">
+            <line x1="20" y1="15" x2="20" y2="27"/><line x1="23" y1="15" x2="23" y2="27"/>
+            <line x1="55" y1="30" x2="55" y2="42"/><line x1="58" y1="30" x2="58" y2="42"/>
+            <line x1="28" y1="45" x2="28" y2="55"/><line x1="31" y1="45" x2="31" y2="55"/>
+          </g>
+          <!-- DK en haut -->
+          <g transform="translate(56,12)">
+            <rect x="-6" y="-9" width="12" height="9" fill="#6d4322"/>
+            <rect x="-4" y="-6" width="8" height="4" fill="#c79a6b"/>
+          </g>
+          <!-- Pauline -->
+          <g transform="translate(20,12)"><rect x="-2" y="-7" width="4" height="5" fill="#ff4fa3"/><rect x="-1.5" y="-10" width="3" height="3" fill="#ffd54f"/></g>
+          <!-- tonneaux -->
+          <ellipse cx="40" cy="24" rx="3.4" ry="3" fill="#a9621f"/>
+          <ellipse cx="60" cy="39" rx="3.4" ry="3" fill="#a9621f"/>
+          <!-- Jumpman en bas -->
+          <g transform="translate(40,55)">
+            <rect x="-3" y="-5" width="6" height="3" fill="#e53935"/>
+            <rect x="-3" y="-2" width="6" height="2" fill="#1e88e5"/>
+            <rect x="-2" y="-8" width="4" height="3" fill="#e53935"/>
+          </g>
+        </svg>
+        <div class="play"><span>▶ JOUER</span></div>
+      </div>
+      <div class="meta">
+        <p class="title">Donkey Kong</p>
+        <p class="tag">Plateforme · Arcade</p>
+      </div>
+    </a>
+
+    <!-- CENTIPEDE -->
+    <a class="card" href="./Centipede/index.html">
+      <div class="year">1981</div>
+      <div class="thumb">
+        <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
+          <rect width="80" height="60" fill="#000"/>
+          <!-- champignons -->
+          <g>
+            <g transform="translate(16,16)"><path d="M-4 0 A4 4 0 0 1 4 0 Z" fill="#d98cff"/><rect x="-1" y="0" width="2" height="4" fill="#caa6e6"/></g>
+            <g transform="translate(58,12)"><path d="M-4 0 A4 4 0 0 1 4 0 Z" fill="#d98cff"/><rect x="-1" y="0" width="2" height="4" fill="#caa6e6"/></g>
+            <g transform="translate(40,30)"><path d="M-4 0 A4 4 0 0 1 4 0 Z" fill="#d98cff"/><rect x="-1" y="0" width="2" height="4" fill="#caa6e6"/></g>
+            <g transform="translate(24,40)"><path d="M-4 0 A4 4 0 0 1 4 0 Z" fill="#7a4fa0"/><rect x="-1" y="0" width="2" height="4" fill="#caa6e6"/></g>
+          </g>
+          <!-- mille-pattes en zigzag -->
+          <g fill="#7CFC00">
+            <circle cx="20" cy="24" r="3"/><circle cx="27" cy="24" r="3"/><circle cx="34" cy="24" r="3"/><circle cx="41" cy="24" r="3"/>
+          </g>
+          <circle cx="48" cy="24" r="3" fill="#ff5252"/>
+          <!-- araignée -->
+          <g transform="translate(60,44)"><ellipse rx="3.5" ry="2.6" fill="#b86cff"/><g stroke="#b86cff" stroke-width=".7"><line x1="0" y1="0" x2="-6" y2="2"/><line x1="0" y1="0" x2="6" y2="2"/><line x1="0" y1="0" x2="-6" y2="-2"/><line x1="0" y1="0" x2="6" y2="-2"/></g></g>
+          <!-- blaster en bas -->
+          <g transform="translate(30,52)"><polygon points="0,-4 -3,3 3,3" fill="#5ad1e8"/></g>
+          <rect x="29.5" y="42" width="1" height="6" fill="#fff"/>
+        </svg>
+        <div class="play"><span>▶ JOUER</span></div>
+      </div>
+      <div class="meta">
+        <p class="title">Centipede</p>
+        <p class="tag">Tir fixe · Arcade</p>
+      </div>
+    </a>
+
+    <!-- PITFALL -->
+    <a class="card" href="./Pitfall/index.html">
+      <div class="year">1982</div>
+      <div class="thumb">
+        <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
+          <rect width="80" height="60" fill="#0a160a"/>
+          <rect y="0" width="80" height="20" fill="#14401a"/>
+          <!-- canopy -->
+          <g fill="#1d6b2a"><circle cx="14" cy="14" r="9"/><circle cx="30" cy="10" r="10"/><circle cx="50" cy="13" r="11"/><circle cx="68" cy="11" r="9"/></g>
+          <!-- ground -->
+          <rect y="40" width="80" height="20" fill="#4a3315"/>
+          <rect y="38" width="80" height="4" fill="#2e7d32"/>
+          <!-- pit -->
+          <rect x="34" y="44" width="14" height="16" fill="#000"/>
+          <!-- vine -->
+          <path d="M40 20 Q44 30 40 38" stroke="#6b4f1d" stroke-width="2" fill="none"/>
+          <!-- explorer -->
+          <g transform="translate(18,28)">
+            <rect x="0" y="0" width="5" height="7" fill="#d9b38c"/>
+            <rect x="-1" y="-3" width="7" height="3" fill="#163"/>
+            <rect x="0" y="7" width="2" height="4" fill="#1b3a1b"/><rect x="3" y="7" width="2" height="4" fill="#1b3a1b"/>
+          </g>
+          <!-- log -->
+          <circle cx="62" cy="50" r="4" fill="#6b4f1d"/><circle cx="62" cy="50" r="1.6" fill="#3d2c10"/>
+        </svg>
+        <div class="play"><span>▶ JOUER</span></div>
+      </div>
+      <div class="meta">
+        <p class="title">Pitfall Jungle</p>
+        <p class="tag">Aventure · Console</p>
+      </div>
+    </a>
+
+    <!-- DIG DUG -->
+    <a class="card" href="./DigDug/index.html">
+      <div class="year">1982</div>
+      <div class="thumb">
+        <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
+          <!-- ciel -->
+          <rect width="80" height="14" fill="#000"/>
+          <!-- couches de terre -->
+          <rect y="14" width="80" height="12" fill="#c98a3a"/>
+          <rect y="26" width="80" height="12" fill="#9c5a25"/>
+          <rect y="38" width="80" height="12" fill="#7d4a3a"/>
+          <rect y="50" width="80" height="10" fill="#5a3a55"/>
+          <!-- galeries creusées -->
+          <g fill="#000">
+            <rect x="34" y="14" width="12" height="40"/>
+            <rect x="10" y="28" width="40" height="10"/>
+            <rect x="46" y="40" width="26" height="10"/>
+          </g>
+          <!-- rocher -->
+          <circle cx="20" cy="20" r="5" fill="#9e9e9e"/><circle cx="18" cy="18" r="1.6" fill="#cfcfcf"/>
+          <!-- joueur (Dig Dug) -->
+          <g transform="translate(40,33)">
+            <circle cx="0" cy="1" r="5" fill="#fff"/>
+            <path d="M-5 0 A5 5 0 0 1 5 0 Z" fill="#1e88e5"/>
+            <rect x="-1.5" y="0" width="3" height="2.5" fill="#000"/>
+          </g>
+          <!-- Pooka rouge -->
+          <g transform="translate(20,33)">
+            <circle r="5" fill="#ff5252"/>
+            <circle cx="-2" cy="-1" r="2" fill="#ffeb3b"/><circle cx="2" cy="-1" r="2" fill="#ffeb3b"/>
+            <circle cx="-2" cy="-1" r=".9" fill="#000"/><circle cx="2" cy="-1" r=".9" fill="#000"/>
+          </g>
+          <!-- Fygar vert -->
+          <g transform="translate(60,45)">
+            <circle r="5" fill="#43a047"/>
+            <polygon points="0,-5 -2,-8 2,-7" fill="#fdd835"/>
+            <circle cx="-2" cy="-1" r="1.4" fill="#fff"/><circle cx="2" cy="-1" r="1.4" fill="#fff"/>
+            <circle cx="-2" cy="-1" r=".7" fill="#000"/><circle cx="2" cy="-1" r=".7" fill="#000"/>
+          </g>
+        </svg>
+        <div class="play"><span>▶ JOUER</span></div>
+      </div>
+      <div class="meta">
+        <p class="title">Dig Dug</p>
+        <p class="tag">Creuser · Arcade</p>
+      </div>
+    </a>
+
+  </div>
+
+  <footer>Clique sur un jeu pour lancer · ↑ ↓ ← → pour jouer</footer>
+</body>
+</html>

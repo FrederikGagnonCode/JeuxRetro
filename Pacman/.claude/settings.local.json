@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell($cmds = 'python','node','npx'; foreach \\($c in $cmds\\) { $g = Get-Command $c -ErrorAction SilentlyContinue; if \\($g\\) { \"$c => $\\($g.Source\\)\" } else { \"$c => absent\" } })",
+      "mcp__Claude_Preview__preview_start"
+    ]
+  }
+}

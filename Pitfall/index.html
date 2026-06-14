@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pitfall Jungle</title>
+<style>
+  html,body{margin:0;padding:0;background:#0a0a0a;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Courier New',monospace;color:#cfcfcf}
+  canvas{image-rendering:pixelated;max-width:100vw;max-height:88vh;border:4px solid #222;box-shadow:0 0 40px #000}
+  #help{margin-top:8px;font-size:13px;letter-spacing:1px;color:#8a8;text-align:center}
+</style>
+</head>
+<body>
+<canvas id="c" width="800" height="560"></canvas>
+<div id="help">&#8592; &#8594; bouger &nbsp;|&nbsp; ESPACE / &#8593; sauter &nbsp;|&nbsp; &#8595; descendre / l&acirc;cher la liane &nbsp;|&nbsp; P pause &nbsp;|&nbsp; ENTR&Eacute;E commencer</div>
+<script>
+'use strict';
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const W = 800, H = 560;
+const GY = 340;          // niveau du sol (pieds)
+const GB = 404;          // bas de la bande de sol / plafond du souterrain
+const UF = 520;          // plancher du souterrain (pieds)
+const NUM = 32;          // nombre d'écrans
+const SPEED = 220, G = 2000, JUMP = 500;
+const TOTAL_TIME = 20 * 60; // 20 minutes
+
+// ---------- Écrans ----------
+// t: plain | logs | hole | vine | croc | quick | snake | fire | treasure
+const SCREENS = [
+  {t:'plain'},                        //0 départ
+  {t:'logs', n:1},                    //1
+  {t:'hole'},                         //2
+  {t:'vine'},                         //3
+  {t:'treasure', v:2000, snake:true}, //4
+  {t:'logs', n:2},                    //5
+  {t:'quick'},                        //6
+  {t:'croc'},                         //7
+  {t:'treasure', v:3000},             //8
+  {t:'hole'},                         //9
+  {t:'vine'},                         //10
+  {t:'fire'},                         //11
+  {t:'logs', n:3},                    //12
+  {t:'treasure', v:2000, snake:true}, //13
+  {t:'quick'},                        //14
+  {t:'croc'},                         //15
+  {t:'hole'},                         //16
+  {t:'treasure', v:4000},             //17
+  {t:'vine'},                         //18
+  {t:'snake'},                        //19
+  {t:'logs', n:2},                    //20
+  {t:'treasure', v:3000, snake:true}, //21
+  {t:'quick'},                        //22
+  {t:'hole'},                         //23
+  {t:'croc'},                         //24
+  {t:'treasure', v:5000},             //25
+  {t:'vine'},                         //26
+  {t:'logs', n:3},                    //27
+  {t:'fire'},                         //28
+  {t:'treasure', v:4000, snake:true}, //29
+  {t:'hole'},                         //30
+  {t:'treasure', v:5000},             //31
+];
+const TOTAL_TREASURES = SCREENS.filter(s => s.t === 'treasure').length;
+const SCR = i => SCREENS[((i % NUM) + NUM) % NUM];
+const SI  = i => ((i % NUM) + NUM) % NUM;
+
+// ---------- Entrées ----------
+const keys = {}, jp = new Set();
+addEventListener('keydown', e => {
+  if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space'].includes(e.code)) e.preventDefault();
+  if (!e.repeat) jp.add(e.code);
+  keys[e.code] = true;
+  if (e.code === 'Enter' && (!st.started || st.over)) { reset(); st.started = true; }
+  if ((e.code === 'KeyP' || e.code === 'Escape') && st.started && !st.over) st.paused = !st.paused;
+  initAudio();
+});
+addEventListener('keyup', e => { keys[e.code] = false; });
+addEventListener('blur', () => {
+  for (const k in keys) keys[k] = false;
+  jp.clear();
+  if (st && st.started && !st.over) st.paused = true; // pause auto en quittant la fenêtre
+});
+const kLeft  = () => keys.ArrowLeft  || keys.KeyA;
+const kRight = () => keys.ArrowRight || keys.KeyD;
+const kUp    = () => keys.ArrowUp    || keys.KeyW;
+const kDown  = () => keys.ArrowDown  || keys.KeyS;
+const jJump  = () => jp.has('Space') || jp.has('ArrowUp') || jp.has('KeyW');
+const jDown  = () => jp.has('ArrowDown') || jp.has('KeyS');
+
+// ---------- Audio ----------
+let AC = null;
+function initAudio(){ if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){} } }
+function beep(f, dur, type, vol, slide){
+  if (!AC) return;
+  try {
+    const o = AC.createOscillator(), g = AC.createGain();
+    o.type = type || 'square'; o.frequency.value = f;
+    if (slide) o.frequency.exponentialRampToValueAtTime(slide, AC.currentTime + dur);
+    g.gain.value = vol || 0.08;
+    g.gain.exponentialRampToValueAtTime(0.001, AC.currentTime + dur);
+    o.connect(g); g.connect(AC.destination);
+    o.start(); o.stop(AC.currentTime + dur);
+  } catch(e){}
+}
+const sJump  = () => beep(280, 0.12, 'square', 0.06, 560);
+const sFall  = () => beep(180, 0.2, 'square', 0.07, 60);
+const sHit   = () => beep(110, 0.12, 'sawtooth', 0.07);
+const sDeath = () => beep(500, 0.6, 'sawtooth', 0.09, 60);
+function sTreasure(){ [523,659,784,1046].forEach((f,i)=>setTimeout(()=>beep(f,0.14,'square',0.07), i*110)); }
+
+// ---------- État ----------
+let hiscore = 0;
+try { hiscore = +localStorage.getItem('pitfallHiscore') || 0; } catch(e){}
+function saveHiscore(){
+  const sc = Math.floor(st.score);
+  if (sc > hiscore){
+    hiscore = sc; st.newHi = true;
+    try { localStorage.setItem('pitfallHiscore', hiscore); } catch(e){}
+  }
+}
+let st;
+function reset(){
+  st = {
+    started:false, over:false, win:false, paused:false, newHi:false,
+    screen:0, x:60, y:GY, vx:0, vy:0, dir:1,
+    grounded:true, climbing:false, vine:false, vineCD:0,
+    lives:2, score:2000, time:TOTAL_TIME, t:0,
+    deadT:0, runPhase:0,
+    collected:new Set(),
+  };
+}
+reset();
+
+// ---------- Mécaniques dynamiques (sans état : tout dérive du temps) ----------
+// gueules décalées : elles s'ouvrent en vague, jamais toutes en même temps
+const crocOpen  = (t, i) => (((t + i * 1.3) % 4) < 1.0);
+function quickOpen(t){ const o = (Math.sin(t * 0.8) + 1) / 2; return 100 * Math.max(0, (o - 0.3) / 0.7); }
+function vineState(t){
+  const a  = 0.85 * Math.sin(t * 1.4);
+  const av = 0.85 * 1.4 * Math.cos(t * 1.4);
+  return {
+    tx: 400 + 235 * Math.sin(a),
+    ty: 60  + 235 * Math.cos(a),
+    vx: 235 * Math.cos(a) * av,
+    vy: -235 * Math.sin(a) * av,
+  };
+}
+function logsFor(si, t){
+  const s = SCR(si); if (s.t !== 'logs') return [];
+  const out = [];
+  for (let j = 0; j < s.n; j++){
+    const spd = 160 + j * 35;
+    const cyc = (t * spd + j * 420 + si * 137) % (W + 160);
+    out.push({ x: W + 80 - cyc, spin: t * spd / 13 });
+  }
+  return out;
+}
+const scorpOn = si => SCR(si).t !== 'hole';
+function scorpX(si, t){
+  // amplitude réduite sur les écrans à mur pour que le scorpion ne le traverse pas
+  const amp = wallOn(si) ? 215 : 250;
+  return 400 + amp * Math.sin(t * 0.45 + si * 2.1);
+}
+const wallOn = si => si % 3 === 1;
+const WALL_X = 640, WALL_W = 28;
+const CROC_HEADS = [290, 390, 490];
+
+// surface au point x : 'solid' | 'none' | 'deadly'
+function surfaceAt(x, si, t){
+  const s = SCR(si);
+  switch (s.t){
+    case 'hole':  return Math.abs(x - 400) < 30 ? 'none' : 'solid';
+    case 'vine':  return (x > 290 && x < 510) ? 'deadly' : 'solid';
+    case 'quick': { const oh = quickOpen(t); return (oh > 6 && Math.abs(x - 400) < oh) ? 'deadly' : 'solid'; }
+    case 'croc':
+      if (x > 250 && x < 560){
+        // 28 = demi-tête (18) + demi-personnage (10) : il suffit qu'un pied touche la tête
+        for (let i = 0; i < CROC_HEADS.length; i++){
+          const hc = CROC_HEADS[i];
+          if (Math.abs(x - hc) <= 28) return crocOpen(t, i) ? 'deadly' : 'solid';
+        }
+        return 'deadly';
+      }
+      return 'solid';
+    default: return 'solid';
+  }
+}
+
+function overlap(ax, ay, aw, ah, bx, by, bw, bh){
+  return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
+}
+
+function die(){
+  if (st.deadT > 0) return;
+  st.deadT = 1.4; st.vine = false; st.climbing = false;
+  sDeath();
+}
+
+// ---------- Mise à jour ----------
+function update(dt){
+  if (!st.started || st.over || st.paused) { jp.clear(); return; }
+  st.t += dt;
+  st.time -= dt;
+  if (st.time <= 0){ st.time = 0; st.over = true; saveHiscore(); jp.clear(); return; }
+  st.vineCD = Math.max(0, st.vineCD - dt);
+
+  // séquence de mort
+  if (st.deadT > 0){
+    st.deadT -= dt;
+    if (st.deadT <= 0){
+      st.lives--;
+      if (st.lives < 0){ st.over = true; saveHiscore(); }
+      else { st.x = 50; st.y = GY; st.vx = 0; st.vy = 0; st.grounded = true; }
+    }
+    jp.clear(); return;
+  }
+
+  const scr = SCR(st.screen);
+  const dirIn = (kRight() ? 1 : 0) - (kLeft() ? 1 : 0);
+  if (dirIn !== 0) st.dir = dirIn;
+
+  // ----- liane -----
+  if (st.vine){
+    const v = vineState(st.t);
+    st.x = v.tx; st.y = v.ty + 44;
+    if (jJump() || jDown()){
+      st.vine = false; st.vineCD = 0.6;
+      st.vx = Math.max(-380, Math.min(380, v.vx));
+      st.vy = Math.min(v.vy, -260);
+    }
+    jp.clear(); return;
+  }
+
+  // ----- échelle -----
+  if (st.climbing){
+    st.vx = 0; st.vy = 0;
+    if (kUp())   st.y -= 130 * dt;
+    if (kDown()) st.y += 130 * dt;
+    if (jp.has('Space')){ st.climbing = false; st.vy = -350; }
+    if (st.y <= GY){
+      // au sommet : on reste accroché, on sort d'un pas de côté
+      st.y = GY;
+      if (kLeft())  { st.climbing = false; st.x = 352; st.grounded = true; }
+      if (kRight()) { st.climbing = false; st.x = 448; st.grounded = true; }
+    }
+    if (st.y >= UF){ st.y = UF; st.climbing = false; st.grounded = true; }
+    jp.clear(); return;
+  }
+
+  // ----- déplacement horizontal -----
+  if (st.grounded) st.vx = dirIn * SPEED;
+  else if (dirIn !== 0) st.vx += (dirIn * SPEED - st.vx) * Math.min(1, 5 * dt);
+  st.x += st.vx * dt;
+  if (Math.abs(st.vx) > 10 && st.grounded) st.runPhase += dt * 9; else st.runPhase = 0;
+
+  // saut
+  if (st.grounded && jJump()){ st.vy = -JUMP; st.grounded = false; sJump(); }
+
+  // ----- verticale -----
+  const prevY = st.y;
+  st.vy += G * dt;
+  st.y += st.vy * dt;
+
+  // interaction avec la surface du sol
+  if (st.y >= GY && prevY <= GY + 0.001 && st.y < GY + 60){
+    const s = surfaceAt(st.x, st.screen, st.t);
+    if (s === 'solid'){ st.y = GY; st.vy = 0; st.grounded = true; }
+    else if (s === 'deadly'){ st.y = GY; die(); }
+    else { st.grounded = false; } // trou : on tombe
+  } else if (st.y < GY){
+    st.grounded = false;
+  }
+
+  // pénalité de chute dans un trou
+  if (!st.climbing && st.vy > 0 && prevY <= GB && st.y > GB){
+    st.score = Math.max(0, st.score - 100);
+    sFall();
+  }
+
+  // plafond du souterrain (sauf dans le puits du trou)
+  const inShaft = scr.t === 'hole' && Math.abs(st.x - 400) < 30;
+  if (st.y > GB && st.y - 44 < GB && !inShaft && st.vy < 0){ st.y = GB + 44; st.vy = 0; }
+
+  // plancher du souterrain
+  if (st.y >= UF){ st.y = UF; st.vy = 0; st.grounded = true; }
+
+  // re-vérifie la surface quand on est posé au sol (croco qui ouvre, sables qui s'ouvrent...)
+  if (st.grounded && st.y === GY){
+    const s = surfaceAt(st.x, st.screen, st.t);
+    if (s === 'none') st.grounded = false;
+    else if (s === 'deadly') die();
+  }
+
+  // murs du souterrain
+  if (st.y > GB + 4 && wallOn(SI(st.screen))){
+    if (st.x + 10 > WALL_X && st.x - 10 < WALL_X + WALL_W){
+      st.x = (st.x < WALL_X + WALL_W / 2) ? WALL_X - 10 : WALL_X + WALL_W + 10;
+      st.vx = 0;
+    }
+  }
+
+  // changement d'écran
+  if (st.x > W - 8){ st.screen++; st.x = 10; }
+  if (st.x < 8)    { st.screen--; st.x = W - 10; }
+
+  const si = SI(st.screen);
+  const s2 = SCR(st.screen);
+
+  // ----- échelle : monter / descendre -----
+  if (s2.t === 'hole'){
+    // depuis le souterrain
+    if (st.y > GB && Math.abs(st.x - 400) < 22 && kUp()){ st.climbing = true; st.x = 400; }
+    // depuis la surface : zone élargie autour du trou
+    if (st.grounded && st.y === GY && Math.abs(st.x - 400) < 60 && kDown()){
+      st.climbing = true; st.x = 400; st.y = GY + 4;
+    }
+    // rattraper l'échelle en tombant dans le puits si ↑ ou ↓ est enfoncé
+    if (!st.grounded && st.y > GY + 6 && st.y < UF - 4 && Math.abs(st.x - 400) < 26 && (kUp() || kDown())){
+      st.climbing = true; st.x = 400; st.vx = 0; st.vy = 0;
+    }
+  }
+
+  // ----- attraper la liane -----
+  if (s2.t === 'vine' && !st.grounded && st.vineCD <= 0 && st.y < GY){
+    const v = vineState(st.t);
+    const dx = st.x - v.tx, dy = (st.y - 26) - v.ty;
+    if (dx * dx + dy * dy < 50 * 50){ st.vine = true; st.vy = 0; }
+  }
+
+  // ----- rondins -----
+  if (st.y <= GY + 1){
+    for (const lg of logsFor(si, st.t)){
+      if (overlap(st.x - 10, st.y - 44, 20, 44, lg.x - 16, GY - 26, 32, 26)){
+        st.score = Math.max(0, st.score - 90 * dt);
+        if (Math.random() < dt * 4) sHit();
+      }
+    }
+  }
+
+  // ----- serpent / feu -----
+  if (st.y <= GY + 1 && st.deadT <= 0){
+    if (s2.t === 'snake' || s2.snake){
+      const sx = s2.t === 'snake' ? 470 : 500;
+      if (overlap(st.x - 10, st.y - 44, 20, 44, sx - 17, GY - 24, 34, 24)) die();
+    }
+    if (s2.t === 'fire'){
+      // boîte réduite (22×24) : seul le cœur de la flamme est mortel, pas la pointe vacillante
+      if (overlap(st.x - 10, st.y - 44, 20, 44, 470 - 11, GY - 24, 22, 24)) die();
+    }
+  }
+
+  // ----- scorpion (souterrain) -----
+  if (st.y > GB && scorpOn(si) && st.deadT <= 0){
+    const sx = scorpX(si, st.t);
+    if (overlap(st.x - 10, st.y - 44, 20, 44, sx - 15, UF - 18, 30, 18)) die();
+  }
+
+  // ----- trésor -----
+  if (s2.t === 'treasure' && !st.collected.has(si)){
+    if (overlap(st.x - 10, st.y - 44, 20, 44, 620 - 14, GY - 30, 28, 30)){
+      st.collected.add(si);
+      st.score += s2.v;
+      sTreasure();
+      if (st.collected.size >= TOTAL_TREASURES){ st.over = true; st.win = true; saveHiscore(); }
+    }
+  }
+
+  jp.clear();
+}
+
+// ---------- Dessin ----------
+function rect(x, y, w, h, c){ ctx.fillStyle = c; ctx.fillRect(x, y, w, h); }
+
+function drawHarry(px, py, dir, mode, phase){
+  ctx.save(); ctx.translate(px, py); ctx.scale(dir, 1);
+  const skin='#e8a85c', skinSh='#c8864a',
+        shirt='#2bb52b', shirtSh='#178017', shirtHi='#34c534',
+        pants='#3a6ad0', pantsSh='#244a9e',
+        hair='#3a2410',
+        boot='#5a3814', bootSh='#332006',
+        hat='#9c6a2e', hatSh='#6e4a1e', hatBand='#4a2e12', hatHi='#b9824a',
+        belt='#4a2e12', buckle='#e0b830';
+  const f = Math.floor(phase * 2) % 2;
+
+  // une jambe avec sa botte
+  const legB = (x, w, topY, h) => {
+    rect(x, topY, w, h - 5, pants);
+    rect(x, topY, 2, h - 5, pantsSh);            // ombre
+    rect(x - 1, topY + h - 5, w + 2, 5, boot);   // botte
+    rect(x - 1, topY + h - 2, w + 2, 2, bootSh); // semelle
+  };
+
+  // ---- jambes + bottes ----
+  if (mode === 'jump'){ legB(-8, 6, -15, 11); legB(3, 6, -13, 9); }
+  else if (mode === 'climb'){ legB(-8, 6, -16, 16 - (f ? 4 : 0)); legB(3, 6, -16, 16 - (f ? 0 : 4)); }
+  else if (mode === 'run'){
+    if (f){ legB(-10, 6, -16, 16); legB(4, 6, -16, 16); }
+    else { legB(-3, 7, -16, 16); }
+  } else { legB(-7, 5, -16, 16); legB(2, 5, -16, 16); }
+
+  // ---- torse (chemise) ----
+  rect(-7, -38, 14, 22, shirt);
+  rect(3, -38, 4, 22, shirtSh);   // ombre latérale
+  rect(-7, -38, 14, 3, shirtHi);  // épaules éclairées
+  // ceinture + boucle
+  rect(-7, -19, 14, 3, belt);
+  rect(-2, -19, 4, 3, buckle);
+
+  // ---- bras ----
+  if (mode === 'swing' || mode === 'climb'){
+    rect(-3, -54, 5, 17, shirt);  // bras levés (manche)
+    rect(-3, -59, 5, 6, skin);    // mains
+  } else if (mode === 'run'){
+    rect(-10, -35, 6, 5, shirtSh); // bras arrière
+    rect(3, -36, 10, 5, shirt);    // bras avant (manche)
+    rect(12, -36, 4, 5, skin);     // main
+  } else {
+    rect(5, -37, 4, 15, shirt);    // bras le long du corps
+    rect(5, -23, 4, 4, skin);      // main
+  }
+
+  // ---- tête + visage ----
+  rect(-5, -48, 11, 12, skin);
+  rect(3, -48, 3, 12, skinSh);     // ombre du visage
+  rect(-6, -47, 2, 9, hair);       // cheveux à l'arrière
+  rect(1, -45, 2, 2, '#1a1a1a');   // œil
+  rect(5, -43, 1, 3, skinSh);      // nez
+
+  // ---- chapeau d'aventurier ----
+  rect(-9, -49, 20, 3, hat);       // bord (brim)
+  rect(-9, -47, 20, 1, hatSh);     // dessous du bord
+  rect(-5, -55, 11, 7, hat);       // calotte
+  rect(-5, -55, 11, 2, hatHi);     // reflet
+  rect(-5, -51, 11, 2, hatBand);   // bandeau
+
+  ctx.restore();
+}
+
+// vignette d'un tableau pour la mini-carte
+function drawMini(idx, bx, by, bw, bh, current){
+  const s = SCR(idx);
+  const gy = by + bh - 11;            // ligne de sol dans la vignette
+  const cx = bx + bw / 2;
+  // ciel + canopée + sol
+  rect(bx, by, bw, bh, '#3a7a1a');
+  rect(bx, by, bw, 3, '#0d4a0d');
+  rect(bx, gy, bw, by + bh - gy, '#c2a541');
+  // éléments selon le type
+  if (s.t === 'hole'){
+    rect(cx - 5, gy, 10, by + bh - gy, '#000');
+  } else if (s.t === 'vine'){
+    rect(cx - 13, gy, 26, by + bh - gy, '#101010');
+    ctx.strokeStyle = '#6b4a14'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(cx, by + 3); ctx.lineTo(cx + 7, gy - 1); ctx.stroke();
+  } else if (s.t === 'croc'){
+    rect(bx + 6, gy, bw - 12, by + bh - gy, '#1838c8');
+    for (const dx of [-13, 0, 13]) rect(cx + dx - 4, gy - 2, 8, 4, '#176617');
+  } else if (s.t === 'quick'){
+    rect(cx - 11, gy, 22, 3, '#7a6020');
+  } else if (s.t === 'logs'){
+    ctx.fillStyle = '#8a5a1c';
+    for (const dx of [-9, 4]){ ctx.beginPath(); ctx.arc(cx + dx, gy - 3, 3, 0, 6.3); ctx.fill(); }
+  } else if (s.t === 'fire'){
+    ctx.fillStyle = '#e85010';
+    ctx.beginPath(); ctx.moveTo(cx - 4, gy); ctx.lineTo(cx, gy - 9); ctx.lineTo(cx + 4, gy); ctx.fill();
+  } else if (s.t === 'snake'){
+    rect(cx - 5, gy - 4, 11, 4, '#0e0e0e');
+  } else if (s.t === 'treasure'){
+    const col = s.v === 2000 ? '#f8e030' : s.v === 3000 ? '#c8c8d8' : s.v === 4000 ? '#e8b818' : '#a0e8f8';
+    const got = st.collected.has(SI(idx));
+    rect(cx - 4, gy - 9, 8, 8, got ? '#4a4a3a' : col);
+    if (!got) rect(cx - 1, gy - 7, 2, 2, '#fff');
+  }
+  // danger additionnel (serpent sur un écran trésor)
+  if (s.snake && s.t !== 'snake') rect(cx - 15, gy - 4, 8, 4, '#0e0e0e');
+  // bordure
+  ctx.strokeStyle = current ? '#f8e060' : 'rgba(0,0,0,0.55)';
+  ctx.lineWidth = current ? 2 : 1;
+  ctx.strokeRect(bx + 0.5, by + 0.5, bw - 1, bh - 1);
+}
+
+function drawScene(){
+  const si = SI(st.screen);
+  const s = SCR(st.screen);
+  const t = st.t;
+
+  // ciel / fond jungle
+  rect(0, 0, W, H, '#4a9e22');
+  // canopée
+  rect(0, 0, W, 58, '#0d4a0d');
+  ctx.fillStyle = '#0d4a0d';
+  for (let x = 0; x < W; x += 40){
+    ctx.beginPath(); ctx.moveTo(x, 58); ctx.lineTo(x + 20, 76); ctx.lineTo(x + 40, 58); ctx.fill();
+  }
+  // troncs d'arbres
+  for (const tx of [110, 290, 510, 690]){
+    rect(tx - 9, 58, 18, GY - 58, '#7a4a14');
+    rect(tx - 9, 58, 5, GY - 58, '#5e3608');
+    ctx.strokeStyle = '#5e3608'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(tx, 100); ctx.lineTo(tx - 22, 66); ctx.moveTo(tx, 100); ctx.lineTo(tx + 22, 66); ctx.stroke();
+  }
+  // bande de sol
+  rect(0, GY, W, GB - GY, '#c2a541');
+  rect(0, GY, W, 4, '#8a7420');
+  // souterrain
+  rect(0, GB, W, UF - GB, '#000');
+  rect(0, UF, W, H - UF, '#94501c');
+  rect(0, UF, W, 4, '#5e3007');
+
+  // mur de briques du souterrain
+  if (wallOn(si)){
+    rect(WALL_X, GB, WALL_W, UF - GB, '#9c2c10');
+    ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
+    for (let y = GB + 12; y < UF; y += 14){
+      ctx.beginPath(); ctx.moveTo(WALL_X, y); ctx.lineTo(WALL_X + WALL_W, y); ctx.stroke();
+    }
+  }
+
+  // éléments selon le type d'écran
+  if (s.t === 'hole'){
+    rect(370, GY, 60, GB - GY, '#000');
+    // échelle
+    ctx.strokeStyle = '#c8a040'; ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(390, GY + 6); ctx.lineTo(390, UF);
+    ctx.moveTo(410, GY + 6); ctx.lineTo(410, UF);
+    ctx.stroke();
+    ctx.lineWidth = 3;
+    for (let y = GY + 16; y < UF; y += 16){
+      ctx.beginPath(); ctx.moveTo(388, y); ctx.lineTo(412, y); ctx.stroke();
+    }
+  }
+
+  if (s.t === 'vine'){
+    // mare de goudron
+    rect(290, GY, 220, GB - GY, '#101010');
+    rect(290, GY, 220, 6, '#2a2a2a');
+    // liane
+    const v = vineState(t);
+    ctx.strokeStyle = '#3f2c08'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(400, 60); ctx.lineTo(v.tx, v.ty); ctx.stroke();
+    rect(v.tx - 5, v.ty - 5, 10, 10, '#1f7a1f');
+  }
+
+  if (s.t === 'quick'){
+    const oh = quickOpen(t);
+    rect(300, GY, 200, 8, '#8a7430');
+    if (oh > 6){
+      rect(400 - oh, GY, oh * 2, GB - GY, '#5e4a18');
+      rect(400 - oh, GY, oh * 2, 8, '#3e3010');
+    }
+  }
+
+  if (s.t === 'croc'){
+    // eau
+    rect(250, GY, 310, GB - GY, '#1838c8');
+    rect(250, GY, 310, 5, '#4060e8');
+    for (let i = 0; i < CROC_HEADS.length; i++){
+      const hc = CROC_HEADS[i];
+      const open = crocOpen(t, i);
+      // tête de croco
+      rect(hc - 18, GY, 36, 16, '#176617');
+      rect(hc - 18, GY - 4, 8, 4, '#176617'); // bosse de l'œil
+      rect(hc - 16, GY - 3, 3, 3, '#fff');
+      if (open){
+        // mâchoire ouverte
+        ctx.fillStyle = '#176617';
+        ctx.beginPath(); ctx.moveTo(hc + 18, GY); ctx.lineTo(hc - 14, GY); ctx.lineTo(hc + 14, GY - 16); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.moveTo(hc + 14, GY - 1); ctx.lineTo(hc - 6, GY - 1); ctx.lineTo(hc + 11, GY - 11); ctx.closePath(); ctx.fill();
+      }
+    }
+  }
+
+  if (s.t === 'logs'){
+    for (const lg of logsFor(si, t)){
+      ctx.fillStyle = '#8a5a1c';
+      ctx.beginPath(); ctx.arc(lg.x, GY - 13, 13, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#5e3a08'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(lg.x, GY - 13, 8, lg.spin, lg.spin + 4); ctx.stroke();
+      ctx.beginPath(); ctx.arc(lg.x, GY - 13, 13, 0, Math.PI * 2); ctx.stroke();
+    }
+  }
+
+  if (s.t === 'fire'){
+    // bûches
+    rect(452, GY - 6, 36, 6, '#5a3a1a');
+    rect(452, GY - 3, 36, 3, '#3a2410');
+    rect(456, GY - 5, 28, 2, '#7a4a22');
+    const fl = Math.sin(t * 18) * 3, fl2 = Math.cos(t * 23) * 2;
+    // flamme externe
+    ctx.fillStyle = '#e84810';
+    ctx.beginPath(); ctx.moveTo(454, GY - 6); ctx.lineTo(470, GY - 30 - fl); ctx.lineTo(486, GY - 6); ctx.closePath(); ctx.fill();
+    // flamme intermédiaire
+    ctx.fillStyle = '#f8a020';
+    ctx.beginPath(); ctx.moveTo(460, GY - 6); ctx.lineTo(470, GY - 22 - fl2); ctx.lineTo(480, GY - 6); ctx.closePath(); ctx.fill();
+    // cœur jaune
+    ctx.fillStyle = '#f8e060';
+    ctx.beginPath(); ctx.moveTo(465, GY - 6); ctx.lineTo(470, GY - 13 + fl); ctx.lineTo(475, GY - 6); ctx.closePath(); ctx.fill();
+  }
+
+  if (s.t === 'snake' || s.snake){
+    const sx = s.t === 'snake' ? 470 : 500;
+    const wig = Math.sin(t * 6) * 2;
+    ctx.fillStyle = '#0e0e0e';
+    rect(sx - 17, GY - 8, 34, 8, '#0e0e0e');
+    rect(sx - 12, GY - 14, 24, 6, '#0e0e0e');
+    rect(sx + 2, GY - 24 + wig, 8, 12, '#0e0e0e');
+    rect(sx + 6, GY - 26 + wig, 8, 7, '#0e0e0e');
+    ctx.fillStyle = '#e83010'; ctx.fillRect(sx + 12, GY - 23 + wig, 2, 2);
+  }
+
+  if (s.t === 'treasure' && !st.collected.has(si)){
+    const tx = 620, shimmer = Math.sin(t * 5) > 0.4;
+    if (s.v === 2000){ // sac d'argent
+      ctx.fillStyle = '#8a6a2a';
+      ctx.beginPath(); ctx.arc(tx, GY - 13, 13, 0, Math.PI * 2); ctx.fill();
+      rect(tx - 4, GY - 30, 8, 6, '#8a6a2a');
+      ctx.fillStyle = '#f8e030'; ctx.font = 'bold 15px monospace'; ctx.fillText('$', tx - 4, GY - 8);
+    } else if (s.v === 3000){ // lingot d'argent
+      rect(tx - 14, GY - 12, 28, 12, '#c8c8d8');
+      rect(tx - 14, GY - 12, 28, 4, '#f0f0ff');
+    } else if (s.v === 4000){ // lingot d'or
+      rect(tx - 14, GY - 12, 28, 12, '#e8b818');
+      rect(tx - 14, GY - 12, 28, 4, '#f8e060');
+    } else { // bague en diamant
+      ctx.strokeStyle = '#f0d030'; ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.arc(tx, GY - 12, 9, 0, Math.PI * 2); ctx.stroke();
+      rect(tx - 4, GY - 28, 8, 8, shimmer ? '#ffffff' : '#a0e8f8');
+    }
+    if (shimmer){ rect(tx + 12, GY - 34, 3, 3, '#fff'); rect(tx - 18, GY - 20, 3, 3, '#fff'); }
+  }
+
+  // scorpion
+  if (scorpOn(si)){
+    const sx = scorpX(si, t);
+    const dir = Math.cos(t * 0.45 + si * 2.1) >= 0 ? 1 : -1;  // sens de marche
+    const lf = Math.floor(t * 10) % 2;
+    const body = '#c8b048', bodyHi = '#e8d068', bodySh = '#9a8430',
+          claw = '#b8a038', sting = '#e84020';
+    ctx.save();
+    ctx.translate(sx, UF);
+    ctx.scale(dir, 1);
+    // pattes animées
+    ctx.strokeStyle = bodySh; ctx.lineWidth = 2;
+    for (let i = 0; i < 4; i++){
+      const lx = -9 + i * 5;
+      const wig = (i % 2 === lf) ? 2 : -2;
+      ctx.beginPath(); ctx.moveTo(lx, -5); ctx.lineTo(lx + wig, 0); ctx.stroke();
+    }
+    // queue recourbée
+    ctx.strokeStyle = body; ctx.lineWidth = 4; ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-10, -7);
+    ctx.quadraticCurveTo(-21, -11, -17, -21);   // segment montant
+    ctx.quadraticCurveTo(-14, -28, -7, -23);    // recourbée vers l'avant
+    ctx.stroke();
+    ctx.lineCap = 'butt';
+    rect(-9, -26, 5, 5, sting);                 // dard
+    // corps segmenté
+    rect(-12, -9, 18, 7, body);
+    rect(-12, -9, 18, 2, bodyHi);               // reflet
+    rect(-12, -3, 18, 1, bodySh);               // ombre
+    ctx.strokeStyle = bodySh; ctx.lineWidth = 1;
+    for (let x = -8; x < 6; x += 4){ ctx.beginPath(); ctx.moveTo(x, -9); ctx.lineTo(x, -2); ctx.stroke(); }
+    // tête
+    rect(5, -9, 8, 7, body);
+    rect(5, -9, 8, 2, bodyHi);
+    rect(9, -7, 2, 2, sting);                   // œil
+    // pinces
+    ctx.strokeStyle = claw; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(12, -7); ctx.lineTo(19, -10); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(12, -4); ctx.lineTo(19, -2); ctx.stroke();
+    rect(17, -13, 6, 4, claw);                  // mâchoire haute
+    rect(17, -4, 6, 4, claw);                   // mâchoire basse
+    ctx.restore();
+  }
+
+  // Harry
+  let mode = 'idle';
+  if (st.vine) mode = 'swing';
+  else if (st.climbing) mode = 'climb';
+  else if (!st.grounded) mode = 'jump';
+  else if (Math.abs(st.vx) > 10) mode = 'run';
+  const phase = st.climbing ? st.t * 4 : st.runPhase;
+  if (!(st.deadT > 0 && Math.floor(st.deadT * 10) % 2 === 0)){
+    drawHarry(st.x, st.y, st.dir, mode, phase);
+  }
+
+  // ---------- HUD ----------
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 24px "Courier New", monospace';
+  ctx.fillText(String(Math.floor(st.score)).padStart(6, '0'), 16, 26);
+  const mm = Math.floor(st.time / 60), ss = Math.floor(st.time % 60);
+  ctx.fillText(mm + ':' + String(ss).padStart(2, '0'), 16, 52);
+  // vies
+  for (let i = 0; i <= st.lives; i++) rect(150 + i * 10, 38, 5, 14, '#fff');
+  // trésors
+  ctx.font = 'bold 16px "Courier New", monospace';
+  ctx.fillStyle = '#f8e060';
+  ctx.fillText('TRÉSORS ' + st.collected.size + '/' + TOTAL_TREASURES, W - 160, 26);
+  // meilleur score
+  ctx.fillStyle = '#9fdf6f';
+  ctx.fillText('RECORD ' + String(hiscore).padStart(6, '0'), W - 160, 48);
+
+  // ---------- mini-carte (2 tableaux avant, l'actuel, 2 après) ----------
+  if (st.started && !st.over){
+    const mw = 58, mh = 34, gap = 5, n = 5;
+    const total = n * mw + (n - 1) * gap;
+    const mx = (W - total) / 2, my = 7;
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.fillRect(mx - 5, my - 4, total + 10, mh + 13);
+    for (let k = -2; k <= 2; k++){
+      drawMini(st.screen + k, mx + (k + 2) * (mw + gap), my, mw, mh, k === 0);
+    }
+    // repère sous le tableau courant
+    const ccx = mx + 2 * (mw + gap) + mw / 2;
+    ctx.fillStyle = '#f8e060';
+    ctx.beginPath();
+    ctx.moveTo(ccx - 4, my + mh + 2); ctx.lineTo(ccx + 4, my + mh + 2); ctx.lineTo(ccx, my + mh + 7);
+    ctx.closePath(); ctx.fill();
+  }
+
+  // flash rouge à la mort
+  if (st.deadT > 0.9){ ctx.fillStyle = 'rgba(216,40,16,0.35)'; ctx.fillRect(0, 0, W, H); }
+
+  // ---------- écrans de jeu ----------
+  if (!st.started || st.over){
+    ctx.fillStyle = 'rgba(0,0,0,0.78)'; ctx.fillRect(0, 0, W, H);
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#f8e060';
+    ctx.font = 'bold 52px "Courier New", monospace';
+    if (!st.started){
+      ctx.fillText('PITFALL JUNGLE', W / 2, 160);
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 20px "Courier New", monospace';
+      ctx.fillText('Trouve les ' + TOTAL_TREASURES + ' trésors de la jungle en 20 minutes !', W / 2, 230);
+      ctx.fillStyle = '#9fdf6f'; ctx.font = '17px "Courier New", monospace';
+      ctx.fillText('← →  bouger        ESPACE / ↑  sauter', W / 2, 285);
+      ctx.fillText('↓  descendre l’échelle ou lâcher la liane', W / 2, 315);
+      ctx.fillText('Saute vers la liane pour t’y accrocher !', W / 2, 345);
+      ctx.fillText('Évite crocos, sables mouvants, serpents et scorpions.', W / 2, 375);
+      ctx.fillText('Tomber dans un trou : -100 points (remonte par l’échelle).', W / 2, 405);
+      ctx.fillText('P ou ÉCHAP : pause', W / 2, 435);
+      if (Math.floor(performance.now() / 500) % 2 === 0){
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 24px "Courier New", monospace';
+        ctx.fillText('APPUIE SUR ENTRÉE', W / 2, 470);
+      }
+    } else {
+      ctx.fillText(st.win ? 'VICTOIRE !' : 'PARTIE TERMINÉE', W / 2, 190);
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 26px "Courier New", monospace';
+      ctx.fillText('SCORE FINAL : ' + Math.floor(st.score), W / 2, 255);
+      if (st.win) ctx.fillText('Tous les trésors sont à toi !', W / 2, 295);
+      ctx.font = 'bold 22px "Courier New", monospace';
+      if (st.newHi){
+        ctx.fillStyle = '#f8e060';
+        ctx.fillText('★ NOUVEAU RECORD ! ★', W / 2, 335);
+      } else {
+        ctx.fillStyle = '#9fdf6f';
+        ctx.fillText('RECORD : ' + hiscore, W / 2, 335);
+      }
+      if (Math.floor(performance.now() / 500) % 2 === 0){
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 22px "Courier New", monospace';
+        ctx.fillText('ENTRÉE POUR REJOUER', W / 2, 400);
+      }
+    }
+    ctx.textAlign = 'left';
+  }
+
+  // ---------- écran de pause ----------
+  if (st.started && !st.over && st.paused){
+    ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0, 0, W, H);
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#f8e060';
+    ctx.font = 'bold 48px "Courier New", monospace';
+    ctx.fillText('PAUSE', W / 2, H / 2 - 10);
+    ctx.fillStyle = '#fff'; ctx.font = '18px "Courier New", monospace';
+    ctx.fillText('P ou ÉCHAP pour reprendre', W / 2, H / 2 + 30);
+    ctx.textAlign = 'left';
+  }
+}
+
+// ---------- Boucle ----------
+let last = performance.now();
+function frame(now){
+  const dt = Math.min(0.033, (now - last) / 1000);
+  last = now;
+  update(dt);
+  drawScene();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+<script src="../music/playlist.js"></script>
+<script src="../music/player.js"></script>
+</body>
+</html>

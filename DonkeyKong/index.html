@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Donkey Kong</title>
+<style>
+  html,body{margin:0;padding:0;height:100%;background:#000;color:#fff;
+    font-family:'Courier New',monospace;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;user-select:none;overflow:hidden}
+  h1{letter-spacing:5px;margin:0 0 8px;font-size:20px;
+     text-shadow:0 0 8px #fff,0 0 18px #e85d2a}
+  #wrap{position:relative}
+  canvas{background:#000;border:2px solid #fff;display:block;
+    box-shadow:0 0 24px rgba(232,93,42,.4);touch-action:none}
+  #hint{color:#777;font-size:12px;margin-top:10px;text-align:center;line-height:1.6}
+  #overlay{position:absolute;inset:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;background:rgba(0,0,0,.8);
+    text-align:center;cursor:pointer}
+  #overlay h2{font-size:24px;letter-spacing:3px;margin:0 0 12px}
+  #overlay p{color:#bbb;font-size:13px;margin:4px 0}
+  .blink{animation:blink 1.1s steps(2,start) infinite}
+  @keyframes blink{50%{opacity:0}}
+  a.back{color:#4ecca3;font-size:12px;margin-top:8px;text-decoration:none;letter-spacing:1px}
+  a.back:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+  <h1>DONKEY KONG</h1>
+  <div id="wrap">
+    <canvas id="game" width="440" height="520"></canvas>
+    <div id="overlay">
+      <h2 id="ovTitle">DONKEY KONG</h2>
+      <p>Rejoignez Pauline tout en haut</p>
+      <p>← → marcher · ↑ ↓ échelles · Espace : sauter</p>
+      <p>Sautez par-dessus les tonneaux (+100)</p>
+      <p class="blink" style="margin-top:14px">▶ Cliquez ou Espace pour jouer</p>
+    </div>
+  </div>
+  <div id="hint">← → marcher · ↑ ↓ monter/descendre les échelles · Espace : sauter · P = pause</div>
+  <a class="back" href="../index.html">← Menu Arcade</a>
+
+<script>
+const cv = document.getElementById('game');
+const ctx = cv.getContext('2d');
+const W = cv.width, H = cv.height, HUD = 36;
+const overlay = document.getElementById('overlay');
+const ovTitle = document.getElementById('ovTitle');
+
+const X1 = 30, X2 = 410;
+// poutrelles (ligne des pieds), du haut vers le bas
+const PY = [120, 192, 264, 336, 408, 470];
+const platforms = PY.map(y=>({x1:X1, x2:X2, y}));
+const TOP = platforms[0], BOTTOM = platforms[platforms.length-1];
+
+// échelles : relient platforms[i] (haut) et platforms[i+1] (bas)
+const ladderDefs = [
+  [0,320],[0,200],
+  [1,90],[1,360],
+  [2,350],[2,150],
+  [3,100],[3,380],
+  [4,370],[4,210]
+];
+const ladders = ladderDefs.map(([i,x])=>({x, yTop:platforms[i].y, yBottom:platforms[i+1].y}));
+
+const dk = { x:330, y:TOP.y, arm:0, throwT:90 };
+const pauline = { x:140, y:TOP.y };
+
+// marteaux à ramasser (posés sur une poutrelle)
+const hammerDefs = [ {x:250, y:platforms[3].y}, {x:190, y:platforms[1].y} ];
+let hammers = [];
+
+const WALK=2.2, CLIMB=2.0, G=0.6, JUMP=8;
+const HAMMER_T=300, HAMMER_RESPAWN=900;
+let player, barrels, parts;
+let score=0, lives=3, level=1, hi=0;
+let running=false, paused=false, over=false, won=false;
+const keys={};
+
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+
+function resetPlayer(){
+  player = { x:80, y:BOTTOM.y, baseY:BOTTOM.y, vy:0, onGround:true,
+             climbing:false, lad:null, facing:1, inv:0, walkT:0, hammer:0 };
+}
+function newGame(){
+  score=0; lives=3; level=1;
+  resetPlayer(); barrels=[]; parts=[];
+  hammers = hammerDefs.map(d=>({x:d.x, y:d.y, taken:false, respawn:0}));
+  dk.throwT=90; dk.arm=0;
+  over=false; won=false; paused=false; running=true;
+  hideOverlay();
+}
+
+function showOverlay(title, sub){
+  ovTitle.textContent = title;
+  overlay.querySelector('p:nth-of-type(1)').textContent = sub;
+  overlay.style.display='flex';
+}
+function hideOverlay(){ overlay.style.display='none'; }
+
+// ---- entrées ----
+document.addEventListener('keydown', e=>{
+  const k=e.key.toLowerCase();
+  keys[k]=true;
+  if (['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)) e.preventDefault();
+  if (k===' '){
+    if (!running||over){ newGame(); }
+    else if (player.onGround && !player.climbing && player.hammer<=0){ player.vy=-JUMP; player.onGround=false; }
+  }
+  if (k==='p' && running && !over) paused=!paused;
+});
+document.addEventListener('keyup', e=>{ keys[e.key.toLowerCase()]=false; });
+overlay.addEventListener('click', ()=>{ if(!running||over) newGame(); });
+cv.addEventListener('touchstart', e=>{ e.preventDefault();
+  if(!running||over){ newGame(); return; }
+  if (player.onGround && !player.climbing && player.hammer<=0){ player.vy=-JUMP; player.onGround=false; }
+}, {passive:false});
+
+// ---- joueur ----
+function updatePlayer(){
+  if (player.inv>0) player.inv--;
+  if (player.hammer>0) player.hammer--;
+
+  if (player.climbing){
+    const lad = player.lad;
+    if (keys['arrowup']){ player.y -= CLIMB; player.walkT++; }
+    if (keys['arrowdown']){ player.y += CLIMB; player.walkT++; }
+    player.x = lad.x;
+    if (player.y <= lad.yTop){ player.y=lad.yTop; player.baseY=lad.yTop; player.climbing=false; player.onGround=true; }
+    else if (player.y >= lad.yBottom){ player.y=lad.yBottom; player.baseY=lad.yBottom; player.climbing=false; player.onGround=true; }
+    checkWin();
+    return;
+  }
+
+  if (keys['arrowleft']){ player.x-=WALK; player.facing=-1; player.walkT++; }
+  if (keys['arrowright']){ player.x+=WALK; player.facing=1; player.walkT++; }
+  player.x = clamp(player.x, X1, X2);
+
+  // ramasser un marteau
+  if (player.hammer<=0 && player.onGround){
+    for (const h of hammers){
+      if (!h.taken && Math.abs(h.x-player.x)<16 && Math.abs(h.y-player.baseY)<8){
+        h.taken=true; h.respawn=HAMMER_RESPAWN; player.hammer=HAMMER_T;
+        floatText(player.x, player.y-36, 'MARTEAU !');
+      }
+    }
+  }
+
+  // avec le marteau : ni saut ni échelle
+  if (player.onGround && player.hammer<=0){
+    // monter une échelle ?
+    if (keys['arrowup']){
+      const lad = ladders.find(l=>Math.abs(l.x-player.x)<14 && Math.abs(l.yBottom-player.baseY)<6);
+      if (lad){ player.climbing=true; player.lad=lad; return; }
+    }
+    // descendre une échelle ?
+    if (keys['arrowdown']){
+      const lad = ladders.find(l=>Math.abs(l.x-player.x)<14 && Math.abs(l.yTop-player.baseY)<6);
+      if (lad){ player.climbing=true; player.lad=lad; player.y+=2; return; }
+    }
+  }
+  if (!player.onGround){
+    player.vy += G;
+    player.y += player.vy;
+    if (player.vy>=0 && player.y>=player.baseY){
+      player.y=player.baseY; player.vy=0; player.onGround=true;
+    }
+  }
+  checkWin();
+}
+
+function checkWin(){
+  if (player.baseY===TOP.y && Math.abs(player.x-pauline.x)<26 && !player.climbing){
+    won=true; over=true; running=false;
+    score += 800;
+    showOverlay('GAGNÉ ! 🎉', 'Pauline est sauvée ! Score : '+score);
+  }
+}
+
+function hit(){
+  if (player.inv>0 || over) return;
+  lives--;
+  burst(player.x, player.y-14, '#ff5252', 22);
+  if (lives<=0){ over=true; running=false; if(score>hi)hi=score; showOverlay('GAME OVER','Score : '+score); }
+  else { resetPlayer(); player.inv=90; }
+}
+
+// ---- tonneaux ----
+function spawnBarrel(){
+  barrels.push({ x:dk.x-14, y:TOP.y, vx:1.6, vy:0, plat:TOP, air:false, jumped:false });
+}
+function updateBarrels(){
+  // DK lance des tonneaux
+  dk.throwT--;
+  if (dk.arm>0) dk.arm--;
+  if (dk.throwT<=0){
+    spawnBarrel(); dk.arm=18;
+    dk.throwT = 110 + Math.random()*90 - level*8;
+  }
+
+  barrels.forEach(b=>{
+    if (b.air){
+      // CHUTE : ne peut atterrir que sur une poutrelle strictement plus basse
+      b.vy += G;
+      b.y += b.vy;
+      for (const p of platforms){
+        if (p.y > b.fromY && b.x>=p.x1-6 && b.x<=p.x2+6 && b.y>=p.y && (b.y-b.vy)<=p.y+2){
+          b.y=p.y; b.vy=0; b.air=false; b.plat=p;
+          b.x = clamp(b.x, p.x1+1, p.x2-1);           // recale sur la poutrelle
+          b.vx = -Math.sign(b.vx||1)*(1.4+Math.random()*0.5); // zigzag : repart en sens inverse
+          break;
+        }
+      }
+    } else {
+      // ROULE le long de la poutrelle
+      b.x += b.vx;
+      if (b.x < b.plat.x1 || b.x > b.plat.x2){
+        b.air=true; b.fromY=b.plat.y; b.plat=null; b.vy=0;     // bascule au bord
+      } else if (Math.random()<0.006){
+        const down = ladders.find(l=>Math.abs(l.x-b.x)<10 && Math.abs(l.yTop-b.plat.y)<6);
+        if (down){ b.air=true; b.fromY=b.plat.y; b.plat=null; b.vy=0; } // descend par l'échelle
+      }
+    }
+
+    // marteau : détruit tout tonneau au corps-à-corps (zone généreuse, devant + dessus)
+    if (player.hammer>0){
+      if (Math.abs(b.x-player.x)<24 && Math.abs((b.y-10)-(player.y-14))<22){
+        b.dead=true; score+=300; burst(b.x,b.y-10,'#ffb300'); floatText(b.x,b.y-24,'+300');
+        return;
+      }
+    }
+
+    // collision joueur
+    if (Math.abs(b.x-player.x)<16){
+      if (player.y <= b.y-18){
+        if (!b.jumped && !player.onGround){ b.jumped=true; score+=100; floatText(player.x,player.y-30,'+100'); }
+      } else if (player.y > b.y-22 && player.y < b.y+8){
+        hit();
+      }
+    }
+  });
+  barrels = barrels.filter(b=> b.y < H+30 && !b.dead);
+
+  // réapparition des marteaux
+  hammers.forEach(h=>{
+    if (h.taken && h.respawn>0){ h.respawn--; if (h.respawn<=0 && player.hammer<=0) h.taken=false; }
+  });
+  if (barrels.length===0 && false){}
+}
+
+// ---- particules / texte ----
+function burst(x,y,color,n){ n=n||14;
+  for(let i=0;i<n;i++){ const a=Math.random()*Math.PI*2,s=Math.random()*3.5+1;
+    parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:18+Math.random()*14,color,txt:null}); } }
+let floats=[];
+function floatText(x,y,txt){ floats.push({x,y,txt,life:40}); }
+
+function update(){
+  if (!running||paused||over) return;
+  updatePlayer();
+  updateBarrels();
+  parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=0.15;p.life--;});
+  parts=parts.filter(p=>p.life>0);
+  floats.forEach(f=>{f.y-=0.6;f.life--;});
+  floats=floats.filter(f=>f.life>0);
+}
+
+// ---- rendu ----
+function draw(){
+  ctx.clearRect(0,0,W,H);
+
+  // poutrelles
+  platforms.forEach(p=>{
+    ctx.fillStyle='#e85d2a';
+    ctx.fillRect(p.x1, p.y, p.x2-p.x1, 8);
+    ctx.fillStyle='#ff8a5c';
+    ctx.fillRect(p.x1, p.y, p.x2-p.x1, 2);
+    ctx.fillStyle='#7a2e10';
+    for (let x=p.x1+6; x<p.x2; x+=20){ ctx.fillRect(x, p.y+3, 3, 3); }
+  });
+
+  // échelles
+  ladders.forEach(l=>{
+    ctx.strokeStyle='#5ad1e8'; ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(l.x-6, l.yTop); ctx.lineTo(l.x-6, l.yBottom);
+    ctx.moveTo(l.x+6, l.yTop); ctx.lineTo(l.x+6, l.yBottom);
+    ctx.stroke();
+    for (let y=l.yTop+6; y<l.yBottom; y+=10){
+      ctx.beginPath(); ctx.moveTo(l.x-6,y); ctx.lineTo(l.x+6,y); ctx.stroke();
+    }
+  });
+
+  // marteaux à ramasser
+  hammers.forEach(h=>{ if (!h.taken) drawHammerPickup(h); });
+
+  drawPauline(pauline.x, pauline.y);
+  drawDK(dk.x, dk.y);
+
+  // tonneaux
+  barrels.forEach(b=>drawBarrel(b));
+
+  // joueur (clignote si invincible)
+  if (!(player.inv>0 && Math.floor(player.inv/5)%2)) drawJumpman(player);
+  if (player.hammer>0) drawHeldHammer(player);
+
+  // particules
+  parts.forEach(p=>{ ctx.globalAlpha=Math.min(1,p.life/20); ctx.fillStyle=p.color; ctx.fillRect(p.x-1,p.y-1,3,3); });
+  ctx.globalAlpha=1;
+  // textes flottants
+  floats.forEach(f=>{ ctx.globalAlpha=Math.min(1,f.life/20); ctx.fillStyle='#ffd54f';
+    ctx.font='bold 13px "Courier New",monospace'; ctx.textAlign='center'; ctx.fillText(f.txt,f.x,f.y); });
+  ctx.globalAlpha=1;
+
+  drawHUD();
+
+  if (paused){ ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.font='30px "Courier New",monospace';
+    ctx.fillText('PAUSE',W/2,H/2); }
+}
+
+function drawJumpman(p){
+  const x=p.x, y=p.y; // y = pieds
+  ctx.save(); ctx.translate(x,y);
+  const step = Math.floor(p.walkT/6)%2;
+  // jambes
+  ctx.fillStyle='#1565c0';
+  if (p.climbing){ ctx.fillRect(-5,-12,4,12); ctx.fillRect(1,-12,4,12); }
+  else { ctx.fillRect(-5,-12,4,12+(step?-1:0)); ctx.fillRect(1,-12,4,12+(step?0:-1)); }
+  // salopette / corps
+  ctx.fillStyle='#1e88e5'; ctx.fillRect(-6,-22,12,12);
+  // bras
+  ctx.fillStyle='#e0b48c'; ctx.fillRect(-9*p.facing,-20,4,7);
+  // chemise rouge
+  ctx.fillStyle='#e53935'; ctx.fillRect(-6,-22,12,4);
+  // tête
+  ctx.fillStyle='#e0b48c'; ctx.fillRect(-5,-30,10,9);
+  // casquette
+  ctx.fillStyle='#e53935'; ctx.fillRect(-6,-31,12,4);
+  ctx.fillRect(-6+ (p.facing>0?6:-2),-30,4,2);
+  // moustache
+  ctx.fillStyle='#3a2410'; ctx.fillRect(-4,-24,8,2);
+  ctx.restore();
+}
+
+function drawBarrel(b){
+  const x=b.x, y=b.y-10;
+  ctx.fillStyle='#a9621f';
+  ctx.beginPath(); ctx.ellipse(x,y,10,9,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#7a4214';
+  ctx.fillRect(x-10,y-2,20,2); ctx.fillRect(x-10,y+2,20,2);
+  ctx.strokeStyle='#5a300c'; ctx.lineWidth=1.5;
+  const a=(b.x*0.18)%(Math.PI); // rotation visuelle
+  ctx.beginPath(); ctx.moveTo(x-7*Math.cos(a),y-7*Math.sin(a)); ctx.lineTo(x+7*Math.cos(a),y+7*Math.sin(a)); ctx.stroke();
+}
+
+function drawHammerPickup(h){
+  const bob = Math.sin(performance.now()*0.005)*2;
+  const x=h.x, y=h.y-16+bob;
+  ctx.save(); ctx.translate(x,y);
+  ctx.fillStyle='#8a5a2e'; ctx.fillRect(-1.5,-2,3,16);   // manche
+  ctx.fillStyle='#cfcfcf'; ctx.fillRect(-7,-8,14,7);     // tête
+  ctx.fillStyle='#9e9e9e'; ctx.fillRect(-7,-8,14,2);
+  ctx.restore();
+}
+
+function drawHeldHammer(p){
+  const fwd = Math.floor((HAMMER_T-p.hammer)/10)%2===1;
+  ctx.save(); ctx.translate(p.x, p.y);
+  if (p.hammer<60 && Math.floor(p.hammer/5)%2) ctx.globalAlpha=0.4; // clignote en fin
+  if (fwd){
+    // tête en avant
+    ctx.rotate(p.facing*0.4);
+    ctx.fillStyle='#8a5a2e'; ctx.fillRect(-2,-30,4,18);
+    ctx.fillStyle='#cfcfcf'; ctx.fillRect(-8,-38,16,9);
+    ctx.fillStyle='#9e9e9e'; ctx.fillRect(-8,-38,16,3);
+  } else {
+    // tête en haut
+    ctx.fillStyle='#8a5a2e'; ctx.fillRect(-2,-40,4,16);
+    ctx.fillStyle='#cfcfcf'; ctx.fillRect(-9,-48,18,10);
+    ctx.fillStyle='#9e9e9e'; ctx.fillRect(-9,-48,18,3);
+  }
+  ctx.restore();
+}
+
+function drawDK(x,y){
+  ctx.save(); ctx.translate(x,y);
+  ctx.fillStyle='#6d4322';
+  ctx.fillRect(-22,-46,44,40);                 // corps
+  ctx.fillStyle='#8a5a2e';
+  ctx.beginPath(); ctx.arc(0,-46,15,Math.PI,0); ctx.fill(); // épaules
+  // tête
+  ctx.fillStyle='#6d4322'; ctx.fillRect(-13,-66,26,20);
+  ctx.fillStyle='#c79a6b'; ctx.fillRect(-9,-58,18,12); // museau
+  ctx.fillStyle='#000'; ctx.fillRect(-8,-63,4,4); ctx.fillRect(4,-63,4,4); // yeux
+  ctx.fillStyle='#000'; ctx.fillRect(-6,-51,12,2); // bouche
+  // ventre clair
+  ctx.fillStyle='#c79a6b'; ctx.fillRect(-12,-30,24,12);
+  // bras (animation de lancer)
+  ctx.fillStyle='#6d4322';
+  const ay = dk.arm>0 ? -50 : -34;
+  ctx.fillRect(-30,ay,10,16); ctx.fillRect(20,ay,10,16);
+  ctx.restore();
+}
+
+function drawPauline(x,y){
+  ctx.save(); ctx.translate(x,y);
+  // robe
+  ctx.fillStyle='#ff4fa3';
+  ctx.beginPath(); ctx.moveTo(0,-22); ctx.lineTo(-8,-4); ctx.lineTo(8,-4); ctx.closePath(); ctx.fill();
+  ctx.fillRect(-4,-30,8,10);
+  // tête
+  ctx.fillStyle='#e0b48c'; ctx.fillRect(-4,-38,8,8);
+  // cheveux
+  ctx.fillStyle='#ffd54f'; ctx.fillRect(-5,-40,10,4); ctx.fillRect(-5,-38,2,6);
+  // jambes
+  ctx.fillStyle='#e0b48c'; ctx.fillRect(-4,-4,3,4); ctx.fillRect(1,-4,3,4);
+  // cœur
+  ctx.fillStyle='#ff5252'; ctx.font='10px monospace'; ctx.textAlign='center';
+  ctx.fillText('♥', 0, -44);
+  ctx.restore();
+}
+
+function drawHUD(){
+  ctx.fillStyle='#000'; ctx.fillRect(0,0,W,HUD);
+  ctx.fillStyle='#fff'; ctx.font='14px "Courier New",monospace';
+  ctx.textAlign='left'; ctx.fillText('SCORE '+score, 10, 23);
+  ctx.textAlign='center'; ctx.fillStyle='#e85d2a'; ctx.fillText('★'.repeat(Math.max(0,lives)), W/2, 24);
+  ctx.textAlign='right'; ctx.fillStyle='#5ad1e8'; ctx.fillText('RECORD '+hi, W-10, 23);
+  ctx.strokeStyle='#333'; ctx.beginPath(); ctx.moveTo(0,HUD-1); ctx.lineTo(W,HUD-1); ctx.stroke();
+}
+
+function loop(){ update(); draw(); requestAnimationFrame(loop); }
+resetPlayer(); barrels=[]; parts=[];
+loop();
+</script>
+<script src="../music/playlist.js"></script>
+<script src="../music/player.js"></script>
+</body>
+</html>

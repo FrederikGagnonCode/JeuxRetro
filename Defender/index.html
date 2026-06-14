@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Defender</title>
+<style>
+  html,body{margin:0;padding:0;height:100%;background:#000;color:#fff;
+    font-family:'Courier New',monospace;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;user-select:none;overflow:hidden}
+  h1{letter-spacing:6px;margin:0 0 8px;font-size:22px;
+     text-shadow:0 0 8px #fff,0 0 18px #ff2e88}
+  #wrap{position:relative}
+  canvas{background:#000;border:2px solid #fff;display:block;
+    box-shadow:0 0 24px rgba(255,46,136,.35);touch-action:none}
+  #hint{color:#777;font-size:12px;margin-top:10px;text-align:center;line-height:1.6}
+  #overlay{position:absolute;inset:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;background:rgba(0,0,0,.8);
+    text-align:center;cursor:pointer}
+  #overlay h2{font-size:26px;letter-spacing:3px;margin:0 0 12px}
+  #overlay p{color:#bbb;font-size:14px;margin:4px 0}
+  .blink{animation:blink 1.1s steps(2,start) infinite}
+  @keyframes blink{50%{opacity:0}}
+  a.back{color:#4ecca3;font-size:12px;margin-top:8px;text-decoration:none;letter-spacing:1px}
+  a.back:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+  <h1>D E F E N D E R</h1>
+  <div id="wrap">
+    <canvas id="game" width="760" height="460"></canvas>
+    <div id="overlay">
+      <h2 id="ovTitle">DEFENDER</h2>
+      <p>Défendez les humanoïdes contre les aliens</p>
+      <p>← → avancer · ↑ ↓ altitude · Espace : tirer</p>
+      <p>Le radar en haut montre tout le secteur</p>
+      <p class="blink" style="margin-top:14px">▶ Cliquez ou Espace pour jouer</p>
+    </div>
+  </div>
+  <div id="hint">← → propulsion · ↑ ↓ monter/descendre · Espace : tir · P = pause</div>
+  <a class="back" href="../index.html">← Menu Arcade</a>
+
+<script>
+const cv = document.getElementById('game');
+const ctx = cv.getContext('2d');
+const VW = cv.width, VH = cv.height;       // vue
+const WORLD = VW * 4;                       // monde qui défile (s'enroule)
+const GROUND = VH - 40;
+const SCANNER_H = 56;
+
+const overlay = document.getElementById('overlay');
+const ovTitle = document.getElementById('ovTitle');
+
+let camX = 0;          // position caméra dans le monde
+let running = false, paused = false, over = false;
+let score = 0, lives = 3, wave = 1;
+const keys = {};
+
+// terrain (silhouette de montagnes) généré une fois
+const terrain = [];
+for (let x = 0; x <= WORLD; x += 40){
+  terrain.push(GROUND - (Math.sin(x*0.01)*14 + Math.sin(x*0.023)*10 + Math.random()*8));
+}
+function groundAt(worldX){
+  worldX = mod(worldX, WORLD);
+  const i = Math.floor(worldX/40);
+  const t = (worldX%40)/40;
+  const a = terrain[i % terrain.length];
+  const b = terrain[(i+1) % terrain.length];
+  return a + (b-a)*t;
+}
+
+const player = { x: 0, y: VH/2, w: 34, h: 14, dir: 1, vx: 0, vy: 0 };
+let bullets = [];      // {x,y,vx,dir}
+let enemies = [];      // {x,y,vx,vy,state,target,grabbed}
+let humans  = [];      // {x,y,state,carrier,fall}
+let particles = [];
+let stars = [];
+for (let i=0;i<90;i++) stars.push({x:Math.random()*WORLD, y:Math.random()*(GROUND-SCANNER_H)+SCANNER_H, s:Math.random()*1.5+0.3});
+
+function mod(n,m){ return ((n%m)+m)%m; }
+function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+// plus court écart signé sur le monde enroulé
+function wrapDelta(a,b){ let d = mod(b-a, WORLD); if (d > WORLD/2) d -= WORLD; return d; }
+
+function spawnWave(){
+  enemies = [];
+  const n = 4 + wave;
+  for (let i=0;i<n;i++){
+    enemies.push({
+      x: mod(player.x + VW + Math.random()*WORLD*0.6, WORLD),
+      y: SCANNER_H + 30 + Math.random()*(GROUND-SCANNER_H-90),
+      vx:(Math.random()<.5?-1:1)*(0.6+Math.random()*0.6),
+      vy:(Math.random()-0.5)*0.6,
+      state:'hunt', target:null, t:Math.random()*100
+    });
+  }
+}
+
+function newGame(){
+  score = 0; lives = 3; wave = 1;
+  player.x = 0; player.y = VH/2; player.dir = 1; player.vx = player.vy = 0;
+  camX = 0;
+  bullets = []; particles = [];
+  humans = [];
+  for (let i=0;i<8;i++){
+    humans.push({ x: mod((i+0.5)*WORLD/8, WORLD), y: GROUND-10, state:'walk', carrier:null, dir:Math.random()<.5?-1:1, fall:0 });
+  }
+  spawnWave();
+  over = false; paused = false; running = true;
+  hideOverlay();
+}
+
+function showOverlay(title, sub){
+  ovTitle.textContent = title;
+  overlay.querySelector('p:nth-of-type(1)').textContent = sub;
+  overlay.style.display = 'flex';
+}
+function hideOverlay(){ overlay.style.display = 'none'; }
+
+// ---- entrées ----
+document.addEventListener('keydown', e=>{
+  const k = e.key.toLowerCase();
+  keys[k] = true;
+  if ([' ','arrowup','arrowdown','arrowleft','arrowright'].includes(e.key.toLowerCase()) || e.key===' ') e.preventDefault();
+  if (e.key === ' '){ if (!running||over){ newGame(); } else { fire(); } }
+  if (k === 'p' && running && !over){ paused = !paused; }
+});
+document.addEventListener('keyup', e=>{ keys[e.key.toLowerCase()] = false; });
+overlay.addEventListener('click', ()=>{ if (!running||over) newGame(); });
+
+// tir au toucher
+cv.addEventListener('touchstart', e=>{ e.preventDefault(); if(!running||over) newGame(); else fire(); }, {passive:false});
+
+let fireCooldown = 0;
+function fire(){
+  if (fireCooldown > 0) return;
+  fireCooldown = 8;
+  bullets.push({ x: player.x + player.dir*player.w/2, y: player.y, dir: player.dir });
+}
+
+// ---- logique ----
+function update(){
+  if (!running || paused || over) return;
+  if (fireCooldown>0) fireCooldown--;
+
+  // contrôle vaisseau
+  const accel = 0.55, maxv = 7;
+  if (keys['arrowleft']){ player.vx = clamp(player.vx-accel,-maxv,maxv); player.dir = -1; }
+  else if (keys['arrowright']){ player.vx = clamp(player.vx+accel,-maxv,maxv); player.dir = 1; }
+  else player.vx *= 0.92;
+  if (keys['arrowup']) player.vy = clamp(player.vy-0.5,-5,5);
+  else if (keys['arrowdown']) player.vy = clamp(player.vy+0.5,-5,5);
+  else player.vy *= 0.9;
+
+  player.x = mod(player.x + player.vx, WORLD);
+  player.y = clamp(player.y + player.vy, SCANNER_H+10, GROUND-8);
+
+  // caméra suit le vaisseau (vaisseau ~1/3 de l'écran selon direction)
+  const desiredScreenX = player.dir>0 ? VW*0.35 : VW*0.65;
+  let targetCam = mod(player.x - desiredScreenX, WORLD);
+  // interpolation douce sur monde enroulé
+  let dc = wrapDelta(camX, targetCam);
+  camX = mod(camX + dc*0.1, WORLD);
+
+  // balles
+  bullets.forEach(b=>{ b.x = mod(b.x + b.dir*14, WORLD); b.life = (b.life||0)+1; });
+  bullets = bullets.filter(b=> (b.life||0) < 60);
+
+  // humains
+  humans.forEach(h=>{
+    if (h.state==='walk'){ h.x = mod(h.x + h.dir*0.2, WORLD); if (Math.random()<0.01) h.dir*=-1; }
+    else if (h.state==='falling'){
+      h.fall += 0.25; h.y += h.fall;
+      if (h.y >= GROUND-10){ h.y = GROUND-10; h.state='walk'; h.fall=0; }
+    } else if (h.state==='carried' && h.carrier){
+      h.x = h.carrier.x; h.y = h.carrier.y + 14;
+    }
+  });
+
+  // ennemis
+  enemies.forEach(en=>{
+    en.t++;
+    if (en.state==='hunt'){
+      // dérive et cherche un humain à enlever
+      en.x = mod(en.x + en.vx, WORLD);
+      en.y += en.vy;
+      if (en.y < SCANNER_H+20 || en.y > GROUND-60) en.vy *= -1;
+      if (Math.random()<0.005){ en.vx = (Math.random()<.5?-1:1)*(0.6+Math.random()*0.7); }
+      // descendre vers un humain proche libre
+      const free = humans.filter(h=>h.state==='walk' && !h.carrier);
+      if (free.length && Math.random()<0.02){
+        let best=null,bd=120;
+        free.forEach(h=>{ const d=Math.abs(wrapDelta(en.x,h.x)); if (d<bd){bd=d;best=h;} });
+        if (best){ en.state='dive'; en.target=best; }
+      }
+    } else if (en.state==='dive'){
+      const t = en.target;
+      if (!t || t.carrier || t.state!=='walk'){ en.state='hunt'; en.target=null; }
+      else {
+        const dx = wrapDelta(en.x, t.x);
+        en.x = mod(en.x + clamp(dx,-1.5,1.5), WORLD);
+        en.y += 1.6;
+        if (en.y >= t.y-14 && Math.abs(dx)<8){
+          t.state='carried'; t.carrier=en; en.state='abduct';
+        }
+      }
+    } else if (en.state==='abduct'){
+      // remonte avec l'humain ; arrivé en haut = humain perdu
+      en.y -= 0.9; en.x = mod(en.x + en.vx*0.4, WORLD);
+      if (en.y <= SCANNER_H+14){
+        if (en.target){ en.target.state='gone'; }
+        en.state='hunt'; en.target=null;
+      }
+    }
+  });
+
+  // collisions balles -> ennemis
+  bullets.forEach(b=>{
+    enemies.forEach(en=>{
+      if (en.dead) return;
+      if (Math.abs(wrapDelta(b.x,en.x))<14 && Math.abs(b.y-en.y)<12){
+        en.dead = true; b.life = 999;
+        score += 150;
+        explode(en.x,en.y,'#ff2e88');
+        // si portait un humain -> il tombe
+        if (en.target && en.target.state==='carried'){ en.target.state='falling'; en.target.carrier=null; en.target.fall=0; }
+      }
+    });
+  });
+  enemies = enemies.filter(en=>!en.dead);
+  bullets = bullets.filter(b=>(b.life||0)<60);
+
+  // collision vaisseau <-> ennemi
+  enemies.forEach(en=>{
+    if (Math.abs(wrapDelta(player.x,en.x))<20 && Math.abs(player.y-en.y)<16){
+      loseLife(); en.dead=true; explode(en.x,en.y,'#fff');
+    }
+  });
+  enemies = enemies.filter(en=>!en.dead);
+
+  // particules
+  particles.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; p.life--; });
+  particles = particles.filter(p=>p.life>0);
+
+  // vague suivante
+  if (enemies.length===0){
+    wave++; score += 500;
+    if (humans.some(h=>h.state!=='gone')) spawnWave();
+    else { gameOver('Tous les humanoïdes ont été enlevés…'); }
+  }
+}
+
+function loseLife(){
+  lives--;
+  explode(player.x, player.y, '#4ecca3', 30);
+  if (lives<=0){ gameOver('Vaisseau détruit. Score : '+score); }
+  else { player.x = mod(camX+VW/2,WORLD); player.y = VH/2; player.vx=player.vy=0; }
+}
+
+function gameOver(msg){
+  over = true; running = false;
+  showOverlay('GAME OVER', msg);
+}
+
+function explode(x,y,color,n){
+  n = n||16;
+  for (let i=0;i<n;i++){
+    const a = Math.random()*Math.PI*2, s = Math.random()*4+1;
+    particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:20+Math.random()*15,color});
+  }
+}
+
+// ---- rendu ----
+function screenX(worldX){
+  let d = wrapDelta(camX, worldX); // -W/2..W/2
+  return d; // 0 = bord gauche caméra ; on ajoute rien car camX est bord gauche
+}
+function sx(worldX){
+  // position écran : différence enroulée par rapport à camX (bord gauche)
+  return mod(worldX - camX, WORLD);
+}
+
+function draw(){
+  ctx.clearRect(0,0,VW,VH);
+
+  // étoiles
+  ctx.fillStyle = '#445';
+  stars.forEach(st=>{
+    let x = sx(st.x);
+    if (x < VW){ ctx.globalAlpha = st.s/1.8; ctx.fillRect(x, st.y, st.s, st.s); }
+  });
+  ctx.globalAlpha = 1;
+
+  // terrain
+  ctx.strokeStyle = '#2e7d32'; ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let x=0; x<=VW; x+=8){
+    const wx = camX + x;
+    const gy = groundAt(wx);
+    if (x===0) ctx.moveTo(x,gy); else ctx.lineTo(x,gy);
+  }
+  ctx.stroke();
+
+  // humains
+  humans.forEach(h=>{
+    if (h.state==='gone') return;
+    const x = sx(h.x);
+    if (x>VW) return;
+    ctx.fillStyle = h.state==='carried' ? '#ffd54f' : '#4ecca3';
+    ctx.fillRect(x-2, h.y, 4, 8);
+    ctx.fillRect(x-3, h.y-3, 6, 3); // tête
+  });
+
+  // ennemis (landers)
+  enemies.forEach(en=>{
+    const x = sx(en.x);
+    if (x>VW) return;
+    ctx.fillStyle = '#ff2e88';
+    ctx.beginPath();
+    ctx.moveTo(x, en.y-7); ctx.lineTo(x+8, en.y); ctx.lineTo(x, en.y+7); ctx.lineTo(x-8, en.y);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#ffd54f';
+    ctx.fillRect(x-2, en.y-2, 4, 4);
+  });
+
+  // balles
+  ctx.fillStyle = '#fff';
+  bullets.forEach(b=>{ const x=sx(b.x); if(x<=VW) ctx.fillRect(x-6,b.y-1,12,2); });
+
+  // vaisseau joueur
+  drawShip(sx(player.x), player.y, player.dir);
+
+  // particules
+  particles.forEach(p=>{ const x=sx(p.x); ctx.globalAlpha=p.life/30; ctx.fillStyle=p.color; ctx.fillRect(x-1,p.y-1,3,3); });
+  ctx.globalAlpha=1;
+
+  drawScanner();
+  drawHUD();
+
+  if (paused && running){
+    ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(0,0,VW,VH);
+    ctx.fillStyle='#fff'; ctx.textAlign='center';
+    ctx.font='30px "Courier New",monospace'; ctx.fillText('PAUSE',VW/2,VH/2);
+  }
+}
+
+function drawShip(x,y,dir){
+  ctx.save();
+  ctx.translate(x,y); ctx.scale(dir,1);
+  ctx.fillStyle = '#4ecca3';
+  ctx.beginPath();
+  ctx.moveTo(18,0); ctx.lineTo(2,-7); ctx.lineTo(-16,-7);
+  ctx.lineTo(-10,0); ctx.lineTo(-16,7); ctx.lineTo(2,7);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.fillRect(4,-2,6,4);
+  // réacteur
+  if (keys['arrowleft']||keys['arrowright']){
+    ctx.fillStyle='#ffd54f'; ctx.fillRect(-22,-3,6,6);
+  }
+  ctx.restore();
+}
+
+function drawScanner(){
+  // cadre radar
+  ctx.strokeStyle='#555'; ctx.lineWidth=1;
+  ctx.strokeRect(8,8,VW-16,SCANNER_H-8);
+  const sw = VW-18, sh = SCANNER_H-12;
+  const ox = 9, oy = 9;
+  const scaleX = sw/WORLD, scaleY = sh/VH;
+  // humains
+  humans.forEach(h=>{ if(h.state==='gone')return; ctx.fillStyle = h.state==='carried'?'#ffd54f':'#4ecca3'; ctx.fillRect(ox+mod(h.x,WORLD)*scaleX, oy+h.y*scaleY, 2,2); });
+  // ennemis
+  ctx.fillStyle='#ff2e88';
+  enemies.forEach(en=>{ ctx.fillRect(ox+mod(en.x,WORLD)*scaleX, oy+en.y*scaleY, 2,2); });
+  // joueur
+  ctx.fillStyle='#fff'; ctx.fillRect(ox+mod(player.x,WORLD)*scaleX-1, oy+player.y*scaleY-1, 3,3);
+  // fenêtre visible
+  ctx.strokeStyle='#888';
+  ctx.strokeRect(ox+mod(camX,WORLD)*scaleX, oy, VW*scaleX, sh);
+}
+
+function drawHUD(){
+  ctx.fillStyle='#fff'; ctx.textAlign='left';
+  ctx.font='16px "Courier New",monospace';
+  ctx.fillText('SCORE '+score, 14, SCANNER_H+22);
+  ctx.textAlign='right';
+  ctx.fillText('VIES '+lives+'   VAGUE '+wave, VW-14, SCANNER_H+22);
+  // humains restants
+  const alive = humans.filter(h=>h.state!=='gone').length;
+  ctx.textAlign='center';
+  ctx.fillStyle='#4ecca3';
+  ctx.fillText('HUMANOÏDES '+alive, VW/2, SCANNER_H+22);
+}
+
+function loop(){ update(); draw(); requestAnimationFrame(loop); }
+loop();
+</script>
+<script src="../music/playlist.js"></script>
+<script src="../music/player.js"></script>
+</body>
+</html>

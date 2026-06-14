@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Jeu du Serpent</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #1a1a2e;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: 'Segoe UI', sans-serif;
+      color: #eee;
+    }
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 12px;
+      color: #4ecca3;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+    #scoreboard {
+      display: flex;
+      gap: 40px;
+      margin-bottom: 16px;
+      font-size: 1.1rem;
+    }
+    #scoreboard span { color: #4ecca3; font-weight: bold; }
+    #canvas-wrapper { position: relative; }
+    canvas {
+      display: block;
+      border: 2px solid #4ecca3;
+      border-radius: 4px;
+      box-shadow: 0 0 30px rgba(78, 204, 163, 0.3);
+    }
+    #overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(26, 26, 46, 0.88);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+    }
+    #overlay h2 { font-size: 2rem; color: #4ecca3; margin-bottom: 8px; }
+    #overlay p  { font-size: 1rem; color: #aaa; margin-bottom: 24px; }
+    #overlay button {
+      padding: 12px 32px;
+      font-size: 1rem;
+      background: #4ecca3;
+      color: #1a1a2e;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      letter-spacing: 1px;
+      transition: background 0.2s;
+    }
+    #overlay button:hover { background: #38b28e; }
+    #bottom-bar {
+      margin-top: 14px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    #instructions { font-size: 0.82rem; color: #666; }
+    #mute-btn {
+      background: none;
+      border: 1px solid #444;
+      color: #888;
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    #mute-btn:hover { border-color: #4ecca3; color: #4ecca3; }
+    #music-bar {
+      margin-top: 16px;
+      width: 404px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    #music-row { display: flex; gap: 8px; align-items: center; }
+    #song-select {
+      flex: 1;
+      padding: 8px 10px;
+      background: #16213e;
+      border: 1px solid #444;
+      border-radius: 6px;
+      color: #eee;
+      font-size: 0.85rem;
+      outline: none;
+      cursor: pointer;
+    }
+    #song-select:focus { border-color: #4ecca3; }
+    .music-btn {
+      padding: 8px 12px;
+      background: #4ecca3;
+      color: #1a1a2e;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: bold;
+    }
+    .music-btn:hover { background: #38b28e; }
+    .music-btn.off { background: #444; color: #aaa; }
+    #now-playing {
+      font-size: 0.75rem;
+      color: #4ecca3;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  </style>
+</head>
+<body>
+  <h1>🐍 Serpent</h1>
+  <div id="scoreboard">
+    Score : <span id="score">0</span> &nbsp;&nbsp; Meilleur : <span id="best">0</span>
+  </div>
+  <div id="canvas-wrapper">
+    <canvas id="c" width="400" height="400"></canvas>
+    <div id="overlay">
+      <h2 id="overlay-title">Jeu du Serpent</h2>
+      <p id="overlay-msg">Utilisez les flèches ou WASD pour jouer</p>
+      <button id="btn">Jouer</button>
+    </div>
+  </div>
+  <div id="bottom-bar">
+    <div id="instructions">↑ ↓ ← → ou W A S D &nbsp;|&nbsp; P = Pause</div>
+    <button id="mute-btn">🎮 Chiptune</button>
+  </div>
+  <script src="../music/playlist.js"></script>
+  <script src="../music/player.js"></script>
+
+  <script>
+    /* ══════════════════════════════════════════════════════
+       MOTEUR AUDIO — chiptune 4 pistes, scheduler précis
+       ══════════════════════════════════════════════════════ */
+    const AC = new (window.AudioContext || window.webkitAudioContext)();
+    let masterGain;
+    let muted = false;
+    let musicPlaying = false;
+    let scheduleTimer = null;
+    let nextNoteTime  = 0;
+    let loopBeat      = 0;   // position dans la boucle (en double-croches)
+
+    // Bouton muet
+    document.getElementById('mute-btn').addEventListener('click', () => {
+      muted = !muted;
+      document.getElementById('mute-btn').textContent = muted ? '🔇 Chiptune' : '🎮 Chiptune';
+      if (masterGain) masterGain.gain.setTargetAtTime(muted ? 0 : 0.55, AC.currentTime, 0.08);
+    });
+
+    /* ── Fréquences (Hz) ── */
+    const F = {
+      C3:131, D3:147, E3:165, F3:175, G3:196, A3:220, B3:247,
+      C4:262, D4:294, E4:330, F4:349, G4:392, A4:440, B4:494,
+      C5:523, D5:587, E5:659, F5:698, G5:784, A5:880, B5:988,
+      C6:1047, D6:1175, E6:1319,
+    };
+
+    /* ── Tempo ──
+       BPM = 148  →  noire = 0.4054 s  →  double-croche = 0.1014 s */
+    const BPM      = 148;
+    const TICK     = 60 / BPM / 4;   // durée d'une double-croche
+    const LOOKAHEAD = 0.10;           // s d'avance max
+    const SCHEDULE_INTERVAL = 50;    // ms entre chaque appel scheduler
+
+    /* ══════════════════════════════════════════════════════
+       COMPOSITION — 32 double-croches = 2 mesures × 4/4
+       Chaque piste : tableau de 32 entrées
+         null   = silence
+         [freq, durée_en_ticks, volume]
+       ══════════════════════════════════════════════════════ */
+
+    // MÉLODIE — carré avec vibrato léger (voix principale)
+    // Progression : Am  F  C  G  (pop / game classique)
+    const MEL = [
+      // mesure 1  (Am)
+      [F.E5,2,.7], null,  [F.A5,2,.7], null,  [F.G5,2,.65],null,  [F.E5,3,.7], null,  null,
+      // mesure 2  (F)
+      [F.F5,2,.7], null,  [F.A5,2,.7], null,  [F.C6,2,.7], null,  [F.A5,4,.65],null,  null, null,
+      // mesure 3  (C)
+      [F.G5,2,.7], null,  [F.E5,2,.65],null,  [F.C5,2,.65],null,  [F.D5,3,.7], null,  null,
+      // mesure 4  (G)
+      [F.B4,2,.7], null,  [F.D5,2,.7], null,  [F.G5,2,.7], null,  [F.B4,3,.65],null,  null,
+    ];
+
+    // CONTRE-MÉLODIE — triangle, octave en dessous + réponses
+    const CTR = [
+      null,  null,  [F.C5,2,.45],null,  null,  null,  [F.B4,2,.4], null,
+      [F.A4,2,.45],null,  null,  null,  [F.F4,2,.4], null,  [F.E4,2,.4], null,
+      null,  null,  [F.G4,2,.45],null,  [F.E4,2,.4], null,  null,  null,
+      [F.D4,2,.45],null,  [F.G4,2,.4], null,  [F.F4,2,.4], null,  null,  null,
+    ];
+
+    // BASSE — triangle, ronde + walking bass
+    const BAS = [
+      [F.A3,4,.75],null, null, null,  [F.E3,2,.6], null,  [F.A3,2,.6], null,
+      [F.F3,4,.75],null, null, null,  [F.C4,2,.6], null,  [F.F3,2,.6], null,
+      [F.C3,4,.75],null, null, null,  [F.G3,2,.6], null,  [F.C4,2,.6], null,
+      [F.G3,4,.75],null, null, null,  [F.D4,2,.6], null,  [F.B3,2,.6], null,
+    ];
+
+    // BATTERIE — bruit filtré pour caisse claire, sine grave pour grosse caisse
+    // K=grosse caisse  S=caisse claire  H=charleston  .=silence
+    const DRUM_PAT = 'K.H.S.H.K.H.S.H.K.H.S.H.K.KHS.';
+    //               0               8              16              24
+
+    /* ── Synthèse d'une note ── */
+    function playNote(freq, type, vol, startT, durationTicks, dest) {
+      const dur = durationTicks * TICK * 0.88;  // légère coupure entre notes
+      const osc  = AC.createOscillator();
+      const env  = AC.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, startT);
+      // Légère modulation de pitch pour la mélodie (vibrato numérique)
+      if (type === 'square') {
+        osc.detune.setValueAtTime(0, startT);
+        osc.detune.linearRampToValueAtTime(8, startT + 0.06);
+        osc.detune.linearRampToValueAtTime(-8, startT + 0.14);
+        osc.detune.linearRampToValueAtTime(0, startT + 0.22);
+      }
+      env.gain.setValueAtTime(0, startT);
+      env.gain.linearRampToValueAtTime(vol, startT + 0.01);
+      env.gain.setValueAtTime(vol * 0.85, startT + 0.03);
+      env.gain.exponentialRampToValueAtTime(0.0001, startT + dur);
+      osc.connect(env); env.connect(dest);
+      osc.start(startT); osc.stop(startT + dur + 0.02);
+    }
+
+    /* ── Synthèse batterie ── */
+    function playDrum(type, startT, dest) {
+      if (type === 'K') {
+        // Grosse caisse : sine avec pitch descendant rapide
+        const osc = AC.createOscillator();
+        const env = AC.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(160, startT);
+        osc.frequency.exponentialRampToValueAtTime(50, startT + 0.12);
+        env.gain.setValueAtTime(0.9, startT);
+        env.gain.exponentialRampToValueAtTime(0.0001, startT + 0.18);
+        osc.connect(env); env.connect(dest);
+        osc.start(startT); osc.stop(startT + 0.2);
+      } else if (type === 'S') {
+        // Caisse claire : bruit blanc + sine
+        const buf  = AC.createBuffer(1, AC.sampleRate * 0.15, AC.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+        const src  = AC.createBufferSource();
+        const filt = AC.createBiquadFilter();
+        const env  = AC.createGain();
+        src.buffer = buf;
+        filt.type = 'highpass'; filt.frequency.value = 1800;
+        env.gain.setValueAtTime(0.55, startT);
+        env.gain.exponentialRampToValueAtTime(0.0001, startT + 0.14);
+        src.connect(filt); filt.connect(env); env.connect(dest);
+        src.start(startT);
+      } else if (type === 'H') {
+        // Charleston : bruit bref très aigu
+        const buf  = AC.createBuffer(1, AC.sampleRate * 0.04, AC.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+        const src  = AC.createBufferSource();
+        const filt = AC.createBiquadFilter();
+        const env  = AC.createGain();
+        src.buffer = buf;
+        filt.type = 'highpass'; filt.frequency.value = 7000;
+        env.gain.setValueAtTime(0.25, startT);
+        env.gain.exponentialRampToValueAtTime(0.0001, startT + 0.04);
+        src.connect(filt); filt.connect(env); env.connect(dest);
+        src.start(startT);
+      }
+    }
+
+    /* ── Scheduler principal ── */
+    function scheduler() {
+      while (nextNoteTime < AC.currentTime + LOOKAHEAD) {
+        const beat = loopBeat % 32;
+        const t    = nextNoteTime;
+
+        // Mélodie
+        if (MEL[beat]) playNote(MEL[beat][0], 'square',   MEL[beat][2], t, MEL[beat][1], masterGain);
+        // Contre-mélodie
+        if (CTR[beat]) playNote(CTR[beat][0], 'triangle', CTR[beat][2], t, CTR[beat][1], masterGain);
+        // Basse
+        if (BAS[beat]) playNote(BAS[beat][0], 'triangle', BAS[beat][2], t, BAS[beat][1], masterGain);
+        // Batterie
+        const d = DRUM_PAT[beat];
+        if (d && d !== '.') playDrum(d, t, masterGain);
+
+        nextNoteTime += TICK;
+        loopBeat++;
+      }
+    }
+
+    /* ── Coordination avec le lecteur de musique centralisé (../music) ──
+       Quand un morceau MP3 démarre, on coupe le chiptune ; à l'arrêt, on le reprend. */
+    document.addEventListener('arcademusic:play', stopMusic);
+    document.addEventListener('arcademusic:stop', () => { if (running) startMusic(); });
+
+    function startMusic() {
+      if (musicPlaying || (window.ArcadeMusic && ArcadeMusic.isPlaying())) return;
+      if (AC.state === 'suspended') AC.resume();
+      musicPlaying  = true;
+      loopBeat      = 0;
+      nextNoteTime  = AC.currentTime + 0.05;
+
+      masterGain = AC.createGain();
+      masterGain.gain.setValueAtTime(muted ? 0 : 0.55, AC.currentTime);
+
+      // Compresseur pour éviter la saturation
+      const comp = AC.createDynamicsCompressor();
+      comp.threshold.value = -18;
+      comp.knee.value = 10;
+      comp.ratio.value = 4;
+      masterGain.connect(comp);
+      comp.connect(AC.destination);
+
+      scheduleTimer = setInterval(scheduler, SCHEDULE_INTERVAL);
+    }
+
+    function stopMusic() {
+      musicPlaying = false;
+      clearInterval(scheduleTimer);
+      if (masterGain) {
+        masterGain.gain.setTargetAtTime(0, AC.currentTime, 0.15);
+        masterGain = null;
+      }
+    }
+
+    /* ── Effets sonores (par-dessus la musique) ── */
+    function sfxNote(freq, type, vol, when, dur) {
+      const osc = AC.createOscillator();
+      const env = AC.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, when);
+      env.gain.setValueAtTime(0, when);
+      env.gain.linearRampToValueAtTime(vol, when + 0.01);
+      env.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+      osc.connect(env); env.connect(AC.destination);
+      osc.start(when); osc.stop(when + dur + 0.05);
+    }
+
+    // 🍎 Pomme mangée — ding montant
+    function sfxEat() {
+      if (muted) return;
+      const t = AC.currentTime;
+      sfxNote(F.C6, 'sine', 0.35, t, 0.1);
+      sfxNote(F.E6, 'sine', 0.3,  t + 0.05, 0.12);
+    }
+
+    // ✂️ Bonus attrapé — arpège magique
+    function sfxBonus() {
+      if (muted) return;
+      const t = AC.currentTime;
+      [F.G4, F.B4, F.E5, F.B5].forEach((f, i) => sfxNote(f, 'triangle', 0.3, t + i * 0.06, 0.3));
+    }
+
+    // 💀 Game over — descente dramatique
+    function sfxDead() {
+      if (muted) return;
+      const t = AC.currentTime;
+      [F.A3, F.F3, F.E3, F.C3].forEach((f, i) => sfxNote(f, 'sawtooth', 0.3, t + i * 0.13, 0.3));
+    }
+
+    /* ═══════════════════════════════
+       JEU
+       ═══════════════════════════════ */
+    const COLS = 20, ROWS = 20;
+    const CELL = 400 / COLS;
+    const canvas = document.getElementById('c');
+    const ctx    = canvas.getContext('2d');
+    const scoreEl     = document.getElementById('score');
+    const bestEl      = document.getElementById('best');
+    const overlay     = document.getElementById('overlay');
+    const overlayTitle = document.getElementById('overlay-title');
+    const overlayMsg  = document.getElementById('overlay-msg');
+    const btn = document.getElementById('btn');
+
+    let snake, dir, nextDir, food, bonus, bonusTick, score, best = 0, loop, paused, running;
+    const BONUS_SHRINK   = 3;
+    const BONUS_LIFETIME = 120;   // ~14 s
+    const BONUS_CHANCE   = 0.15;  // 15 % par pomme
+
+    function init() {
+      if (AC.state === 'suspended') AC.resume();
+      snake    = [{ x: 10, y: 10 }, { x: 9, y: 10 }, { x: 8, y: 10 }];
+      dir      = { x: 1, y: 0 };
+      nextDir  = { x: 1, y: 0 };
+      score    = 0;
+      bonus    = null;
+      bonusTick = 0;
+      floatings = [];
+      paused   = false;
+      running  = true;
+      placeFood();
+      updateScore();
+      overlay.style.display = 'none';
+      clearInterval(loop);
+      loop = setInterval(tick, 120);
+      // Musique : laisser le lecteur central reprendre sa sélection, sinon chiptune
+      if (window.ArcadeMusic && ArcadeMusic.hasSelection()) ArcadeMusic.resume();
+      else startMusic();
+    }
+
+    function placeFood() {
+      let pos;
+      do {
+        pos = { x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS) };
+      } while (
+        snake.some(s => s.x === pos.x && s.y === pos.y) ||
+        (bonus && pos.x === bonus.x && pos.y === bonus.y)
+      );
+      food = pos;
+    }
+
+    function placeBonus() {
+      let pos, tries = 0;
+      do {
+        pos = { x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS) };
+        tries++;
+      } while (
+        tries < 200 && (
+          snake.some(s => s.x === pos.x && s.y === pos.y) ||
+          (pos.x === food.x && pos.y === food.y)
+        )
+      );
+      if (tries < 200) { bonus = pos; bonusTick = BONUS_LIFETIME; }
+    }
+
+    function tick() {
+      if (paused) return;
+      dir = { ...nextDir };
+      const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
+
+      if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS) return gameOver();
+      if (snake.some(s => s.x === head.x && s.y === head.y)) return gameOver();
+
+      snake.unshift(head);
+
+      if (head.x === food.x && head.y === food.y) {
+        score++;
+        if (score > best) { best = score; bestEl.textContent = best; }
+        updateScore();
+        sfxEat();
+        placeFood();
+        if (!bonus && Math.random() < BONUS_CHANCE) placeBonus();
+      } else {
+        snake.pop();
+      }
+
+      // Bonus ramassé ?
+      if (bonus && head.x === bonus.x && head.y === bonus.y) {
+        sfxBonus();
+        bonus = null;
+        showFloating('✂ -' + BONUS_SHRINK, head);
+        const remove = Math.min(BONUS_SHRINK, snake.length - 1);
+        snake.splice(snake.length - remove, remove);
+      }
+
+      if (bonus) { bonusTick--; if (bonusTick <= 0) bonus = null; }
+
+      draw();
+    }
+
+    function draw() {
+      ctx.fillStyle = '#16213e';
+      ctx.fillRect(0, 0, 400, 400);
+
+      // Grille
+      ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+      ctx.lineWidth = 0.5;
+      for (let i = 0; i <= COLS; i++) {
+        ctx.beginPath(); ctx.moveTo(i * CELL, 0); ctx.lineTo(i * CELL, 400); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, i * CELL); ctx.lineTo(400, i * CELL); ctx.stroke();
+      }
+
+      // Serpent
+      snake.forEach((s, i) => {
+        const t = i / snake.length;
+        ctx.fillStyle = i === 0 ? '#4ecca3' : `hsl(${160 - t * 40}, 60%, ${55 - t * 15}%)`;
+        const pad = i === 0 ? 1 : 2;
+        ctx.beginPath();
+        ctx.roundRect(s.x * CELL + pad, s.y * CELL + pad, CELL - pad * 2, CELL - pad * 2, i === 0 ? 4 : 3);
+        ctx.fill();
+      });
+
+      // Yeux
+      const h = snake[0];
+      ctx.fillStyle = '#16213e';
+      const ex = dir.x, ey = dir.y;
+      const cx = h.x * CELL + CELL / 2, cy = h.y * CELL + CELL / 2;
+      [[-1, -1], [1, -1]].forEach(([ox, oy]) => {
+        const eyeX = cx + ex * CELL * 0.2 + ox * CELL * 0.2;
+        const eyeY = cy + ey * CELL * 0.2 + oy * CELL * 0.2;
+        ctx.beginPath(); ctx.arc(eyeX, eyeY, 2, 0, Math.PI * 2); ctx.fill();
+      });
+
+      // Nourriture
+      ctx.fillStyle = '#ff6b6b';
+      ctx.shadowColor = '#ff6b6b';
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.arc(food.x * CELL + CELL / 2, food.y * CELL + CELL / 2, CELL / 2 - 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // Bonus
+      if (bonus) {
+        const urgency = bonusTick / BONUS_LIFETIME;
+        const blink = bonusTick < 30 ? (bonusTick % 6 < 3) : true;
+        if (blink) {
+          const bx = bonus.x * CELL + CELL / 2;
+          const by = bonus.y * CELL + CELL / 2;
+          const pulse = 1 + 0.15 * Math.sin(Date.now() / 150);
+
+          ctx.shadowColor = '#c77dff';
+          ctx.shadowBlur = 18;
+          ctx.fillStyle = '#7b2fff';
+          ctx.beginPath();
+          ctx.arc(bx, by, (CELL / 2 - 1) * pulse, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+
+          ctx.font = `bold ${Math.round(CELL * 0.65)}px Arial`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = '#fff';
+          ctx.fillText('✂', bx, by + 1);
+
+          ctx.font = 'bold 9px Arial';
+          ctx.fillStyle = '#ffdd57';
+          ctx.fillText('-3', bx + CELL * 0.35, by - CELL * 0.3);
+
+          ctx.fillStyle = `hsl(${270 * urgency + 40}, 90%, 65%)`;
+          ctx.fillRect(bonus.x * CELL + 1, bonus.y * CELL + CELL - 3, (CELL - 2) * urgency, 3);
+        }
+      }
+
+      // Textes flottants
+      floatings = floatings.filter(f => f.life > 0);
+      floatings.forEach(f => {
+        ctx.globalAlpha = f.life / f.maxLife;
+        ctx.font = 'bold 14px Segoe UI';
+        ctx.fillStyle = '#c77dff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(f.text, f.x, f.y);
+        f.y -= 1.2;
+        f.life--;
+      });
+      ctx.globalAlpha = 1;
+    }
+
+    let floatings = [];
+    function showFloating(text, cell) {
+      floatings.push({ text, x: cell.x * CELL + CELL / 2, y: cell.y * CELL, life: 40, maxLife: 40 });
+    }
+
+    function gameOver() {
+      clearInterval(loop);
+      running = false;
+      stopMusic();
+      sfxDead();
+      overlayTitle.textContent = 'Game Over';
+      overlayMsg.textContent = `Score : ${score}`;
+      btn.textContent = 'Rejouer';
+      overlay.style.display = 'flex';
+    }
+
+    function updateScore() { scoreEl.textContent = score; }
+
+    document.addEventListener('keydown', e => {
+      if (!running) return;
+      const map = {
+        ArrowUp:    { x: 0, y:-1 }, w: { x: 0, y:-1 }, W: { x: 0, y:-1 },
+        ArrowDown:  { x: 0, y: 1 }, s: { x: 0, y: 1 }, S: { x: 0, y: 1 },
+        ArrowLeft:  { x:-1, y: 0 }, a: { x:-1, y: 0 }, A: { x:-1, y: 0 },
+        ArrowRight: { x: 1, y: 0 }, d: { x: 1, y: 0 }, D: { x: 1, y: 0 },
+      };
+      if (e.key === 'p' || e.key === 'P') { paused = !paused; return; }
+      const d = map[e.key];
+      if (!d) return;
+      if (d.x === -dir.x && d.y === -dir.y) return;
+      nextDir = d;
+      e.preventDefault();
+    });
+
+    btn.addEventListener('click', init);
+
+    ctx.fillStyle = '#16213e';
+    ctx.fillRect(0, 0, 400, 400);
+  </script>
+</body>
+</html>

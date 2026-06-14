@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Centipede</title>
+<style>
+  html,body{margin:0;padding:0;height:100%;background:#000;color:#fff;
+    font-family:'Courier New',monospace;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;user-select:none;overflow:hidden}
+  h1{letter-spacing:5px;margin:0 0 8px;font-size:20px;
+     text-shadow:0 0 8px #fff,0 0 18px #7CFC00}
+  #wrap{position:relative}
+  canvas{background:#000;border:2px solid #fff;display:block;
+    box-shadow:0 0 24px rgba(124,252,0,.35);touch-action:none}
+  #hint{color:#777;font-size:12px;margin-top:10px;text-align:center;line-height:1.6}
+  #overlay{position:absolute;inset:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;background:rgba(0,0,0,.8);
+    text-align:center;cursor:pointer}
+  #overlay h2{font-size:24px;letter-spacing:3px;margin:0 0 12px}
+  #overlay p{color:#bbb;font-size:13px;margin:4px 0}
+  .blink{animation:blink 1.1s steps(2,start) infinite}
+  @keyframes blink{50%{opacity:0}}
+  a.back{color:#4ecca3;font-size:12px;margin-top:8px;text-decoration:none;letter-spacing:1px}
+  a.back:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+  <h1>CENTIPEDE</h1>
+  <div id="wrap">
+    <canvas id="game" width="440" height="520"></canvas>
+    <div id="overlay">
+      <h2 id="ovTitle">CENTIPEDE</h2>
+      <p>Détruisez le mille-pattes segment par segment</p>
+      <p>Flèches : se déplacer · Espace : tirer</p>
+      <p>Chaque segment touché devient un champignon</p>
+      <p class="blink" style="margin-top:14px">▶ Cliquez ou Espace pour jouer</p>
+    </div>
+  </div>
+  <div id="hint">Flèches : déplacer le blaster (zone basse) · Espace : tir · P = pause</div>
+  <a class="back" href="../index.html">← Menu Arcade</a>
+
+<script>
+const cv = document.getElementById('game');
+const ctx = cv.getContext('2d');
+const W=cv.width, H=cv.height, HUD=36;
+const CELL=22, COLS=20, ROWS=22;
+const PLAY_TOP_ROW = ROWS-6;                 // zone du joueur (6 rangées du bas)
+const PLAY_TOP_Y = HUD + PLAY_TOP_ROW*CELL;
+const MAXROW = ROWS-1;
+
+const overlay=document.getElementById('overlay');
+const ovTitle=document.getElementById('ovTitle');
+
+const ccx = c=>c*CELL+CELL/2;
+const ccy = r=>HUD + r*CELL+CELL/2;
+const colAt = x=>Math.floor(x/CELL);
+const rowAt = y=>Math.floor((y-HUD)/CELL);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+
+let mush, segs, player, bullet, spider, parts;
+let score=0, lives=3, wave=1, hi=0;
+let stepT=0, spiderT, fireCd=0;
+let running=false, paused=false, over=false;
+const keys={};
+
+function newGame(){
+  score=0; lives=3; wave=1;
+  initMushrooms();
+  spawnCentipede();
+  player={ x:W/2, y:H-CELL, inv:0 };
+  bullet=null; spider=null; spiderT=360; parts=[];
+  over=false; paused=false; running=true;
+  hideOverlay();
+}
+
+function initMushrooms(){
+  mush=[]; for(let r=0;r<ROWS;r++) mush.push(new Array(COLS).fill(0));
+  let n=26;
+  while(n>0){
+    const r=1+Math.floor(Math.random()*(PLAY_TOP_ROW-2));
+    const c=Math.floor(Math.random()*COLS);
+    if(mush[r][c]===0){ mush[r][c]=4; n--; }
+  }
+}
+function spawnCentipede(){
+  segs=[];
+  const len=9+wave;
+  for(let i=0;i<len;i++){
+    segs.push({ col: clamp(5+i,0,COLS-1), row:0, dir:1, vdir:1, head:(i===len-1) });
+  }
+}
+
+function showOverlay(t,s){ ovTitle.textContent=t; overlay.querySelector('p:nth-of-type(1)').textContent=s; overlay.style.display='flex'; }
+function hideOverlay(){ overlay.style.display='none'; }
+
+// ---- entrées ----
+document.addEventListener('keydown',e=>{
+  const k=e.key.toLowerCase(); keys[k]=true;
+  if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)) e.preventDefault();
+  if(k===' ' && (!running||over)) newGame();
+  if(k==='p' && running && !over) paused=!paused;
+});
+document.addEventListener('keyup',e=>{ keys[e.key.toLowerCase()]=false; });
+overlay.addEventListener('click',()=>{ if(!running||over) newGame(); });
+cv.addEventListener('touchstart',e=>{ e.preventDefault(); if(!running||over) newGame(); },{passive:false});
+
+// ---- mise à jour ----
+function update(){
+  if(!running||paused||over) return;
+  if(player.inv>0) player.inv--;
+  if(fireCd>0) fireCd--;
+
+  // déplacement blaster
+  const sp=3.2;
+  if(keys['arrowleft']) player.x-=sp;
+  if(keys['arrowright']) player.x+=sp;
+  if(keys['arrowup']) player.y-=sp;
+  if(keys['arrowdown']) player.y+=sp;
+  player.x=clamp(player.x, CELL/2, W-CELL/2);
+  player.y=clamp(player.y, PLAY_TOP_Y+CELL/2, H-CELL/2);
+
+  // tir
+  if(keys[' '] && !bullet && fireCd<=0){ bullet={x:player.x, y:player.y-CELL/2}; fireCd=6; }
+  if(bullet){
+    bullet.y-=9;
+    const c=colAt(bullet.x), r=rowAt(bullet.y);
+    if(bullet.y<HUD){ bullet=null; }
+    else if(r>=0 && r<ROWS && c>=0 && c<COLS){
+      // segment ?
+      const si=segs.findIndex(s=>s.col===c && s.row===r);
+      if(si>=0){
+        const s=segs[si];
+        score += s.head?100:50;
+        burst(ccx(c),ccy(r),'#7CFC00');
+        mush[r][c]=Math.max(mush[r][c],3);    // segment touché → champignon
+        segs.splice(si,1);
+        bullet=null;
+      } else if(mush[r][c]>0){
+        mush[r][c]--; score+=1;
+        if(mush[r][c]===0){ score+=4; burst(ccx(c),ccy(r),'#d98cff'); }
+        bullet=null;
+      }
+    }
+  }
+
+  // pas du mille-pattes
+  stepT++;
+  const STEP=Math.max(3, 8-wave);
+  if(stepT>=STEP){ stepT=0; stepCentipede(); }
+
+  // collision joueur <-> segment
+  segs.forEach(s=>{
+    if(Math.abs(ccx(s.col)-player.x)<CELL*0.7 && Math.abs(ccy(s.row)-player.y)<CELL*0.7) hit();
+  });
+
+  // araignée
+  updateSpider();
+
+  // particules
+  parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.life--;});
+  parts=parts.filter(p=>p.life>0);
+
+  // vague suivante
+  if(segs.length===0){ wave++; score+=500; spawnCentipede(); stepT=0; }
+}
+
+function stepCentipede(){
+  // chaque segment n'est bloqué QUE par un mur ou un champignon
+  // (pas par les autres segments) → il avance d'un bord à l'autre,
+  // puis descend d'une rangée et repart en sens inverse, en cascade.
+  segs.forEach(s=>{
+    const nc=s.col+s.dir;
+    const blocked = nc<0 || nc>=COLS || (mush[s.row] && mush[s.row][nc]>0);
+    if(blocked){
+      s.dir*=-1;                              // inverse le sens horizontal
+      let nr = s.row + s.vdir;                 // descend (ou monte) d'une rangée
+      if(nr>MAXROW){ s.vdir=-1; nr=s.row+s.vdir; }   // touche le fond → remonte
+      else if(nr<0){ s.vdir=1;  nr=s.row+s.vdir; }   // touche le haut → redescend
+      s.row=nr;
+    } else {
+      s.col=nc;
+    }
+  });
+}
+
+function updateSpider(){
+  if(!spider){
+    spiderT--;
+    if(spiderT<=0){
+      const fromLeft=Math.random()<0.5;
+      spider={ x: fromLeft?-10:W+10, y: PLAY_TOP_Y+CELL+Math.random()*(H-PLAY_TOP_Y-CELL*2),
+               vx:(fromLeft?1:-1)*1.6, vy:(Math.random()<.5?1:-1)*1.4 };
+    }
+    return;
+  }
+  spider.x+=spider.vx; spider.y+=spider.vy;
+  if(spider.y<PLAY_TOP_Y+CELL/2){ spider.y=PLAY_TOP_Y+CELL/2; spider.vy*=-1; }
+  if(spider.y>H-CELL/2){ spider.y=H-CELL/2; spider.vy*=-1; }
+  // mange les champignons
+  const c=colAt(spider.x), r=rowAt(spider.y);
+  if(r>=0&&r<ROWS&&c>=0&&c<COLS&&mush[r][c]>0&&Math.random()<0.1) mush[r][c]=0;
+  // sort de l'écran
+  if(spider.x<-20||spider.x>W+20){ spider=null; spiderT=300+Math.random()*360; return; }
+  // tir
+  if(bullet && Math.abs(bullet.x-spider.x)<14 && Math.abs(bullet.y-spider.y)<14){
+    const pts=[300,600,900][Math.floor(Math.random()*3)];
+    score+=pts; burst(spider.x,spider.y,'#b86cff'); bullet=null; spider=null; spiderT=300+Math.random()*360;
+    return;
+  }
+  // collision joueur
+  if(Math.abs(spider.x-player.x)<CELL*0.7 && Math.abs(spider.y-player.y)<CELL*0.7) hit();
+}
+
+function hit(){
+  if(player.inv>0||over) return;
+  lives--; burst(player.x,player.y,'#ff5252',24);
+  if(lives<=0){ over=true; running=false; if(score>hi)hi=score; showOverlay('GAME OVER','Score : '+score); }
+  else { player.x=W/2; player.y=H-CELL; player.inv=100; bullet=null; }
+}
+
+function burst(x,y,color,n){ n=n||12;
+  for(let i=0;i<n;i++){ const a=Math.random()*Math.PI*2,s=Math.random()*3+1;
+    parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:14+Math.random()*12,color}); } }
+
+// ---- rendu ----
+function draw(){
+  ctx.clearRect(0,0,W,H);
+
+  // ligne de zone du joueur
+  ctx.strokeStyle='#13361a'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(0,PLAY_TOP_Y); ctx.lineTo(W,PLAY_TOP_Y); ctx.stroke();
+
+  // champignons
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    if(mush[r][c]>0) drawMushroom(ccx(c),ccy(r),mush[r][c]);
+  }
+
+  // mille-pattes
+  segs.forEach(s=>drawSegment(s));
+
+  // araignée
+  if(spider) drawSpider(spider.x,spider.y);
+
+  // balle
+  if(bullet){ ctx.fillStyle='#fff'; ctx.fillRect(bullet.x-1.5,bullet.y-8,3,10); }
+
+  // blaster
+  if(!(player.inv>0 && Math.floor(player.inv/5)%2)) drawPlayer(player.x,player.y);
+
+  // particules
+  parts.forEach(p=>{ ctx.globalAlpha=Math.min(1,p.life/16); ctx.fillStyle=p.color; ctx.fillRect(p.x-1,p.y-1,3,3); });
+  ctx.globalAlpha=1;
+
+  drawHUD();
+
+  if(paused){ ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.font='30px "Courier New",monospace'; ctx.fillText('PAUSE',W/2,H/2); }
+}
+
+function drawMushroom(x,y,hp){
+  const dmg = hp<4;
+  ctx.fillStyle = dmg ? '#7a4fa0' : '#d98cff';
+  ctx.beginPath(); ctx.arc(x,y-3,CELL*0.4,Math.PI,0); ctx.fill();
+  ctx.fillRect(x-CELL*0.4,y-3,CELL*0.8,3);
+  ctx.fillStyle='#caa6e6'; ctx.fillRect(x-2,y,4,CELL*0.32);   // pied
+  // points sur le chapeau
+  ctx.fillStyle='#fff';
+  ctx.fillRect(x-5,y-7,2,2); ctx.fillRect(x+3,y-6,2,2);
+}
+
+function drawSegment(s){
+  const x=ccx(s.col), y=ccy(s.row);
+  ctx.fillStyle = s.head ? '#ff5252' : '#7CFC00';
+  ctx.beginPath(); ctx.arc(x,y,CELL*0.42,0,Math.PI*2); ctx.fill();
+  // pattes
+  ctx.strokeStyle = s.head?'#ff8a80':'#bfff8a'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(x-CELL*0.42,y); ctx.lineTo(x-CELL*0.6,y+3);
+  ctx.moveTo(x+CELL*0.42,y); ctx.lineTo(x+CELL*0.6,y+3); ctx.stroke();
+  // yeux
+  ctx.fillStyle='#000';
+  ctx.fillRect(x-4,y-3,2.5,2.5); ctx.fillRect(x+2,y-3,2.5,2.5);
+}
+
+function drawSpider(x,y){
+  ctx.fillStyle='#b86cff';
+  ctx.beginPath(); ctx.ellipse(x,y,8,6,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x-7,y-2,3,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle='#b86cff'; ctx.lineWidth=1.5;
+  for(let i=-1;i<=1;i++){
+    ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x-12,y+i*5+2);
+    ctx.moveTo(x,y); ctx.lineTo(x+12,y+i*5+2); ctx.stroke();
+  }
+  ctx.fillStyle='#fff'; ctx.fillRect(x-8,y-3,2,2);
+}
+
+function drawPlayer(x,y){
+  // tireur compact (~1 case, comme un segment)
+  ctx.fillStyle='#5ad1e8';
+  ctx.beginPath();                                   // tête courte
+  ctx.moveTo(x, y-CELL*0.34);
+  ctx.lineTo(x-CELL*0.32, y-CELL*0.04);
+  ctx.lineTo(x+CELL*0.32, y-CELL*0.04);
+  ctx.closePath(); ctx.fill();
+  ctx.fillRect(x-CELL*0.32, y-CELL*0.04, CELL*0.64, CELL*0.32);  // corps
+  ctx.fillStyle='#fff'; ctx.fillRect(x-1.5, y-CELL*0.42, 3, 5);  // canon
+  ctx.fillStyle='#1e88e5'; ctx.fillRect(x-CELL*0.32, y+CELL*0.24, CELL*0.64, 3); // base
+}
+
+function drawHUD(){
+  ctx.fillStyle='#000'; ctx.fillRect(0,0,W,HUD);
+  ctx.fillStyle='#fff'; ctx.font='14px "Courier New",monospace';
+  ctx.textAlign='left'; ctx.fillText('SCORE '+score, 10, 23);
+  ctx.textAlign='center'; ctx.fillStyle='#7CFC00'; ctx.fillText('★'.repeat(Math.max(0,lives))+'  V'+wave, W/2, 23);
+  ctx.textAlign='right'; ctx.fillStyle='#d98cff'; ctx.fillText('RECORD '+hi, W-10, 23);
+  ctx.strokeStyle='#333'; ctx.beginPath(); ctx.moveTo(0,HUD-1); ctx.lineTo(W,HUD-1); ctx.stroke();
+}
+
+function loop(){ update(); draw(); requestAnimationFrame(loop); }
+initMushrooms(); segs=[]; parts=[]; player={x:W/2,y:H-CELL,inv:0};
+loop();
+</script>
+<script src="../music/playlist.js"></script>
+<script src="../music/player.js"></script>
+</body>
+</html>
