@@ -139,9 +139,10 @@ addEventListener('keydown', e => {
   if (['ArrowLeft','ArrowRight',' ','Enter'].includes(e.key)) e.preventDefault();
   keys[e.key.toLowerCase()] = true;
 
-  if (e.key === 'Enter' && (state === STATE.MENU || state === STATE.GAMEOVER)) resetGame();
+  if ((e.key === 'Enter' || e.key === ' ') && (state === STATE.MENU || state === STATE.GAMEOVER)) resetGame();
   if (e.key.toLowerCase() === 'p' && state === STATE.PLAYING) state = STATE.PAUSED;
   else if (e.key.toLowerCase() === 'p' && state === STATE.PAUSED) state = STATE.PLAYING;
+  else if (state === STATE.PAUSED && ['arrowleft','arrowright',' '].includes(e.key.toLowerCase())) state = STATE.PLAYING;
 });
 addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
 

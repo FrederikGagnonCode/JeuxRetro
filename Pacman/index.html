@@ -571,6 +571,7 @@ window.addEventListener('keydown', e => {
   if (e.key === 'Enter' || e.key === ' ') { if (startIfWaiting()) return; }
   if (e.key === 'p' || e.key === 'P') { paused = !paused; return; }
   if (e.key === 'm' || e.key === 'M') { muted = !muted; return; }
+  if (paused && KEYMAP[e.key] !== undefined) { paused = false; }
   const d = KEYMAP[e.key];
   if (d !== undefined) { audio(); setDir(d); }
 });

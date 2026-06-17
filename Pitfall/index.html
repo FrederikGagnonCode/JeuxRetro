@@ -70,8 +70,10 @@ addEventListener('keydown', e => {
   if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space'].includes(e.code)) e.preventDefault();
   if (!e.repeat) jp.add(e.code);
   keys[e.code] = true;
-  if (e.code === 'Enter' && (!st.started || st.over)) { reset(); st.started = true; }
+  if ((e.code === 'Enter' || e.code === 'Space') && (!st.started || st.over)) { reset(); st.started = true; }
   if ((e.code === 'KeyP' || e.code === 'Escape') && st.started && !st.over) st.paused = !st.paused;
+  else if (st.started && !st.over && st.paused &&
+           ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space','KeyW','KeyA','KeyD'].includes(e.code)) st.paused = false;
   initAudio();
 });
 addEventListener('keyup', e => { keys[e.code] = false; });

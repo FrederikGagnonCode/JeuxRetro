@@ -17,9 +17,18 @@
                time: 'arcadeMusicTime', on: 'arcadeMusicOn', vol: 'arcadeMusicVol' };
   const AUDIO_EXTS = ['.mp3', '.m4a', '.wav', '.ogg', '.flac'];
 
-  let playlist   = (window.PLAYLIST || []).slice();
+  // PLAYLIST est un `const` global (déclaré dans playlist.js) : accessible par
+  // référence directe, mais PAS via window.PLAYLIST. D'où le typeof.
+  let playlist   = (typeof PLAYLIST !== 'undefined' ? PLAYLIST : []).slice();
   let shuffleMode = localStorage.getItem(LS.shuffle) === '1';
   let current     = -1;                       // index du morceau courant
+  // choix auto d'un morceau au 1er geste (désactivable : window.ARCADE_MUSIC_AUTOSTART = false)
+  const AUTOSTART = (window.ARCADE_MUSIC_AUTOSTART !== false);
+
+  // les URLs de la playlist sont résolues par rapport à CE script (dossier music/),
+  // pour fonctionner depuis le menu comme depuis les jeux, peu importe la profondeur.
+  const SCRIPT_BASE = (document.currentScript && document.currentScript.src) || location.href;
+  const resolveUrl = u => { try { return new URL(u, SCRIPT_BASE).href; } catch (e) { return u; } };
 
   const audio = new Audio();
   audio.volume = parseFloat(localStorage.getItem(LS.vol) ?? '0.7');
@@ -91,17 +100,17 @@
 
   function play(index) {
     const song = playlist[index];
-    if (!song) return;
+    if (!song) return Promise.reject();
     current = index;
-    audio.src = song.url;
-    audio.play().catch(() => { elNow.textContent = '⚠ ' + song.name; });
+    audio.src = resolveUrl(song.url);
     elSelect.value = index;
     elNow.textContent = '🎧 ' + song.name;
     elStop.classList.remove('off');
     localStorage.setItem(LS.song, index);
     localStorage.setItem(LS.on, '1');
-    emit('play', { name: song.name, index });
+    return audio.play().then(() => emit('play', { name: song.name, index }));
   }
+  function playRandom() { return play(Math.floor(Math.random() * playlist.length)); }
 
   function step(delta) {
     if (!playlist.length) return;
@@ -113,7 +122,7 @@
       idx = (current + delta + playlist.length) % playlist.length;
       if (isNaN(idx)) idx = 0;
     }
-    play(idx);
+    play(idx).catch(() => {});
   }
 
   function stop() {
@@ -153,7 +162,7 @@
     elToggle.addEventListener('click', (e) => { e.stopPropagation(); toggle(); });
 
     elSelect.addEventListener('change', () => {
-      if (elSelect.value === '') stop(); else play(+elSelect.value);
+      if (elSelect.value === '') stop(); else play(+elSelect.value).catch(()=>{});
       elSelect.blur();
     });
     elPrev.addEventListener('click', () => { step(-1); elPrev.blur(); });
@@ -187,34 +196,27 @@
       elFolderInput.value = '';
     });
 
-    // avance auto + mémorisation de la position
+    // avance auto à la fin d'un morceau
     audio.addEventListener('ended', () => step(1));
-    audio.addEventListener('timeupdate', () => {
-      if (audio.currentTime) localStorage.setItem(LS.time, audio.currentTime);
+    // signaler un fichier introuvable (aide au diagnostic des chemins)
+    audio.addEventListener('error', () => {
+      if (audio.src) elNow.textContent = '⚠ fichier introuvable';
     });
 
-    // restaurer le dernier morceau (reprise inter-jeux au 1er clic/touche)
-    const savedIdx = localStorage.getItem(LS.song);
-    if (savedIdx !== null && playlist[savedIdx]) {
-      current = +savedIdx;
-      elSelect.value = savedIdx;
-      elNow.textContent = '🎧 ' + playlist[savedIdx].name;
-      elStop.classList.remove('off');
-      if (localStorage.getItem(LS.on) === '1') {
-        const savedTime = parseFloat(localStorage.getItem(LS.time) || '0');
-        const resume = () => {
-          audio.src = playlist[current].url;
-          audio.addEventListener('loadedmetadata', () => {
-            if (savedTime) try { audio.currentTime = savedTime; } catch (e) {}
-          }, { once: true });
-          audio.play().then(() => emit('play', { name: playlist[current].name, index: current }))
-                      .catch(() => {});
-          window.removeEventListener('pointerdown', resume);
-          window.removeEventListener('keydown', resume);
+    // ── démarrage : piocher une chanson au hasard et la jouer ──
+    //    (chaque page = nouveau hasard → une autre chanson à chaque jeu lancé)
+    //    On tente tout de suite ; si l'autoplay est bloqué par le navigateur,
+    //    on démarre au tout premier clic/touche de la page.
+    if (AUTOSTART && playlist.length) {
+      playRandom().catch(() => {
+        const go = () => {
+          window.removeEventListener('pointerdown', go);
+          window.removeEventListener('keydown', go);
+          playRandom().catch(() => {});
         };
-        window.addEventListener('pointerdown', resume, { once: true });
-        window.addEventListener('keydown', resume, { once: true });
-      }
+        window.addEventListener('pointerdown', go, { once: true });
+        window.addEventListener('keydown', go, { once: true });
+      });
     }
   }
 

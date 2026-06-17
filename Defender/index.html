@@ -123,6 +123,7 @@ document.addEventListener('keydown', e=>{
   const k = e.key.toLowerCase();
   keys[k] = true;
   if ([' ','arrowup','arrowdown','arrowleft','arrowright'].includes(e.key.toLowerCase()) || e.key===' ') e.preventDefault();
+  if (paused && ['arrowup','arrowdown','arrowleft','arrowright',' ','w','a','s','d'].includes(k)){ paused=false; return; }
   if (e.key === ' '){ if (!running||over){ newGame(); } else { fire(); } }
   if (k === 'p' && running && !over){ paused = !paused; }
 });

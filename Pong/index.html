@@ -84,6 +84,7 @@ function hideOverlay(){ overlay.style.display = 'none'; }
 // ---- entrées ----
 document.addEventListener('keydown', e => {
   keys[e.key.toLowerCase()] = true;
+  if (paused && ['arrowup','arrowdown','w','s'].includes(e.key.toLowerCase())){ paused = false; }
   if (e.key === ' '){ e.preventDefault(); onAction(); }
   if (e.key.toLowerCase() === 'p' && running && !over){ paused = !paused; }
 });

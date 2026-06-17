@@ -66,8 +66,9 @@ const ladders = ladderDefs.map(([i,x])=>({x, yTop:platforms[i].y, yBottom:platfo
 const dk = { x:330, y:TOP.y, arm:0, throwT:90 };
 const pauline = { x:140, y:TOP.y };
 
-// marteaux à ramasser (posés sur une poutrelle)
-const hammerDefs = [ {x:250, y:platforms[3].y}, {x:190, y:platforms[1].y} ];
+// marteaux à ramasser : suspendus en l'air au-dessus d'une poutrelle → il faut sauter
+const HAMMER_LIFT = 46;
+const hammerDefs = [ {x:250, y:platforms[3].y-HAMMER_LIFT}, {x:190, y:platforms[1].y-HAMMER_LIFT} ];
 let hammers = [];
 
 const WALK=2.2, CLIMB=2.0, G=0.6, JUMP=8;
@@ -104,6 +105,7 @@ document.addEventListener('keydown', e=>{
   const k=e.key.toLowerCase();
   keys[k]=true;
   if (['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)) e.preventDefault();
+  if (paused && ['arrowup','arrowdown','arrowleft','arrowright',' ','w','a','s','d'].includes(k)){ paused=false; return; }
   if (k===' '){
     if (!running||over){ newGame(); }
     else if (player.onGround && !player.climbing && player.hammer<=0){ player.vy=-JUMP; player.onGround=false; }
@@ -137,10 +139,11 @@ function updatePlayer(){
   if (keys['arrowright']){ player.x+=WALK; player.facing=1; player.walkT++; }
   player.x = clamp(player.x, X1, X2);
 
-  // ramasser un marteau
-  if (player.hammer<=0 && player.onGround){
+  // ramasser un marteau : suspendu en l'air → seul le corps en plein saut l'atteint
+  if (player.hammer<=0){
+    const bodyY = player.y - 12;                 // centre du corps (player.y = pieds)
     for (const h of hammers){
-      if (!h.taken && Math.abs(h.x-player.x)<16 && Math.abs(h.y-player.baseY)<8){
+      if (!h.taken && Math.abs(h.x-player.x)<16 && Math.abs(h.y-bodyY)<16){
         h.taken=true; h.respawn=HAMMER_RESPAWN; player.hammer=HAMMER_T;
         floatText(player.x, player.y-36, 'MARTEAU !');
       }
@@ -357,7 +360,7 @@ function drawBarrel(b){
 
 function drawHammerPickup(h){
   const bob = Math.sin(performance.now()*0.005)*2;
-  const x=h.x, y=h.y-16+bob;
+  const x=h.x, y=h.y+bob;            // dessiné centré sur la position flottante
   ctx.save(); ctx.translate(x,y);
   ctx.fillStyle='#8a5a2e'; ctx.fillRect(-1.5,-2,3,16);   // manche
   ctx.fillStyle='#cfcfcf'; ctx.fillRect(-7,-8,14,7);     // tête

@@ -580,7 +580,10 @@
     function updateScore() { scoreEl.textContent = score; }
 
     document.addEventListener('keydown', e => {
-      if (!running) return;
+      if (!running) {
+        if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); init(); }
+        return;
+      }
       const map = {
         ArrowUp:    { x: 0, y:-1 }, w: { x: 0, y:-1 }, W: { x: 0, y:-1 },
         ArrowDown:  { x: 0, y: 1 }, s: { x: 0, y: 1 }, S: { x: 0, y: 1 },
@@ -590,6 +593,7 @@
       if (e.key === 'p' || e.key === 'P') { paused = !paused; return; }
       const d = map[e.key];
       if (!d) return;
+      if (paused) paused = false;   // une touche de direction relance la partie
       if (d.x === -dir.x && d.y === -dir.y) return;
       nextDir = d;
       e.preventDefault();
