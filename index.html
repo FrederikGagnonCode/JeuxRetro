@@ -312,6 +312,36 @@
       </div>
     </a>
 
+    <!-- GALAGA -->
+    <a class="card" href="./Galaga/index.html">
+      <div class="year">1981</div>
+      <div class="thumb">
+        <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
+          <rect width="80" height="60" fill="#000"/>
+          <!-- étoiles -->
+          <g fill="#cde"><circle cx="12" cy="10" r=".7"/><circle cx="66" cy="8" r=".7"/><circle cx="40" cy="6" r=".7"/><circle cx="24" cy="46" r=".7"/><circle cx="58" cy="50" r=".7"/></g>
+          <!-- formation : boss vert -->
+          <g transform="translate(32,14)"><circle r="3.5" fill="#7CFC00"/><rect x="-3" y="-3.5" width="6" height="2.4" fill="#1565c0"/></g>
+          <g transform="translate(48,14)"><circle r="3.5" fill="#7CFC00"/><rect x="-3" y="-3.5" width="6" height="2.4" fill="#1565c0"/></g>
+          <!-- papillons rouges -->
+          <g fill="#ff5252"><rect x="20" y="22" width="7" height="4" rx="1"/><rect x="36" y="22" width="7" height="4" rx="1"/><rect x="53" y="22" width="7" height="4" rx="1"/></g>
+          <!-- abeilles jaunes -->
+          <g fill="#ffd23a"><rect x="24" y="30" width="5" height="4" rx="1"/><rect x="38" y="30" width="5" height="4" rx="1"/><rect x="51" y="30" width="5" height="4" rx="1"/></g>
+          <!-- un alien en piqué -->
+          <g transform="translate(30,40)"><rect x="-3" y="-2" width="6" height="4" rx="1" fill="#ff5252"/></g>
+          <!-- tir -->
+          <rect x="39.2" y="40" width="1.6" height="6" fill="#ffd23a"/>
+          <!-- chasseur -->
+          <g transform="translate(40,52)" fill="#fff"><polygon points="0,-6 -2,-1 2,-1"/><rect x="-6" y="-1" width="12" height="2.5" fill="#36c5f0"/></g>
+        </svg>
+        <div class="play"><span>▶ JOUER</span></div>
+      </div>
+      <div class="meta">
+        <p class="title">Galaga</p>
+        <p class="tag">Tir spatial · Arcade</p>
+      </div>
+    </a>
+
     <!-- PITFALL -->
     <a class="card" href="./Pitfall/index.html">
       <div class="year">1982</div>
@@ -390,6 +420,92 @@
       <div class="meta">
         <p class="title">Dig Dug</p>
         <p class="tag">Creuser · Arcade</p>
+      </div>
+    </a>
+
+    <!-- OUT RUN -->
+    <a class="card" href="./OutRun/index.html">
+      <div class="year">1986</div>
+      <div class="thumb">
+        <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
+          <!-- ciel -->
+          <defs><linearGradient id="orsky" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#1763c9"/><stop offset="1" stop-color="#79c9ee"/>
+          </linearGradient></defs>
+          <rect width="80" height="34" fill="url(#orsky)"/>
+          <!-- soleil -->
+          <circle cx="58" cy="12" r="7" fill="#ffd23a"/>
+          <!-- herbe -->
+          <rect y="30" width="80" height="30" fill="#329a35"/>
+          <!-- route (trapèze) -->
+          <polygon points="36,30 44,30 64,60 16,60" fill="#9b9b9b"/>
+          <!-- bordures -->
+          <polygon points="35,30 36,30 16,60 13,60" fill="#fff"/>
+          <polygon points="44,30 45,30 67,60 64,60" fill="#c23a3a"/>
+          <!-- ligne centrale -->
+          <polygon points="39.6,30 40.4,30 42,60 38,60" fill="#fff"/>
+          <!-- palmiers -->
+          <g stroke="#0a6b1e" stroke-width="1.5" fill="none">
+            <g transform="translate(10,34)"><line x1="0" y1="0" x2="0" y2="-7" stroke="#6b4a1d"/><path d="M0 -7 Q-4 -10 -6 -8M0 -7 Q4 -10 6 -8M0 -7 Q-3 -12 0 -13M0 -7 Q3 -12 5 -12"/></g>
+            <g transform="translate(70,36)"><line x1="0" y1="0" x2="0" y2="-8" stroke="#6b4a1d"/><path d="M0 -8 Q-4 -11 -6 -9M0 -8 Q4 -11 6 -9M0 -8 Q-3 -13 0 -14M0 -8 Q3 -13 5 -13"/></g>
+          </g>
+          <!-- voiture rouge (vue arrière) -->
+          <g transform="translate(40,52)">
+            <rect x="-9" y="-2" width="18" height="6" rx="1" fill="#d11414"/>
+            <rect x="-7" y="-6" width="14" height="5" rx="1" fill="#e02020"/>
+            <rect x="-5" y="-5" width="10" height="3" fill="#101018"/>
+            <rect x="-9" y="2" width="3" height="2" fill="#ff4d4d"/><rect x="6" y="2" width="3" height="2" fill="#ff4d4d"/>
+          </g>
+        </svg>
+        <div class="play"><span>▶ JOUER</span></div>
+      </div>
+      <div class="meta">
+        <p class="title">Out Run</p>
+        <p class="tag">Course · Arcade</p>
+      </div>
+    </a>
+
+    <!-- BUBBLE BOBBLE -->
+    <a class="card" href="./BubbleBobble/index.html">
+      <div class="year">1986</div>
+      <div class="thumb">
+        <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
+          <rect width="80" height="60" fill="#02030a"/>
+          <!-- plateformes -->
+          <g fill="#2e57c8">
+            <rect x="6" y="14" width="22" height="3"/><rect x="52" y="14" width="22" height="3"/>
+            <rect x="28" y="30" width="24" height="3"/>
+            <rect x="6" y="46" width="68" height="3"/>
+          </g>
+          <!-- Bub, le dino vert -->
+          <g transform="translate(20,40)">
+            <circle r="7" fill="#3fae45"/>
+            <circle cx="0" cy="2" r="4" fill="#cdeb8e"/>
+            <circle cx="3" cy="-2" r="3" fill="#fff"/><circle cx="4" cy="-2" r="1.3" fill="#000"/>
+            <polygon points="-7,-3 -9,-7 -5,-6" fill="#2e8b34"/>
+            <rect x="2" y="3" width="4" height="2" fill="#e26a2c"/>
+          </g>
+          <!-- bulle avec ennemi piégé -->
+          <g transform="translate(40,22)">
+            <circle r="8" fill="rgba(255,90,90,.18)" stroke="#ff8c8c" stroke-width="1.5"/>
+            <circle cy="1" r="4" fill="#ffd23a"/>
+            <circle cx="-1.5" cy="0" r=".8" fill="#000"/><circle cx="1.5" cy="0" r=".8" fill="#000"/>
+            <circle cx="-3" cy="-3" r="1.4" fill="#fff" opacity=".6"/>
+          </g>
+          <!-- ennemi libre -->
+          <g transform="translate(62,42)">
+            <circle r="6" fill="#b86cff"/>
+            <circle cx="-2" cy="-1" r="2.4" fill="#fff"/><circle cx="2" cy="-1" r="2.4" fill="#fff"/>
+            <circle cx="-2" cy="-1" r="1" fill="#000"/><circle cx="2" cy="-1" r="1" fill="#000"/>
+          </g>
+          <!-- bulle vide qui monte -->
+          <circle cx="32" cy="10" r="5" fill="rgba(120,200,255,.14)" stroke="#9fe" stroke-width="1.2"/>
+        </svg>
+        <div class="play"><span>▶ JOUER</span></div>
+      </div>
+      <div class="meta">
+        <p class="title">Bubble Bobble</p>
+        <p class="tag">Plateforme · Arcade</p>
       </div>
     </a>
 
