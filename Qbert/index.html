@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Q*bert</title>
+<style>
+  html,body{margin:0;padding:0;height:100%;background:#000;color:#fff;
+    font-family:'Courier New',monospace;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;user-select:none;overflow:hidden}
+  h1{letter-spacing:5px;margin:0 0 8px;font-size:20px;
+     text-shadow:0 0 8px #fff,0 0 18px #ff8a3d}
+  #wrap{position:relative}
+  canvas{background:#05050f;border:2px solid #fff;display:block;
+    box-shadow:0 0 24px rgba(255,138,61,.4);touch-action:none}
+  #hint{color:#777;font-size:12px;margin-top:10px;text-align:center;line-height:1.6}
+  #overlay{position:absolute;inset:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;background:rgba(0,0,0,.8);
+    text-align:center;cursor:pointer}
+  #overlay h2{font-size:24px;letter-spacing:3px;margin:0 0 12px}
+  #overlay p{color:#bbb;font-size:13px;margin:4px 0}
+  .blink{animation:blink 1.1s steps(2,start) infinite}
+  @keyframes blink{50%{opacity:0}}
+  a.back{color:#4ecca3;font-size:12px;margin-top:8px;text-decoration:none;letter-spacing:1px}
+  a.back:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+  <h1>Q * B E R T</h1>
+  <div id="wrap">
+    <canvas id="game" width="440" height="480"></canvas>
+    <div id="overlay">
+      <h2 id="ovTitle">Q*BERT</h2>
+      <p>Saute sur tous les cubes pour les changer de couleur</p>
+      <p>↑ haut-droite · ← haut-gauche · ↓ bas-gauche · → bas-droite</p>
+      <p>Ne tombe pas dans le vide · évite les ennemis</p>
+      <p class="blink" style="margin-top:14px">▶ Cliquez ou Espace pour jouer</p>
+    </div>
+  </div>
+  <div id="hint">Sauts en diagonale : ↑ haut-droite · ← haut-gauche · ↓ bas-gauche · → bas-droite · P = pause</div>
+  <a class="back" href="../index.html">← Menu Arcade</a>
+
+<script>
+const cv = document.getElementById('game');
+const ctx = cv.getContext('2d');
+const W=cv.width, H=cv.height, HUD=36;
+const overlay=document.getElementById('overlay');
+const ovTitle=document.getElementById('ovTitle');
+
+const ROWS=7;
+const CW=48, CH=26, SH=24, ROWDY=CH/2+SH;     // géométrie isométrique
+const CENTERX=W/2, TOPY=HUD+52;
+const TOP_COLORS=['#1e63d6','#ffce1f'];        // 0 = départ, 1 = cible
+const TARGET=1;
+const FACE_L='#6a3fa6', FACE_R='#412766';      // faces latérales (mauve)
+
+let cubes, player, enemies, parts;
+let score=0, lives=3, level=1, hi=0;
+let ballT, coilyT, coilyAlive;
+let running=false, paused=false, over=false;
+const keys={};
+
+const lerp=(a,b,t)=>a+(b-a)*t;
+const valid=(r,c)=> r>=0 && r<ROWS && c>=0 && c<=r;
+function cubePos(r,c){ return { x:CENTERX+(c-r/2)*CW, y:TOPY+r*ROWDY }; }
+function arc(a,b,t){ return { x:lerp(a.x,b.x,t), y:lerp(a.y,b.y,t)-34*Math.sin(Math.PI*Math.min(t,1)) }; }
+
+function initCubes(){ cubes=[]; for(let r=0;r<ROWS;r++) cubes.push(new Array(r+1).fill(0)); }
+
+function resetPlayer(){
+  const p=cubePos(0,0);
+  player={ r:0,c:0, x:p.x, y:p.y, hopping:false, falling:false, dead:false,
+           fromR:0, fromC:0, tr:0, tc:0, t:0, fvx:0, fvy:0, inv:0, face:-1 };
+}
+function spawnLevel(){
+  enemies=[]; coilyAlive=false;
+  ballT=120; coilyT=300 - level*20;
+}
+function newGame(){
+  score=0; lives=3; level=1;
+  initCubes(); resetPlayer(); spawnLevel(); parts=[];
+  over=false; paused=false; running=true;
+  hideOverlay();
+}
+function levelClear(){
+  level++; score+=1000;
+  initCubes(); resetPlayer(); spawnLevel();
+  flash('NIVEAU '+level+' !');
+}
+
+function showOverlay(t,s){ ovTitle.textContent=t; overlay.querySelector('p:nth-of-type(1)').textContent=s; overlay.style.display='flex'; }
+function hideOverlay(){ overlay.style.display='none'; }
+let flashMsg=null, flashT=0;
+function flash(m){ flashMsg=m; flashT=70; }
+
+// ── entrées (diagonales) ──
+document.addEventListener('keydown',e=>{
+  const k=e.key.toLowerCase(); keys[k]=true;
+  if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)) e.preventDefault();
+  if(k===' '){ if(!running||over) newGame(); return; }
+  if(k==='p' && running && !over){ paused=!paused; return; }
+  if(!running||paused||over) return;
+  if(k==='arrowup')    tryMove(-1, 0);   // haut-droite
+  else if(k==='arrowleft')  tryMove(-1,-1); // haut-gauche
+  else if(k==='arrowdown')  tryMove( 1, 0); // bas-gauche
+  else if(k==='arrowright') tryMove( 1, 1); // bas-droite
+});
+document.addEventListener('keyup',e=>{ keys[e.key.toLowerCase()]=false; });
+overlay.addEventListener('click',()=>{ if(!running||over) newGame(); });
+cv.addEventListener('touchstart',e=>{ e.preventDefault(); if(!running||over) newGame(); },{passive:false});
+
+function tryMove(dr,dc){
+  if(player.hopping||player.falling||player.dead) return;
+  const nr=player.r+dr, nc=player.c+dc;
+  player.fromR=player.r; player.fromC=player.c;
+  player.face = dc>0?1 : dc<0?-1 : (dr>0?-1:1);   // trompe orientée selon la diagonale
+  if(!valid(nr,nc)){
+    // saute dans le vide
+    const a=cubePos(player.r,player.c), b=cubePos(nr,nc);
+    player.falling=true; player.fvx=(b.x-a.x)*0.14; player.fvy=-5;
+  } else {
+    player.tr=nr; player.tc=nc; player.t=0; player.hopping=true;
+  }
+}
+
+// ── mise à jour ──
+function update(){
+  if(!running||paused||over) return;
+  if(flashT>0) flashT--;
+
+  // joueur
+  if(player.hopping){
+    player.t+=1/13;
+    const p=arc(cubePos(player.fromR,player.fromC), cubePos(player.tr,player.tc), player.t);
+    player.x=p.x; player.y=p.y;
+    if(player.t>=1){ player.hopping=false; player.r=player.tr; player.c=player.tc; landPlayer(); }
+  } else if(player.falling){
+    player.fvy+=0.6; player.x+=player.fvx; player.y+=player.fvy;
+    if(player.y>H+60){ player.falling=false; loseLife(); }
+  } else {
+    const p=cubePos(player.r,player.c); player.x=p.x; player.y=p.y-2;
+    if(player.inv>0) player.inv--;
+  }
+
+  // apparition d'ennemis
+  if(!player.dead && !player.falling){
+    ballT--;
+    if(ballT<=0 && enemies.filter(e=>e.kind==='ball').length<2+Math.min(level,3)){
+      enemies.push(makeEnemy('ball', 0,0)); ballT=130-level*8;
+    }
+    coilyT--;
+    if(coilyT<=0 && !coilyAlive){ enemies.push(makeEnemy('coily',0,0)); coilyAlive=true; coilyT=99999; }
+  }
+
+  // ennemis
+  enemies.forEach(e=>{
+    if(e.hopping){
+      e.t+=1/14;
+      const p=arc(cubePos(e.fromR,e.fromC), cubePos(e.tr,e.tc), e.t);
+      e.x=p.x; e.y=p.y;
+      if(e.t>=1){ e.hopping=false; e.r=e.tr; e.c=e.tc; landEnemy(e); }
+    } else {
+      const p=cubePos(e.r,e.c); e.x=p.x; e.y=p.y-2;
+      e.moveT--;
+      if(e.moveT<=0 && !player.dead) startEnemyHop(e);
+    }
+  });
+  enemies=enemies.filter(e=>!e.dead);
+
+  // collision joueur <-> ennemi (tous deux posés)
+  if(!player.hopping && !player.falling && !player.dead && player.inv<=0){
+    for(const e of enemies){
+      if(!e.hopping && e.r===player.r && e.c===player.c){ loseLife(); break; }
+    }
+  }
+
+  parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=0.2;p.life--;});
+  parts=parts.filter(p=>p.life>0);
+}
+
+function landPlayer(){
+  const cur=cubes[player.r][player.c];
+  if(cur<TARGET){ cubes[player.r][player.c]=cur+1; score+=25; burst(player.x,player.y,'#ffce1f',8); }
+  // collision immédiate à l'atterrissage
+  for(const e of enemies){ if(!e.hopping && e.r===player.r && e.c===player.c){ loseLife(); return; } }
+  if(allChanged()) levelClear();
+}
+function allChanged(){
+  for(let r=0;r<ROWS;r++) for(let c=0;c<=r;c++) if(cubes[r][c]!==TARGET) return false;
+  return true;
+}
+
+function makeEnemy(kind,r,c){
+  const p=cubePos(r,c);
+  return { kind, state:(kind==='coily'?'egg':null), r,c, x:p.x,y:p.y, fromR:r,fromC:c,tr:r,tc:c,
+           t:0, hopping:false, moveT:(kind==='coily'?26:30)+Math.floor(Math.random()*10) };
+}
+function startEnemyHop(e){
+  let dr,dc;
+  if(e.kind==='ball' || (e.kind==='coily'&&e.state==='egg')){
+    dr=1; dc=Math.random()<0.5?0:1;                 // descend en zigzag
+  } else { // Coily serpent : poursuit le joueur (plus court chemin à l'écran)
+    const opts=[[-1,0],[-1,-1],[1,0],[1,1]].map(([a,b])=>({r:e.r+a,c:e.c+b}))
+      .filter(n=>valid(n.r,n.c));
+    if(!opts.length){ e.moveT=20; return; }
+    const pt=cubePos(player.r,player.c);
+    opts.sort((A,B)=>{ const pa=cubePos(A.r,A.c),pb=cubePos(B.r,B.c);
+      return (Math.hypot(pa.x-pt.x,pa.y-pt.y))-(Math.hypot(pb.x-pt.x,pb.y-pt.y)); });
+    dr=opts[0].r-e.r; dc=opts[0].c-e.c;
+  }
+  const nr=e.r+dr, nc=e.c+dc;
+  e.fromR=e.r; e.fromC=e.c; e.tr=nr; e.tc=nc; e.t=0; e.hopping=true;
+}
+function landEnemy(e){
+  if(e.r>=ROWS){ e.dead=true; if(e.kind==='coily') coilyAlive=false; return; }   // tombé en bas
+  if(e.kind==='coily' && e.state==='egg' && e.r>=ROWS-1){ e.state='snake'; }
+  e.moveT=(e.kind==='coily'?24:30)+Math.floor(Math.random()*12);
+  if(!e.hopping && e.r===player.r && e.c===player.c && player.inv<=0 && !player.hopping) loseLife();
+}
+
+function loseLife(){
+  if(over) return;
+  lives--; burst(player.x,player.y,'#ff8a3d',26);
+  if(lives<=0){ over=true; running=false; if(score>hi)hi=score; showOverlay('GAME OVER','Score : '+score); return; }
+  resetPlayer(); player.inv=70;                 // respawn en haut, bref invincibilité
+  enemies=[]; coilyAlive=false; coilyT=Math.max(120, 300-level*20);
+}
+
+function burst(x,y,color,n){ n=n||12;
+  for(let i=0;i<n;i++){ const a=Math.random()*Math.PI*2,s=Math.random()*3+1;
+    parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-1,life:16+Math.random()*12,color}); } }
+
+// ── rendu ──
+function draw(){
+  ctx.clearRect(0,0,W,H);
+
+  // cubes (du haut vers le bas pour le bon recouvrement)
+  for(let r=0;r<ROWS;r++) for(let c=0;c<=r;c++) drawCube(r,c,cubes[r][c]);
+
+  // entités triées par profondeur (rangée)
+  const ents=[player, ...enemies].filter(e=>e && !(e===player && player.dead && !player.falling));
+  ents.sort((a,b)=>(a.r+(a.hopping?a.t:0))-(b.r+(b.hopping?b.t:0)));
+  ents.forEach(e=>{ if(e===player) drawQbert(); else drawEnemy(e); });
+
+  // particules
+  parts.forEach(p=>{ ctx.globalAlpha=Math.min(1,p.life/18); ctx.fillStyle=p.color; ctx.fillRect(p.x-1,p.y-1,3,3); });
+  ctx.globalAlpha=1;
+
+  drawHUD();
+  if(flashMsg && flashT>0){ ctx.globalAlpha=Math.min(1,flashT/20); ctx.fillStyle='#ffce1f';
+    ctx.font='bold 22px "Courier New",monospace'; ctx.textAlign='center'; ctx.fillText(flashMsg,W/2,H/2); ctx.globalAlpha=1; }
+
+  if(paused){ ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.font='30px "Courier New",monospace'; ctx.fillText('PAUSE',W/2,H/2); }
+}
+
+function drawCube(r,c,col){
+  const {x,y}=cubePos(r,c);
+  const hw=CW/2, hh=CH/2;
+  // face gauche
+  ctx.fillStyle=FACE_L;
+  ctx.beginPath(); ctx.moveTo(x-hw,y); ctx.lineTo(x,y+hh); ctx.lineTo(x,y+hh+SH); ctx.lineTo(x-hw,y+SH); ctx.closePath(); ctx.fill();
+  // face droite
+  ctx.fillStyle=FACE_R;
+  ctx.beginPath(); ctx.moveTo(x,y+hh); ctx.lineTo(x+hw,y); ctx.lineTo(x+hw,y+SH); ctx.lineTo(x,y+hh+SH); ctx.closePath(); ctx.fill();
+  // dessus
+  ctx.fillStyle=TOP_COLORS[col];
+  ctx.beginPath(); ctx.moveTo(x,y-hh); ctx.lineTo(x+hw,y); ctx.lineTo(x,y+hh); ctx.lineTo(x-hw,y); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle='rgba(0,0,0,.25)'; ctx.lineWidth=1; ctx.stroke();
+}
+
+function drawQbert(){
+  if(player.dead && !player.falling) return;
+  const x=player.x, y=player.y-12, f=player.face;
+  const body = (player.inv>0 && Math.floor(player.inv/4)%2) ? '#ffd2a6' : '#ff7a00';
+  // pattes (deux pieds orange écartés)
+  ctx.fillStyle='#d35f00';
+  ctx.beginPath(); ctx.ellipse(x-7,y+13,4.5,3,0,0,Math.PI*2); ctx.ellipse(x+7,y+13,4.5,3,0,0,Math.PI*2); ctx.fill();
+  ctx.fillRect(x-9,y+8,5,6); ctx.fillRect(x+4,y+8,5,6);
+  // corps rond
+  ctx.fillStyle=body;
+  ctx.beginPath(); ctx.arc(x,y,13,0,Math.PI*2); ctx.fill();
+  // grosse trompe (capsule épaisse, orientée + légèrement vers le bas)
+  ctx.strokeStyle=body; ctx.lineWidth=9; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(x+f*5,y+3); ctx.lineTo(x+f*18,y+7); ctx.stroke();
+  ctx.fillStyle='#7a2e00';                       // narines
+  ctx.beginPath(); ctx.arc(x+f*17,y+5,1,0,Math.PI*2); ctx.arc(x+f*16,y+9,1,0,Math.PI*2); ctx.fill();
+  // yeux (grands, blancs)
+  ctx.fillStyle='#fff';
+  ctx.beginPath(); ctx.ellipse(x-4,y-4,4.5,5.5,0,0,Math.PI*2); ctx.ellipse(x+5,y-4,4.5,5.5,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#000';
+  ctx.beginPath(); ctx.arc(x-4+f,y-3,2,0,Math.PI*2); ctx.arc(x+5+f,y-3,2,0,Math.PI*2); ctx.fill();
+  // sourcils rouges fâchés
+  ctx.strokeStyle='#c81000'; ctx.lineWidth=2.5; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(x-9,y-9); ctx.lineTo(x-1,y-6); ctx.moveTo(x+9,y-9); ctx.lineTo(x+1,y-6); ctx.stroke();
+}
+
+function drawEnemy(e){
+  const x=e.x, y=e.y-11;
+  if(e.kind==='coily'){
+    if(e.state==='egg'){
+      // œuf mauve tacheté
+      ctx.fillStyle='#7a2bb5'; ctx.beginPath(); ctx.ellipse(x,y,8,11,0,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#b06cff';
+      ctx.beginPath(); ctx.arc(x-2,y-3,2,0,Math.PI*2); ctx.arc(x+3,y+2,1.5,0,Math.PI*2); ctx.arc(x-1,y+5,1.3,0,Math.PI*2); ctx.fill();
+    } else {
+      const dark='#6a23a0', mid='#8a2be2', lite='#b06cff';
+      // corps enroulé : anneaux empilés (effet ressort)
+      for(let i=0;i<3;i++){
+        const cy=y+9 - i*6, rw=11-i;
+        ctx.fillStyle=dark; ctx.beginPath(); ctx.ellipse(x,cy,rw,5,0,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle=mid;  ctx.beginPath(); ctx.ellipse(x,cy-1.5,rw,3.5,0,0,Math.PI*2); ctx.fill();
+      }
+      // tête au sommet
+      const hy=y-13;
+      ctx.fillStyle=mid;  ctx.beginPath(); ctx.arc(x,hy,8,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle=lite; ctx.beginPath(); ctx.arc(x-2,hy-2,4,0,Math.PI*2); ctx.fill();
+      // yeux jaunes
+      ctx.fillStyle='#ffe000'; ctx.beginPath(); ctx.arc(x-3,hy-2,3,0,Math.PI*2); ctx.arc(x+3,hy-2,3,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(x-3,hy-1,1.4,0,Math.PI*2); ctx.arc(x+3,hy-1,1.4,0,Math.PI*2); ctx.fill();
+      // gueule magenta + crocs
+      ctx.fillStyle='#d6188a'; ctx.beginPath(); ctx.arc(x,hy+4,3.4,0,Math.PI); ctx.fill();
+      ctx.fillStyle='#fff';
+      ctx.beginPath();
+      ctx.moveTo(x-3,hy+4); ctx.lineTo(x-2,hy+8); ctx.lineTo(x-1,hy+4); ctx.closePath();
+      ctx.moveTo(x+3,hy+4); ctx.lineTo(x+2,hy+8); ctx.lineTo(x+1,hy+4); ctx.closePath();
+      ctx.fill();
+    }
+  } else { // balle rouge
+    ctx.fillStyle='#c81414'; ctx.beginPath(); ctx.arc(x,y,10,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#e83a3a'; ctx.beginPath(); ctx.arc(x,y,8,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#ff9a9a'; ctx.beginPath(); ctx.arc(x-3,y-3,3,0,Math.PI*2); ctx.fill();
+  }
+}
+
+function drawHUD(){
+  ctx.fillStyle='#000'; ctx.fillRect(0,0,W,HUD);
+  ctx.fillStyle='#fff'; ctx.font='15px "Courier New",monospace';
+  ctx.textAlign='left'; ctx.fillText('SCORE '+score, 10, 23);
+  ctx.textAlign='center'; ctx.fillStyle='#ff8a3d'; ctx.fillText('●'.repeat(Math.max(0,lives))+'  N'+level, W/2, 23);
+  ctx.textAlign='right';
+  ctx.fillStyle='#bbb'; ctx.fillText('BUT', W-46, 23);
+  ctx.fillStyle=TOP_COLORS[TARGET]; ctx.fillRect(W-34,12,22,14);
+  ctx.strokeStyle='#333'; ctx.beginPath(); ctx.moveTo(0,HUD-1); ctx.lineTo(W,HUD-1); ctx.stroke();
+}
+
+function loop(){ update(); draw(); requestAnimationFrame(loop); }
+initCubes(); resetPlayer(); enemies=[]; parts=[]; ballT=120; coilyT=300; coilyAlive=false;
+loop();
+</script>
+<script src="../music/playlist.js"></script>
+<script src="../music/player.js"></script>
+</body>
+</html>

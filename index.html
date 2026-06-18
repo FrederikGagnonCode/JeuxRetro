@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Arcade Rétro</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="favicon.svg">
+<meta name="theme-color" content="#0b0b1a">
 <style>
   :root{
     --bg:#0b0b1a;
@@ -15,15 +18,42 @@
   }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0;min-height:100%}
+  html{background:#08081a;}
   body{
-    background:
-      radial-gradient(circle at 20% 0%, #1a1a3a 0%, transparent 45%),
-      radial-gradient(circle at 80% 100%, #2a0a2a 0%, transparent 45%),
-      var(--bg);
+    background:transparent;
     color:var(--text);
     font-family:'Courier New',monospace;
     display:flex;flex-direction:column;align-items:center;
     padding:40px 20px 60px;min-height:100vh;
+    position:relative;
+  }
+  /* ── fond psychédélique animé ── */
+  #psych{
+    position:fixed; inset:-25%; z-index:-2; pointer-events:none;
+    background:
+      radial-gradient(closest-side at 24% 30%, #ff2ec4, transparent 62%),
+      radial-gradient(closest-side at 78% 22%, #25e0ff, transparent 62%),
+      radial-gradient(closest-side at 60% 80%, #ffe53a, transparent 62%),
+      radial-gradient(closest-side at 30% 72%, #7b2cff, transparent 62%),
+      radial-gradient(closest-side at 85% 60%, #2bff88, transparent 62%),
+      radial-gradient(closest-side at 50% 45%, #ff7b2c, transparent 70%);
+    filter: blur(70px) saturate(1.5) hue-rotate(0deg);
+    animation: psychSwirl 26s linear infinite, psychHue 15s linear infinite;
+  }
+  @keyframes psychSwirl{
+    from{ transform: rotate(0deg)   scale(1.3); }
+    to  { transform: rotate(360deg) scale(1.3); }
+  }
+  @keyframes psychHue{
+    from{ filter: blur(70px) saturate(1.5) hue-rotate(0deg); }
+    to  { filter: blur(70px) saturate(1.5) hue-rotate(360deg); }
+  }
+  #veil{
+    position:fixed; inset:0; z-index:-1; pointer-events:none;
+    background:radial-gradient(circle at 50% 38%, rgba(8,8,22,.34), rgba(8,8,22,.72));
+  }
+  @media (prefers-reduced-motion: reduce){
+    #psych{ animation: psychHue 40s linear infinite; }
   }
   h1{
     font-size:clamp(28px,6vw,56px);
@@ -79,6 +109,8 @@
 </style>
 </head>
 <body>
+  <div id="psych"></div>
+  <div id="veil"></div>
   <h1>★ ARCADE RÉTRO ★</h1>
   <div class="sub">Choisis ton jeu — Insert Coin</div>
 
@@ -420,6 +452,62 @@
       <div class="meta">
         <p class="title">Dig Dug</p>
         <p class="tag">Creuser · Arcade</p>
+      </div>
+    </a>
+
+    <!-- Q*BERT -->
+    <a class="card" href="./Qbert/index.html">
+      <div class="year">1982</div>
+      <div class="thumb">
+        <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
+          <rect width="80" height="60" fill="#05050f"/>
+          <!-- pyramide isométrique de cubes -->
+          <g>
+            <!-- helper: chaque cube = dessus losange + 2 faces -->
+            <!-- rangée du bas (3 cubes) -->
+            <g>
+              <g transform="translate(26,42)"><polygon points="0,-5 9,0 0,5 -9,0" fill="#1e63d6"/><polygon points="-9,0 0,5 0,12 -9,7" fill="#6a3fa6"/><polygon points="0,5 9,0 9,7 0,12" fill="#412766"/></g>
+              <g transform="translate(40,42)"><polygon points="0,-5 9,0 0,5 -9,0" fill="#ffce1f"/><polygon points="-9,0 0,5 0,12 -9,7" fill="#6a3fa6"/><polygon points="0,5 9,0 9,7 0,12" fill="#412766"/></g>
+              <g transform="translate(54,42)"><polygon points="0,-5 9,0 0,5 -9,0" fill="#1e63d6"/><polygon points="-9,0 0,5 0,12 -9,7" fill="#6a3fa6"/><polygon points="0,5 9,0 9,7 0,12" fill="#412766"/></g>
+            </g>
+            <!-- rangée du milieu (2 cubes) -->
+            <g>
+              <g transform="translate(33,30)"><polygon points="0,-5 9,0 0,5 -9,0" fill="#ffce1f"/><polygon points="-9,0 0,5 0,12 -9,7" fill="#6a3fa6"/><polygon points="0,5 9,0 9,7 0,12" fill="#412766"/></g>
+              <g transform="translate(47,30)"><polygon points="0,-5 9,0 0,5 -9,0" fill="#1e63d6"/><polygon points="-9,0 0,5 0,12 -9,7" fill="#6a3fa6"/><polygon points="0,5 9,0 9,7 0,12" fill="#412766"/></g>
+            </g>
+            <!-- sommet (1 cube) -->
+            <g transform="translate(40,18)"><polygon points="0,-5 9,0 0,5 -9,0" fill="#ffce1f"/><polygon points="-9,0 0,5 0,12 -9,7" fill="#6a3fa6"/><polygon points="0,5 9,0 9,7 0,12" fill="#412766"/></g>
+          </g>
+          <!-- Q*bert orange sur un cube -->
+          <g transform="translate(33,25)">
+            <!-- pattes -->
+            <ellipse cx="-3" cy="6" rx="2" ry="1.3" fill="#d35f00"/><ellipse cx="3" cy="6" rx="2" ry="1.3" fill="#d35f00"/>
+            <!-- corps -->
+            <circle r="5.5" fill="#ff7a00"/>
+            <!-- grosse trompe -->
+            <path d="M-2,1 L-8,3" stroke="#ff7a00" stroke-width="4" stroke-linecap="round"/>
+            <circle cx="-7.5" cy="2.5" r=".5" fill="#7a2e00"/>
+            <!-- yeux -->
+            <ellipse cx="-1.6" cy="-1.5" rx="2" ry="2.4" fill="#fff"/><ellipse cx="2" cy="-1.5" rx="2" ry="2.4" fill="#fff"/>
+            <circle cx="-2" cy="-1" r=".9" fill="#000"/><circle cx="1.6" cy="-1" r=".9" fill="#000"/>
+            <!-- sourcils fâchés -->
+            <path d="M-4,-4 L-0.5,-2.5 M4,-4 L0.5,-2.5" stroke="#c81000" stroke-width="1.1" stroke-linecap="round"/>
+          </g>
+          <!-- Coily : serpent mauve enroulé -->
+          <g transform="translate(56,34)">
+            <ellipse cy="4" rx="5" ry="2.2" fill="#6a23a0"/><ellipse cy="2.5" rx="5" ry="1.6" fill="#8a2be2"/>
+            <ellipse cy="0" rx="4" ry="2" fill="#6a23a0"/><ellipse cy="-1.3" rx="4" ry="1.4" fill="#8a2be2"/>
+            <circle cy="-6" r="3.6" fill="#8a2be2"/>
+            <circle cx="-1.3" cy="-7" r="1.4" fill="#ffe000"/><circle cx="1.3" cy="-7" r="1.4" fill="#ffe000"/>
+            <circle cx="-1.3" cy="-6.6" r=".6" fill="#000"/><circle cx="1.3" cy="-6.6" r=".6" fill="#000"/>
+            <path d="M-1.6,-4 A1.6 1.6 0 0 0 1.6 -4 Z" fill="#d6188a"/>
+          </g>
+        </svg>
+        <div class="play"><span>▶ JOUER</span></div>
+      </div>
+      <div class="meta">
+        <p class="title">Q*bert</p>
+        <p class="tag">Iso · Arcade</p>
       </div>
     </a>
 

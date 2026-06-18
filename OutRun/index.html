@@ -63,6 +63,11 @@ const COL = {
 
 let segments=[], trackLength=0;
 let cars=[];
+// minicarte du circuit
+const MAP_W=98, MAP_H=74, MAP_PAD=10, MAP_STEP=4;
+let trackPath=null, trackMapPts=[];
+let finishPos=0, finished=false;            // ligne d'arrivée
+let finishGantry=null;                       // portique capté pendant le rendu
 let position, speed, playerX, totalDist, timeLeft, stage, score, nextCP;
 let running=false, paused=false, over=false;
 const keys={};
@@ -122,7 +127,30 @@ function buildTrack(){
     segments[n].sprites.push({offset:side});
     if(Math.random()<0.3) segments[n].sprites.push({offset:-side*1.2});
   }
+  // bande d'arrivée à damier (3 segments) près de la fin du circuit
+  const FB = segments.length - 8;
+  for(let n=0;n<3;n++){ if(segments[FB+n]) segments[FB+n].finish = n; }
+  finishPos = FB*segLength;
   trackLength = segments.length*segLength;
+  buildMinimap();
+}
+
+// forme du circuit vue de dessus : on intègre le cap à partir des courbures
+function buildMinimap(){
+  let h=0, x=0, y=0; const raw=[];
+  for(let i=0;i<segments.length;i++){
+    if(i%MAP_STEP===0) raw.push({x, y, i});
+    x+=Math.sin(h); y-=Math.cos(h);            // y vers le haut = avancer
+    h+=segments[i].curve*0.0018;
+  }
+  let minx=1e9,miny=1e9,maxx=-1e9,maxy=-1e9;
+  raw.forEach(p=>{ minx=Math.min(minx,p.x);maxx=Math.max(maxx,p.x);miny=Math.min(miny,p.y);maxy=Math.max(maxy,p.y); });
+  const bw=Math.max(1,maxx-minx), bh=Math.max(1,maxy-miny);
+  const iw=MAP_W-2*MAP_PAD, ih=MAP_H-2*MAP_PAD, s=Math.min(iw/bw, ih/bh);
+  const ox=MAP_PAD+(iw-bw*s)/2, oy=MAP_PAD+(ih-bh*s)/2;
+  trackMapPts = raw.map(p=>({ x:ox+(p.x-minx)*s, y:oy+(p.y-miny)*s, i:p.i }));
+  trackPath = new Path2D();
+  trackMapPts.forEach((p,k)=> k? trackPath.lineTo(p.x,p.y) : trackPath.moveTo(p.x,p.y));
 }
 
 function spawnTraffic(){
@@ -143,7 +171,7 @@ function newGame(){
   spawnTraffic();
   position=0; speed=0; playerX=0; totalDist=0;
   timeLeft=90; stage=1; score=0; nextCP=6000;
-  over=false; paused=false; running=true;
+  over=false; paused=false; running=true; finished=false;
   hideOverlay();
 }
 
@@ -195,8 +223,16 @@ function update(dt){
     }
   }
 
-  position=(position+speed*dt)%trackLength;
+  position+=speed*dt;
   totalDist+=speed*dt;
+
+  // arrivée : on a franchi la ligne à damier
+  if(position>=finishPos){
+    position=finishPos; finished=true; over=true; running=false;
+    const bonus=Math.floor(timeLeft)*50; score+=bonus;
+    showOverlay('🏁 ARRIVÉE !', 'Bonus temps +'+bonus+'  ·  Score : '+score);
+    return;
+  }
 
   // checkpoints (+temps) et stages
   if(totalDist>nextCP){ timeLeft+=14; stage++; nextCP+=6000+stage*500; }
@@ -218,7 +254,7 @@ function renderSeg(s,p1,p2){
   poly(p1.sx-p1.sw-r1,p1.sy, p1.sx-p1.sw,p1.sy, p2.sx-p2.sw,p2.sy, p2.sx-p2.sw-r2,p2.sy, s.color.rumble);
   poly(p1.sx+p1.sw+r1,p1.sy, p1.sx+p1.sw,p1.sy, p2.sx+p2.sw,p2.sy, p2.sx+p2.sw+r2,p2.sy, s.color.rumble);
   poly(p1.sx-p1.sw,p1.sy, p1.sx+p1.sw,p1.sy, p2.sx+p2.sw,p2.sy, p2.sx-p2.sw,p2.sy, s.color.road);
-  if(s.color.lane){
+  if(s.color.lane && s.finish===undefined){
     const lw1=l1, lw2=l2;
     for(let i=1;i<lanes;i++){
       const lx1=p1.sx - p1.sw + (2*p1.sw*i/lanes);
@@ -226,6 +262,35 @@ function renderSeg(s,p1,p2){
       poly(lx1-lw1/2,p1.sy, lx1+lw1/2,p1.sy, lx2+lw2/2,p2.sy, lx2-lw2/2,p2.sy, s.color.lane);
     }
   }
+  if(s.finish!==undefined) drawFinish(s,p1,p2);
+}
+
+// bande d'arrivée à damier (+ portique sur le segment le plus proche)
+function drawFinish(s,p1,p2){
+  const cols=10;
+  for(let j=0;j<cols;j++){
+    const t0=j/cols, t1=(j+1)/cols;
+    const nlx=interp(p1.sx-p1.sw,p1.sx+p1.sw,t0), nrx=interp(p1.sx-p1.sw,p1.sx+p1.sw,t1);
+    const flx=interp(p2.sx-p2.sw,p2.sx+p2.sw,t0), frx=interp(p2.sx-p2.sw,p2.sx+p2.sw,t1);
+    poly(nlx,p1.sy,nrx,p1.sy,frx,p2.sy,flx,p2.sy, ((j+s.finish)%2)?'#f5f5f5':'#1a1a1a');
+  }
+  // le portique est mémorisé puis dessiné APRÈS la boucle (sinon l'herbe le recouvre)
+  if(s.finish===0) finishGantry={ lx:p1.sx-p1.sw, rx:p1.sx+p1.sw, by:p1.sy, sw:p1.sw };
+}
+
+function drawFinishGantry(g){
+  const ph=Math.min(280, g.sw*1.6);
+  ctx.fillStyle='#cfcfcf';
+  ctx.fillRect(g.lx-4, g.by-ph, 5, ph); ctx.fillRect(g.rx-1, g.by-ph, 5, ph);
+  const bh=Math.max(5, g.sw*0.26), n=Math.max(6, Math.round((g.rx-g.lx)/Math.max(8,bh)));
+  for(let j=0;j<n;j++){
+    const x0=interp(g.lx,g.rx,j/n), x1=interp(g.lx,g.rx,(j+1)/n);
+    ctx.fillStyle=(j%2)?'#1a1a1a':'#f5f5f5'; ctx.fillRect(x0, g.by-ph, x1-x0, bh);
+    ctx.fillStyle=(j%2)?'#f5f5f5':'#1a1a1a'; ctx.fillRect(x0, g.by-ph+bh, x1-x0, bh);
+  }
+  // mot ARRIVÉE sur la banderole
+  ctx.fillStyle='#ff3030'; ctx.font='bold 11px "Courier New",monospace'; ctx.textAlign='center';
+  if(g.sw>40) ctx.fillText('ARRIVÉE', (g.lx+g.rx)/2, g.by-ph+bh*2-3);
 }
 function drawPalm(x,baseY,h){
   const w=h*0.55;
@@ -268,6 +333,7 @@ function render(){
 
   let maxy=H, x=0, dx=-(base.curve*basePct);
   const rendered=[];
+  finishGantry=null;
   for(let n=0;n<drawDistance;n++){
     const s=segments[(base.index+n)%segments.length];
     const looped=s.index<base.index;
@@ -282,6 +348,8 @@ function render(){
     maxy=s.p2.sy; s.vis=true;
     rendered.push(s);
   }
+
+  if(finishGantry) drawFinishGantry(finishGantry);
 
   // sprites (palmiers) — du plus loin au plus proche
   for(let i=rendered.length-1;i>=0;i--){
@@ -317,9 +385,35 @@ function render(){
   drawPlayerCar(W/2 + playerX*8, H-34+bounce);
 
   drawHUD();
+  drawMinimap();
 
   if(paused){ ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(0,0,W,H);
     ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.font='30px "Courier New",monospace'; ctx.fillText('PAUSE',W/2,H/2); }
+}
+
+function drawMinimap(){
+  if(!trackPath || !trackMapPts.length) return;
+  const X=10, Y=H-MAP_H-10;
+  ctx.save();
+  ctx.translate(X,Y);
+  // panneau
+  ctx.fillStyle='rgba(0,0,0,.55)';
+  ctx.strokeStyle='rgba(255,255,255,.45)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.rect(0.5,0.5,MAP_W,MAP_H); ctx.fill(); ctx.stroke();
+  // tracé du circuit
+  ctx.strokeStyle='#ffd23a'; ctx.lineWidth=2; ctx.lineJoin='round'; ctx.lineCap='round';
+  ctx.stroke(trackPath);
+  // repère d'arrivée (damier)
+  const fk=clamp(Math.floor((finishPos/segLength)/MAP_STEP), 0, trackMapPts.length-1);
+  const fp=trackMapPts[fk];
+  ctx.fillStyle='#fff'; ctx.fillRect(fp.x-3,fp.y-3,6,6);
+  ctx.fillStyle='#111'; ctx.fillRect(fp.x-3,fp.y-3,3,3); ctx.fillRect(fp.x,fp.y,3,3);
+  // point de la voiture
+  const k=clamp(Math.floor((position/segLength)/MAP_STEP), 0, trackMapPts.length-1);
+  const p=trackMapPts[k];
+  ctx.fillStyle='#ff3030'; ctx.beginPath(); ctx.arc(p.x,p.y,3.4,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle='#fff'; ctx.lineWidth=1.2; ctx.stroke();
+  ctx.restore();
 }
 
 function drawPlayerCar(x,y){

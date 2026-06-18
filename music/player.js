@@ -82,6 +82,13 @@
 
   function mount() {
     document.head.appendChild(styleEl);
+    // favicon commun (Space Invader) si la page n'en définit pas déjà un
+    if (!document.querySelector('link[rel~="icon"]')) {
+      const fav = document.createElement('link');
+      fav.rel = 'icon'; fav.type = 'image/svg+xml';
+      fav.href = resolveUrl('../favicon.svg');
+      document.head.appendChild(fav);
+    }
     document.body.appendChild(root);
     wire();
   }
