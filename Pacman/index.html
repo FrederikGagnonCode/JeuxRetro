@@ -380,7 +380,7 @@ function update(dt) {
     case 'ready': if (stateT > 2.2) { state = 'play'; stateT = 0; } break;
     case 'play': updatePlay(dt); break;
     case 'dying':
-      if (stateT > 1.7) {
+      if (stateT > 3.0) {
         lives--;
         if (lives <= 0) { state = 'over'; stateT = 0; localStorage.setItem('pacman-hi', hi); }
         else { resetActors(); state = 'ready'; stateT = 0; }
@@ -479,7 +479,7 @@ function draw(t) {
   // Pac-Man
   if (state !== 'over' && state !== 'title' && state !== 'clear') {
     if (state === 'dying') {
-      const o = Math.min(Math.PI, (stateT / 1.4) * Math.PI);
+      const o = Math.min(Math.PI, (stateT / 2.6) * Math.PI);
       if (o < Math.PI - 0.05) drawPac(pac.x, pac.y + TOP, UP, o);
     } else {
       const open = state === 'play' ? (0.08 + 0.45 * Math.abs(Math.sin(t * 14))) : 0.45;

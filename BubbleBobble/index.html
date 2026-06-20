@@ -230,10 +230,12 @@ function update(){
 }
 
 function hit(){
-  if(player.inv>0||over) return;
-  lives--; burst(player.x,player.y-12,'#4ecca3',24);
-  if(lives<=0){ over=true; running=false; if(score>hi)hi=score; showOverlay('GAME OVER','Score : '+score); }
-  else { resetPlayer(); player.inv=110; }
+  if(player.inv>0||over||!running) return;
+  lives--; running=false;
+  ArcadeFX.die(cv, player.x, player.y-12, 'splat', ()=>{
+    if(lives<=0){ over=true; if(score>hi)hi=score; showOverlay('GAME OVER','Score : '+score); }
+    else { resetPlayer(); player.inv=110; running=true; }
+  });
 }
 
 function burst(x,y,color,n){ n=n||12;

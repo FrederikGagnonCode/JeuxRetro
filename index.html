@@ -273,35 +273,47 @@
       <div class="year">1981</div>
       <div class="thumb">
         <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
-          <rect width="80" height="60" fill="#000"/>
-          <!-- poutrelles -->
-          <g fill="#e85d2a">
-            <rect x="6" y="12" width="68" height="3"/>
-            <rect x="6" y="27" width="68" height="3"/>
-            <rect x="6" y="42" width="68" height="3"/>
-            <rect x="6" y="55" width="68" height="3"/>
+          <defs><linearGradient id="dkbg" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#070a1c"/><stop offset="0.5" stop-color="#12245a"/><stop offset="1" stop-color="#05060f"/>
+          </linearGradient></defs>
+          <rect width="80" height="60" fill="url(#dkbg)"/>
+          <!-- poutrelles INCLINÉES rose-rouge -->
+          <g stroke="#d23b5c" stroke-width="3">
+            <line x1="6" y1="13" x2="74" y2="16"/>
+            <line x1="6" y1="31" x2="74" y2="27"/>
+            <line x1="6" y1="44" x2="74" y2="48"/>
+            <line x1="6" y1="58" x2="74" y2="58"/>
           </g>
-          <!-- échelles -->
+          <!-- échelles (dont une coupée) -->
           <g stroke="#5ad1e8" stroke-width=".8">
-            <line x1="20" y1="15" x2="20" y2="27"/><line x1="23" y1="15" x2="23" y2="27"/>
-            <line x1="55" y1="30" x2="55" y2="42"/><line x1="58" y1="30" x2="58" y2="42"/>
-            <line x1="28" y1="45" x2="28" y2="55"/><line x1="31" y1="45" x2="31" y2="55"/>
+            <line x1="20" y1="14" x2="20" y2="30"/><line x1="23" y1="14" x2="23" y2="30"/>
+            <line x1="55" y1="28" x2="55" y2="44"/><line x1="58" y1="28" x2="58" y2="44"/>
+            <line x1="30" y1="45" x2="30" y2="48"/><line x1="30" y1="53" x2="30" y2="58"/>
+            <line x1="33" y1="45" x2="33" y2="48"/><line x1="33" y1="53" x2="33" y2="58"/>
           </g>
-          <!-- DK en haut -->
-          <g transform="translate(56,12)">
-            <rect x="-6" y="-9" width="12" height="9" fill="#6d4322"/>
-            <rect x="-4" y="-6" width="8" height="4" fill="#c79a6b"/>
+          <!-- tas de tonneaux + DK -->
+          <ellipse cx="44" cy="11" rx="3" ry="2.6" fill="#a9621f"/><ellipse cx="50" cy="11" rx="3" ry="2.6" fill="#a9621f"/>
+          <g transform="translate(60,9)">
+            <rect x="-6" y="-9" width="12" height="9" fill="#7a4a1e"/>
+            <rect x="-4" y="-6" width="8" height="4" fill="#d2a878"/>
+            <rect x="-5" y="-9" width="10" height="1.5" fill="#4f3010"/>
           </g>
           <!-- Pauline -->
-          <g transform="translate(20,12)"><rect x="-2" y="-7" width="4" height="5" fill="#ff4fa3"/><rect x="-1.5" y="-10" width="3" height="3" fill="#ffd54f"/></g>
-          <!-- tonneaux -->
-          <ellipse cx="40" cy="24" rx="3.4" ry="3" fill="#a9621f"/>
-          <ellipse cx="60" cy="39" rx="3.4" ry="3" fill="#a9621f"/>
+          <g transform="translate(20,12)"><rect x="-2" y="-7" width="4" height="5" fill="#ff3b8d"/><rect x="-1.5" y="-10" width="3" height="3" fill="#ffd54f"/></g>
+          <!-- tonneau qui roule -->
+          <ellipse cx="40" cy="25" rx="3.4" ry="3" fill="#a9621f"/>
+          <!-- baril d'huile en flammes (bas-gauche) -->
+          <g transform="translate(11,58)">
+            <rect x="-5" y="-9" width="10" height="9" fill="#1f4fd0"/>
+            <path d="M-3,-9 Q-2,-13 -1,-9 M0,-9 Q1,-14 2,-9 M2,-9 Q3,-12 4,-9" fill="#ff3b00"/>
+          </g>
+          <!-- boule de feu -->
+          <g transform="translate(46,41)"><circle r="2.6" fill="#ffb000"/><circle cy="1" r="1.6" fill="#ff6a00"/></g>
           <!-- Jumpman en bas -->
-          <g transform="translate(40,55)">
-            <rect x="-3" y="-5" width="6" height="3" fill="#e53935"/>
-            <rect x="-3" y="-2" width="6" height="2" fill="#1e88e5"/>
-            <rect x="-2" y="-8" width="4" height="3" fill="#e53935"/>
+          <g transform="translate(26,58)">
+            <rect x="-3" y="-8" width="6" height="2" fill="#e53935"/>
+            <rect x="-3" y="-6" width="6" height="2" fill="#f0c090"/>
+            <rect x="-3" y="-4" width="6" height="4" fill="#1e5fd0"/>
           </g>
         </svg>
         <div class="play"><span>▶ JOUER</span></div>
@@ -511,6 +523,38 @@
       </div>
     </a>
 
+    <!-- 1942 -->
+    <a class="card" href="./1942/index.html">
+      <div class="year">1984</div>
+      <div class="thumb">
+        <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
+          <rect width="80" height="60" fill="#1d6ea8"/>
+          <!-- moutons d'écume -->
+          <g fill="rgba(255,255,255,.14)"><ellipse cx="16" cy="14" rx="7" ry="3"/><ellipse cx="60" cy="26" rx="8" ry="3"/><ellipse cx="34" cy="44" rx="6" ry="2.5"/></g>
+          <!-- île -->
+          <g><ellipse cx="64" cy="48" rx="9" ry="6" fill="#caa86a"/><ellipse cx="64" cy="48" rx="5" ry="3" fill="#3aa03a"/></g>
+          <!-- avions ennemis (nez vers le bas) -->
+          <g transform="translate(24,16)" fill="#d83a3a"><polygon points="0,5 3,-4 -3,-4"/><rect x="-7" y="-2" width="14" height="3"/></g>
+          <g transform="translate(44,12)" fill="#9aa3ad"><polygon points="0,5 3,-4 -3,-4"/><rect x="-7" y="-2" width="14" height="3"/></g>
+          <!-- tirs -->
+          <rect x="39.2" y="34" width="1.6" height="5" fill="#fff"/>
+          <rect x="39.2" y="26" width="1.6" height="5" fill="#fff"/>
+          <!-- chasseur joueur (nez vers le haut) -->
+          <g transform="translate(40,48)">
+            <polygon points="0,-8 4,4 -4,4" fill="#dfe6ee"/>
+            <rect x="-9" y="-1" width="18" height="3" fill="#b9c4cf"/>
+            <rect x="-4" y="4" width="8" height="2" fill="#b9c4cf"/>
+            <rect x="-1" y="-4" width="2" height="3" fill="#2b6db0"/>
+          </g>
+        </svg>
+        <div class="play"><span>▶ JOUER</span></div>
+      </div>
+      <div class="meta">
+        <p class="title">1942</p>
+        <p class="tag">Shoot'em up · Arcade</p>
+      </div>
+    </a>
+
     <!-- OUT RUN -->
     <a class="card" href="./OutRun/index.html">
       <div class="year">1986</div>
@@ -594,6 +638,46 @@
       <div class="meta">
         <p class="title">Bubble Bobble</p>
         <p class="tag">Plateforme · Arcade</p>
+      </div>
+    </a>
+
+    <!-- GOLDEN AXE -->
+    <a class="card" href="./GoldenAxe/index.html">
+      <div class="year">1989</div>
+      <div class="thumb">
+        <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
+          <!-- ciel crépusculaire -->
+          <defs><linearGradient id="gax" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#3a1a40"/><stop offset="1" stop-color="#c0562a"/>
+          </linearGradient></defs>
+          <rect width="80" height="38" fill="url(#gax)"/>
+          <circle cx="40" cy="30" r="9" fill="#ffd27a"/>
+          <!-- montagnes -->
+          <g fill="#5a2f22"><polygon points="0,38 14,20 28,38"/><polygon points="26,38 40,16 54,38"/><polygon points="52,38 66,22 80,38"/></g>
+          <!-- sol -->
+          <rect y="38" width="80" height="22" fill="#6b4a26"/><rect y="38" width="80" height="2" fill="#7d5a30"/>
+          <!-- barbare (joueur) -->
+          <g transform="translate(26,50)">
+            <rect x="-4" y="-10" width="8" height="9" fill="#d9a066"/>
+            <rect x="-3" y="-15" width="6" height="6" fill="#e8b888"/>
+            <rect x="-4" y="-16" width="8" height="2" fill="#b0b0c0"/>
+            <rect x="-4" y="-1" width="3" height="6" fill="#6b4a2a"/><rect x="1" y="-1" width="3" height="6" fill="#6b4a2a"/>
+            <line x1="4" y1="-9" x2="13" y2="-16" stroke="#e8e8f0" stroke-width="2"/>
+          </g>
+          <!-- ennemi vert -->
+          <g transform="translate(56,52)">
+            <rect x="-4" y="-9" width="8" height="8" fill="#5a8f3a"/>
+            <rect x="-3" y="-14" width="6" height="5" fill="#a8d080"/>
+            <rect x="-3" y="0" width="2" height="5" fill="#333"/><rect x="1" y="0" width="2" height="5" fill="#333"/>
+            <circle cx="-9" cy="-12" r="2.4" fill="#8a5a2a"/>
+            <line x1="-3" y1="-8" x2="-9" y2="-12" stroke="#5a8f3a" stroke-width="2"/>
+          </g>
+        </svg>
+        <div class="play"><span>▶ JOUER</span></div>
+      </div>
+      <div class="meta">
+        <p class="title">Golden Axe</p>
+        <p class="tag">Beat'em up · Arcade</p>
       </div>
     </a>
 

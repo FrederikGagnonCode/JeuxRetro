@@ -358,15 +358,17 @@ function checkHazards(){
 }
 
 function loseLife(){
-  if (over) return;
-  lives--;
-  burst(player.px, player.py, '#4ecca3', 26);
-  if (lives<=0){ over=true; running=false; showOverlay('GAME OVER','Score : '+score); }
-  else {
-    player.col=6; player.row=0; player.px=cx(6); player.py=cy(0);
-    player.moving=false; player.facing='down'; harpoon=null;
-    for (let r=0;r<4;r++) grid[r][6]=0;
-  }
+  if (over||!running) return;
+  lives--; running=false;
+  ArcadeFX.die(cv, player.px, player.py-10, 'splat', ()=>{
+    if (lives<=0){ over=true; showOverlay('GAME OVER','Score : '+score); }
+    else {
+      player.col=6; player.row=0; player.px=cx(6); player.py=cy(0);
+      player.moving=false; player.facing='down'; harpoon=null;
+      for (let r=0;r<4;r++) grid[r][6]=0;
+      running=true;
+    }
+  });
 }
 
 // particules

@@ -219,11 +219,14 @@ function landEnemy(e){
 }
 
 function loseLife(){
-  if(over) return;
-  lives--; burst(player.x,player.y,'#ff8a3d',26);
-  if(lives<=0){ over=true; running=false; if(score>hi)hi=score; showOverlay('GAME OVER','Score : '+score); return; }
-  resetPlayer(); player.inv=70;                 // respawn en haut, bref invincibilité
-  enemies=[]; coilyAlive=false; coilyT=Math.max(120, 300-level*20);
+  if(over||!running) return;
+  lives--; running=false;
+  ArcadeFX.die(cv, player.x, player.y, 'fall', ()=>{
+    if(lives<=0){ over=true; if(score>hi)hi=score; showOverlay('GAME OVER','Score : '+score); return; }
+    resetPlayer(); player.inv=70;                 // respawn en haut, bref invincibilité
+    enemies=[]; coilyAlive=false; coilyT=Math.max(120, 300-level*20);
+    running=true;
+  });
 }
 
 function burst(x,y,color,n){ n=n||12;

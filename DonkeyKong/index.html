@@ -48,49 +48,84 @@ const overlay = document.getElementById('overlay');
 const ovTitle = document.getElementById('ovTitle');
 
 const X1 = 30, X2 = 410;
-// poutrelles (ligne des pieds), du haut vers le bas
-const PY = [120, 192, 264, 336, 408, 470];
-const platforms = PY.map(y=>({x1:X1, x2:X2, y}));
-const TOP = platforms[0], BOTTOM = platforms[platforms.length-1];
-
-// échelles : relient platforms[i] (haut) et platforms[i+1] (bas)
-const ladderDefs = [
-  [0,320],[0,200],
-  [1,90],[1,360],
-  [2,350],[2,150],
-  [3,100],[3,380],
-  [4,370],[4,210]
-];
-const ladders = ladderDefs.map(([i,x])=>({x, yTop:platforms[i].y, yBottom:platforms[i+1].y}));
-
-const dk = { x:330, y:TOP.y, arm:0, throwT:90 };
-const pauline = { x:140, y:TOP.y };
-
-// marteaux à ramasser : suspendus en l'air au-dessus d'une poutrelle → il faut sauter
+const PY = [120, 192, 264, 336, 408, 470];   // hauteurs des poutrelles (bord gauche)
 const HAMMER_LIFT = 46;
-const hammerDefs = [ {x:250, y:platforms[3].y-HAMMER_LIFT}, {x:190, y:platforms[1].y-HAMMER_LIFT} ];
-let hammers = [];
+
+let platforms, ladders, hammerDefs, TOP, BOTTOM;
+let oilX, oilPlat, marioStartX, girderCol, levelBarrels, levelPies;
+const dk = { x:330, y:0, arm:0, throwT:90 };
+const pauline = { x:140, y:0 };
+let hammers = [], fireballs = [], pies = [], oilT = 180, pieT = 90;
+
+function platY(p,x){ const xx = x<p.x1?p.x1 : (x>p.x2?p.x2:x); return p.y + p.slope*(xx-p.x1); }
+function platformAt(x, prevFeet, feet){
+  let best=null;
+  for(const p of platforms){ if(x>=p.x1 && x<=p.x2){ const py=platY(p,x);
+    if(prevFeet<=py+1 && feet>=py && (!best || py<best.py)) best={p,py}; } }
+  return best;
+}
+
+// ── définition des niveaux (le jeu boucle dessus) ──
+const LEVELS = [
+  { // niveau 1 — poutrelles inclinées (rose-rouge) + tonneaux
+    slopes:[0.02,-0.02,0.02,-0.02,0.02,0], belts:[0,0,0,0,0,0], gird:'#d23b5c',
+    barrels:true, pies:false,
+    ladders:[[0,320,0],[0,200,0],[1,90,0],[1,360,1],[2,350,0],[2,150,1],[3,100,0],[3,380,0],[4,370,1],[4,210,0]],
+    hammers:[[3,250],[1,190]], oilIdx:5, oilX:52, dkx:330, paulinex:140, mariox:80 },
+  { // niveau 2 — usine à tartes : tapis roulants + plats, pas de tonneaux, boules de feu lentes
+    slopes:[0,0,0,0,0,0], belts:[0,1,-1,1,-1,0], gird:'#3aa84a',
+    barrels:false, pies:true,
+    ladders:[[0,300,0],[0,150,0],[1,70,0],[1,220,0],[1,355,0],[2,110,0],[2,250,0],[2,360,0],[3,80,0],[3,205,0],[3,330,0],[4,150,0],[4,330,0]],
+    hammers:[[3,250],[1,90]], oilIdx:2, oilX:220, dkx:330, paulinex:170, mariox:70 },
+];
+
+function buildLevel(lvl){
+  const L = LEVELS[(lvl-1) % LEVELS.length];
+  platforms = PY.map((y,i)=>({x1:X1, x2:X2, y, slope:L.slopes[i], belt:(L.belts?L.belts[i]:0), beltCd:0}));
+  TOP = platforms[0]; BOTTOM = platforms[platforms.length-1];
+  levelBarrels = L.barrels; levelPies = L.pies;
+  ladders = L.ladders.map(([i,x,broken])=>{
+    const top=platforms[i], bot=platforms[i+1];
+    const yTop=platY(top,x), yBottom=platY(bot,x);
+    return { x, yTop, yBottom, topPlat:top, botPlat:bot, broken:!!broken, gapY:yBottom-(yBottom-yTop)*0.45 };
+  });
+  hammerDefs = L.hammers.map(([i,x])=>({x, y:platY(platforms[i],x)-HAMMER_LIFT}));
+  oilPlat = platforms[L.oilIdx]; oilX = L.oilX; girderCol = L.gird; marioStartX = L.mariox;
+  dk.x=L.dkx; dk.y=platY(TOP,L.dkx)-2; dk.arm=0; dk.throwT=90;
+  pauline.x=L.paulinex; pauline.y=platY(TOP,L.paulinex);
+}
+buildLevel(1);
 
 const WALK=2.2, CLIMB=2.0, G=0.6, JUMP=8;
 const HAMMER_T=300, HAMMER_RESPAWN=900;
 let player, barrels, parts;
 let score=0, lives=3, level=1, hi=0;
+let bonus=5000, bonusT=0;
 let running=false, paused=false, over=false, won=false;
 const keys={};
 
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 
 function resetPlayer(){
-  player = { x:80, y:BOTTOM.y, baseY:BOTTOM.y, vy:0, onGround:true,
-             climbing:false, lad:null, facing:1, inv:0, walkT:0, hammer:0 };
+  const sx=marioStartX, sy=platY(BOTTOM,sx);
+  player = { x:sx, y:sy, baseY:sy, vy:0, onGround:true,
+             plat:BOTTOM, climbing:false, lad:null, facing:1, inv:0, walkT:0, hammer:0 };
 }
 function newGame(){
-  score=0; lives=3; level=1;
-  resetPlayer(); barrels=[]; parts=[];
+  score=0; lives=3; level=1; bonus=5000; bonusT=0;
+  buildLevel(1);
+  resetPlayer(); barrels=[]; parts=[]; fireballs=[]; oilT=180; placePies();
   hammers = hammerDefs.map(d=>({x:d.x, y:d.y, taken:false, respawn:0}));
-  dk.throwT=90; dk.arm=0;
   over=false; won=false; paused=false; running=true;
   hideOverlay();
+}
+// passe au niveau suivant en sauvant Pauline
+function nextLevel(){
+  level++; score += 800 + bonus;
+  buildLevel(level);
+  resetPlayer(); barrels=[]; fireballs=[]; oilT=180; bonus=5000; bonusT=0; placePies();
+  hammers = hammerDefs.map(d=>({x:d.x, y:d.y, taken:false, respawn:0}));
+  floatText(W/2, H/2, 'NIVEAU '+level+' !');
 }
 
 function showOverlay(title, sub){
@@ -126,11 +161,25 @@ function updatePlayer(){
 
   if (player.climbing){
     const lad = player.lad;
+    const topLimit = lad.broken ? lad.gapY : lad.yTop;   // échelle coupée : bloqué au trou
+    // sortir de l'échelle en appuyant ← ou → → rejoint la plateforme la plus proche
+    if (keys['arrowleft'] || keys['arrowright']){
+      if (Math.abs(player.y-lad.yBottom) <= Math.abs(player.y-lad.yTop)){
+        player.plat=lad.botPlat; player.y=player.baseY=lad.yBottom;
+      } else {
+        player.plat=lad.topPlat; player.y=player.baseY=lad.yTop;
+      }
+      player.climbing=false; player.onGround=true; checkWin(); return;
+    }
     if (keys['arrowup']){ player.y -= CLIMB; player.walkT++; }
     if (keys['arrowdown']){ player.y += CLIMB; player.walkT++; }
     player.x = lad.x;
-    if (player.y <= lad.yTop){ player.y=lad.yTop; player.baseY=lad.yTop; player.climbing=false; player.onGround=true; }
-    else if (player.y >= lad.yBottom){ player.y=lad.yBottom; player.baseY=lad.yBottom; player.climbing=false; player.onGround=true; }
+    if (player.y <= topLimit){
+      if (lad.broken){ player.y = topLimit; }            // on ne passe pas le trou
+      else { player.y=lad.yTop; player.baseY=lad.yTop; player.plat=lad.topPlat; player.climbing=false; player.onGround=true; }
+    } else if (player.y >= lad.yBottom){
+      player.y=lad.yBottom; player.baseY=lad.yBottom; player.plat=lad.botPlat; player.climbing=false; player.onGround=true;
+    }
     checkWin();
     return;
   }
@@ -139,9 +188,16 @@ function updatePlayer(){
   if (keys['arrowright']){ player.x+=WALK; player.facing=1; player.walkT++; }
   player.x = clamp(player.x, X1, X2);
 
+  // au sol : suit la pente de la poutrelle
+  if (player.onGround && player.plat){ player.y = platY(player.plat, player.x); player.baseY = player.y; }
+  // tapis roulant : pousse le joueur
+  if (player.onGround && player.plat && player.plat.belt){
+    player.x = clamp(player.x + player.plat.belt*0.9, X1, X2);
+  }
+
   // ramasser un marteau : suspendu en l'air → seul le corps en plein saut l'atteint
   if (player.hammer<=0){
-    const bodyY = player.y - 12;                 // centre du corps (player.y = pieds)
+    const bodyY = player.y - 12;
     for (const h of hammers){
       if (!h.taken && Math.abs(h.x-player.x)<16 && Math.abs(h.y-bodyY)<16){
         h.taken=true; h.respawn=HAMMER_RESPAWN; player.hammer=HAMMER_T;
@@ -150,79 +206,90 @@ function updatePlayer(){
     }
   }
 
-  // avec le marteau : ni saut ni échelle
-  if (player.onGround && player.hammer<=0){
-    // monter une échelle ?
+  // monter/descendre une échelle — PAS si on marche (←/→ prioritaires) ni avec le marteau
+  if (player.onGround && player.hammer<=0 && !keys['arrowleft'] && !keys['arrowright']){
     if (keys['arrowup']){
-      const lad = ladders.find(l=>Math.abs(l.x-player.x)<14 && Math.abs(l.yBottom-player.baseY)<6);
+      const lad = ladders.find(l=>!l.broken && Math.abs(l.x-player.x)<14 && Math.abs(l.yBottom-player.baseY)<8);
       if (lad){ player.climbing=true; player.lad=lad; return; }
     }
-    // descendre une échelle ?
     if (keys['arrowdown']){
-      const lad = ladders.find(l=>Math.abs(l.x-player.x)<14 && Math.abs(l.yTop-player.baseY)<6);
+      const lad = ladders.find(l=>!l.broken && Math.abs(l.x-player.x)<14 && Math.abs(l.yTop-player.baseY)<8);
       if (lad){ player.climbing=true; player.lad=lad; player.y+=2; return; }
     }
   }
+
+  // EN PLEIN SAUT : on peut attraper une échelle (sauf les coupées)
+  if (!player.onGround && player.hammer<=0 && (keys['arrowup']||keys['arrowdown'])){
+    const lad = ladders.find(l=>!l.broken && Math.abs(l.x-player.x)<14 &&
+      player.y > l.yTop-6 && player.y < l.yBottom+6);
+    if (lad){ player.climbing=true; player.lad=lad; player.x=lad.x; player.vy=0; return; }
+  }
+
   if (!player.onGround){
     player.vy += G;
     player.y += player.vy;
-    if (player.vy>=0 && player.y>=player.baseY){
-      player.y=player.baseY; player.vy=0; player.onGround=true;
+    const gy = platY(player.plat, player.x);     // on retombe sur sa poutrelle
+    if (player.vy>=0 && player.y>=gy){
+      player.y=gy; player.baseY=gy; player.vy=0; player.onGround=true;
     }
   }
   checkWin();
 }
 
 function checkWin(){
-  if (player.baseY===TOP.y && Math.abs(player.x-pauline.x)<26 && !player.climbing){
-    won=true; over=true; running=false;
-    score += 800;
-    showOverlay('GAGNÉ ! 🎉', 'Pauline est sauvée ! Score : '+score);
+  if (player.plat===TOP && Math.abs(player.x-pauline.x)<26 && !player.climbing){
+    nextLevel();                                   // Pauline sauvée → niveau suivant
   }
 }
 
 function hit(){
-  if (player.inv>0 || over) return;
-  lives--;
-  burst(player.x, player.y-14, '#ff5252', 22);
-  if (lives<=0){ over=true; running=false; if(score>hi)hi=score; showOverlay('GAME OVER','Score : '+score); }
-  else { resetPlayer(); player.inv=90; }
+  if (player.inv>0 || over || !running) return;
+  lives--; running=false;
+  ArcadeFX.die(cv, player.x, player.y-14, 'fall', ()=>{
+    barrels=[]; fireballs=[]; pies=[];        // on efface tonneaux, boules de feu et tartes
+    if (lives<=0){ over=true; if(score>hi)hi=score; showOverlay('GAME OVER','Score : '+score); }
+    else { resetPlayer(); player.inv=90; placePies(); running=true; }
+  });
 }
 
 // ---- tonneaux ----
 function spawnBarrel(){
-  barrels.push({ x:dk.x-14, y:TOP.y, vx:1.6, vy:0, plat:TOP, air:false, jumped:false });
+  barrels.push({ x:dk.x-14, y:platY(TOP,dk.x-14), dir:1, vy:0, plat:TOP, air:false, jumped:false });
 }
 function updateBarrels(){
-  // DK lance des tonneaux
-  dk.throwT--;
+  // DK lance des tonneaux (seulement aux niveaux à tonneaux)
   if (dk.arm>0) dk.arm--;
-  if (dk.throwT<=0){
-    spawnBarrel(); dk.arm=18;
-    dk.throwT = 110 + Math.random()*90 - level*8;
+  if (levelBarrels){
+    dk.throwT--;
+    if (dk.throwT<=0){
+      spawnBarrel(); dk.arm=18;
+      dk.throwT = 110 + Math.random()*90 - level*8;
+    }
   }
 
   barrels.forEach(b=>{
     if (b.air){
-      // CHUTE : ne peut atterrir que sur une poutrelle strictement plus basse
-      b.vy += G;
-      b.y += b.vy;
+      // CHUTE : atterrit sur la poutrelle strictement plus basse
+      b.vy += G; b.y += b.vy;
       for (const p of platforms){
-        if (p.y > b.fromY && b.x>=p.x1-6 && b.x<=p.x2+6 && b.y>=p.y && (b.y-b.vy)<=p.y+2){
-          b.y=p.y; b.vy=0; b.air=false; b.plat=p;
-          b.x = clamp(b.x, p.x1+1, p.x2-1);           // recale sur la poutrelle
-          b.vx = -Math.sign(b.vx||1)*(1.4+Math.random()*0.5); // zigzag : repart en sens inverse
+        const py=platY(p,b.x);
+        if (py > b.fromY+4 && b.x>=p.x1-6 && b.x<=p.x2+6 && b.y>=py && (b.y-b.vy)<=py+2){
+          b.y=py; b.vy=0; b.air=false; b.plat=p; b.x=clamp(b.x,p.x1+1,p.x2-1);
+          if (p.slope===0) b.dir = -(b.dir||1);    // poutrelle plate : zigzag (inverse à chaque chute)
           break;
         }
       }
     } else {
-      // ROULE le long de la poutrelle
-      b.x += b.vx;
+      // ROULE vers le bas de la pente
+      const dir = b.plat.slope>0?1 : (b.plat.slope<0?-1 : (b.dir||1));
+      b.dir=dir;
+      b.x += dir*(1.5 + Math.abs(b.plat.slope)*9);
+      b.y = platY(b.plat, b.x);
       if (b.x < b.plat.x1 || b.x > b.plat.x2){
-        b.air=true; b.fromY=b.plat.y; b.plat=null; b.vy=0;     // bascule au bord
-      } else if (Math.random()<0.006){
-        const down = ladders.find(l=>Math.abs(l.x-b.x)<10 && Math.abs(l.yTop-b.plat.y)<6);
-        if (down){ b.air=true; b.fromY=b.plat.y; b.plat=null; b.vy=0; } // descend par l'échelle
+        b.air=true; b.fromY=platY(b.plat, clamp(b.x,b.plat.x1,b.plat.x2)); b.plat=null; b.vy=0;
+      } else if (Math.random()<0.005){
+        const down = ladders.find(l=>!l.broken && Math.abs(l.x-b.x)<10 && Math.abs(l.yTop-platY(b.plat,b.x))<8);
+        if (down){ b.air=true; b.fromY=platY(b.plat,b.x); b.plat=null; b.vy=0; }
       }
     }
 
@@ -259,39 +326,153 @@ function burst(x,y,color,n){ n=n||14;
 let floats=[];
 function floatText(x,y,txt){ floats.push({x,y,txt,life:40}); }
 
+// ---- boules de feu (sortent du baril d'huile, grimpent vers le joueur) ----
+function spawnFireball(){
+  if (fireballs.length>=3) return;
+  fireballs.push({ x:oilX, y:platY(oilPlat,oilX), plat:oilPlat, dir:Math.random()<.5?-1:1,
+    climbing:false, lad:null, climbDir:0, walkT:0 });
+}
+function updateFireballs(){
+  oilT--;
+  if (oilT<=0){ spawnFireball(); oilT = 220 + Math.random()*200 - level*10; }
+  fireballs.forEach(f=>{
+    f.walkT++;
+    const fspd = levelPies ? 0.55 : 1.0;             // boules de feu lentes au niveau 2
+    if (f.climbing){
+      f.y += f.climbDir*fspd*1.5; f.x = f.lad.x;
+      if (f.climbDir<0 && f.y<=f.lad.yTop){ f.y=f.lad.yTop; f.plat=f.lad.topPlat; f.climbing=false; }
+      else if (f.climbDir>0 && f.y>=f.lad.yBottom){ f.y=f.lad.yBottom; f.plat=f.lad.botPlat; f.climbing=false; }
+    } else {
+      f.x += f.dir*fspd;
+      if (f.x<X1+8){ f.x=X1+8; f.dir=1; } else if (f.x>X2-8){ f.x=X2-8; f.dir=-1; }
+      f.y = platY(f.plat, f.x);
+      if (Math.random()<0.025){
+        const up = player.y < f.y-24;
+        const lad = ladders.find(l=>!l.broken && Math.abs(l.x-f.x)<12 &&
+          (up ? Math.abs(l.yBottom-f.y)<8 : Math.abs(l.yTop-f.y)<8));
+        if (lad){ f.climbing=true; f.lad=lad; f.climbDir=up?-1:1; }
+        else if (Math.random()<0.3) f.dir*=-1;
+      }
+    }
+    // marteau : détruit la boule de feu
+    if (player.hammer>0 && Math.abs(f.x-player.x)<22 && Math.abs((f.y-10)-(player.y-14))<22){
+      f.dead=true; score+=500; burst(f.x,f.y-10,'#ff8a3d'); floatText(f.x,f.y-24,'+500');
+    } else if (player.inv<=0 && Math.abs(f.x-player.x)<13 && Math.abs(f.y-player.y)<18){
+      hit();
+    }
+  });
+  fireballs = fireballs.filter(f=>!f.dead);
+}
+
+// ---- tartes/plats : déjà posées sur les tapis, elles oscillent ; le tapis
+//      s'inverse quand une tarte arrive à un bout ----
+function placePies(){
+  pies = [];
+  if (!levelPies) return;
+  platforms.forEach(p=>{
+    if (!p.belt) return;
+    for (let k=0;k<2;k++){
+      const x = p.x1 + (p.x2-p.x1)*(0.32 + 0.40*k);
+      pies.push({ x, y:platY(p,x), plat:p, jumped:false });
+    }
+  });
+}
+function updatePies(){
+  if (!levelPies) return;
+  platforms.forEach(p=>{ if(p.beltCd>0) p.beltCd--; });
+  pies.forEach(pe=>{
+    const p = pe.plat;
+    pe.x += p.belt*0.8;
+    pe.y = platY(p, pe.x);
+    // une tarte au bout (dans le sens du tapis) → inverse le tapis
+    if (p.belt>0 && pe.x >= p.x2-12){ pe.x=p.x2-12; if(p.beltCd<=0){ p.belt=-1; p.beltCd=18; } }
+    else if (p.belt<0 && pe.x <= p.x1+12){ pe.x=p.x1+12; if(p.beltCd<=0){ p.belt=1; p.beltCd=18; } }
+    pe.jumped = (player.onGround) ? false : pe.jumped;
+    // marteau : détruit la tarte ; sinon contact = mort, saut par-dessus = +100
+    if (player.hammer>0 && Math.abs(pe.x-player.x)<24 && Math.abs((pe.y-8)-(player.y-14))<20){
+      pe.dead=true; score+=300; burst(pe.x,pe.y-8,'#ffd23a'); floatText(pe.x,pe.y-22,'+300');
+    } else if (Math.abs(pe.x-player.x)<15){
+      if (player.y <= pe.y-16){
+        if (!pe.jumped && !player.onGround){ pe.jumped=true; score+=100; floatText(player.x,player.y-30,'+100'); }
+      } else if (player.inv<=0 && player.y > pe.y-20 && player.y < pe.y+8){ hit(); }
+    }
+  });
+  pies = pies.filter(pe=>!pe.dead);
+}
+
 function update(){
   if (!running||paused||over) return;
   updatePlayer();
   updateBarrels();
+  updateFireballs();
+  updatePies();
   parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=0.15;p.life--;});
   parts=parts.filter(p=>p.life>0);
   floats.forEach(f=>{f.y-=0.6;f.life--;});
   floats=floats.filter(f=>f.life>0);
+  // décompte du bonus (façon arcade)
+  bonusT++; if(bonusT>=85){ bonusT=0; bonus=Math.max(0, bonus-100); }
 }
 
 // ---- rendu ----
 function draw(){
-  ctx.clearRect(0,0,W,H);
+  // fond bleu nuit dégradé (comme l'arcade)
+  ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H);
+  const bg=ctx.createLinearGradient(0,HUD,0,H);
+  bg.addColorStop(0,'#070a1c'); bg.addColorStop(0.5,'#12245a'); bg.addColorStop(1,'#05060f');
+  ctx.fillStyle=bg; ctx.fillRect(0,HUD,W,H-HUD);
 
-  // poutrelles
+  // poutrelles INCLINÉES à treillis rose-rouge
   platforms.forEach(p=>{
-    ctx.fillStyle='#e85d2a';
-    ctx.fillRect(p.x1, p.y, p.x2-p.x1, 8);
-    ctx.fillStyle='#ff8a5c';
-    ctx.fillRect(p.x1, p.y, p.x2-p.x1, 2);
-    ctx.fillStyle='#7a2e10';
-    for (let x=p.x1+6; x<p.x2; x+=20){ ctx.fillRect(x, p.y+3, 3, 3); }
+    const yL=platY(p,p.x1), yR=platY(p,p.x2);
+    ctx.save();
+    ctx.translate(p.x1, yL);
+    ctx.rotate(Math.atan2(yR-yL, p.x2-p.x1));
+    const len=Math.hypot(p.x2-p.x1, yR-yL);
+    ctx.fillStyle=girderCol; ctx.fillRect(0,0,len,8);
+    ctx.fillStyle='rgba(255,255,255,.35)'; ctx.fillRect(0,0,len,2);
+    ctx.fillStyle='rgba(0,0,0,.35)'; ctx.fillRect(0,7,len,1.5);
+    if (p.belt){
+      // tapis roulant : chevrons qui défilent dans le sens du tapis
+      const off = ((performance.now()*0.05*p.belt) % 16 + 16) % 16;
+      ctx.save(); ctx.beginPath(); ctx.rect(0,0,len,8); ctx.clip();
+      ctx.strokeStyle='rgba(0,0,0,.45)'; ctx.lineWidth=2; ctx.lineCap='round';
+      for (let x=off-16; x<len+16; x+=16){
+        ctx.beginPath(); ctx.moveTo(x,2); ctx.lineTo(x+5*p.belt,4); ctx.lineTo(x,6); ctx.stroke();
+      }
+      ctx.restore();
+    } else {
+      ctx.strokeStyle='rgba(0,0,0,.4)'; ctx.lineWidth=1.4; ctx.beginPath();
+      let up=true;
+      for (let x=0;x<=len;x+=10){ const yy=up?2.5:7; if(x===0)ctx.moveTo(x,yy);else ctx.lineTo(x,yy); up=!up; }
+      ctx.stroke();
+      ctx.fillStyle='rgba(255,255,255,.5)';
+      for (let x=5;x<len;x+=24){ ctx.fillRect(x,1,1.5,1.5); ctx.fillRect(x,5.5,1.5,1.5); }
+    }
+    ctx.restore();
   });
 
-  // échelles
+  drawOilDrum();
+  if (levelBarrels) drawBarrelStack();
+
+  // échelles (les coupées ont un trou)
   ladders.forEach(l=>{
     ctx.strokeStyle='#5ad1e8'; ctx.lineWidth=2;
-    ctx.beginPath();
-    ctx.moveTo(l.x-6, l.yTop); ctx.lineTo(l.x-6, l.yBottom);
-    ctx.moveTo(l.x+6, l.yTop); ctx.lineTo(l.x+6, l.yBottom);
-    ctx.stroke();
-    for (let y=l.yTop+6; y<l.yBottom; y+=10){
-      ctx.beginPath(); ctx.moveTo(l.x-6,y); ctx.lineTo(l.x+6,y); ctx.stroke();
+    if (l.broken){
+      // petit tronçon en haut + tronçon bas, séparés par le trou
+      ctx.beginPath();
+      ctx.moveTo(l.x-6,l.yTop); ctx.lineTo(l.x-6,l.yTop+9);
+      ctx.moveTo(l.x+6,l.yTop); ctx.lineTo(l.x+6,l.yTop+9);
+      ctx.moveTo(l.x-6,l.gapY); ctx.lineTo(l.x-6,l.yBottom);
+      ctx.moveTo(l.x+6,l.gapY); ctx.lineTo(l.x+6,l.yBottom);
+      ctx.stroke();
+      for (let y=l.gapY+4; y<l.yBottom; y+=10){ ctx.beginPath(); ctx.moveTo(l.x-6,y); ctx.lineTo(l.x+6,y); ctx.stroke(); }
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(l.x-6,l.yTop); ctx.lineTo(l.x-6,l.yBottom);
+      ctx.moveTo(l.x+6,l.yTop); ctx.lineTo(l.x+6,l.yBottom);
+      ctx.stroke();
+      for (let y=l.yTop+6; y<l.yBottom; y+=10){ ctx.beginPath(); ctx.moveTo(l.x-6,y); ctx.lineTo(l.x+6,y); ctx.stroke(); }
     }
   });
 
@@ -301,8 +482,10 @@ function draw(){
   drawPauline(pauline.x, pauline.y);
   drawDK(dk.x, dk.y);
 
-  // tonneaux
+  // tonneaux + boules de feu + tartes
   barrels.forEach(b=>drawBarrel(b));
+  fireballs.forEach(f=>drawFireball(f));
+  pies.forEach(pe=>drawPie(pe));
 
   // joueur (clignote si invincible)
   if (!(player.inv>0 && Math.floor(player.inv/5)%2)) drawJumpman(player);
@@ -324,38 +507,58 @@ function draw(){
 }
 
 function drawJumpman(p){
-  const x=p.x, y=p.y; // y = pieds
+  const x=p.x, y=p.y, f=p.facing>0?1:-1; // y = pieds
   ctx.save(); ctx.translate(x,y);
-  const step = Math.floor(p.walkT/6)%2;
-  // jambes
-  ctx.fillStyle='#1565c0';
-  if (p.climbing){ ctx.fillRect(-5,-12,4,12); ctx.fillRect(1,-12,4,12); }
-  else { ctx.fillRect(-5,-12,4,12+(step?-1:0)); ctx.fillRect(1,-12,4,12+(step?0:-1)); }
-  // salopette / corps
-  ctx.fillStyle='#1e88e5'; ctx.fillRect(-6,-22,12,12);
-  // bras
-  ctx.fillStyle='#e0b48c'; ctx.fillRect(-9*p.facing,-20,4,7);
-  // chemise rouge
-  ctx.fillStyle='#e53935'; ctx.fillRect(-6,-22,12,4);
+  const step = (!p.climbing && Math.floor(p.walkT/6)%2)?1:0;
+  const SKIN='#f0c090', BLUE='#1e5fd0', RED='#e53935', BR='#3a2410', BOOT='#5a2e0c';
+  // bottes
+  ctx.fillStyle=BOOT;
+  if (p.climbing){ ctx.fillRect(-5,-3,4,3); ctx.fillRect(1,-3,4,3); }
+  else { ctx.fillRect(-7+step,-3,5,3); ctx.fillRect(2+step,-3,5,3); }
+  // jambes (salopette bleue)
+  ctx.fillStyle=BLUE; ctx.fillRect(-5,-13,4,11); ctx.fillRect(1,-13,4,11);
+  // salopette
+  ctx.fillStyle=BLUE; ctx.fillRect(-6,-22,12,10);
+  // chemise rouge (épaules) + bretelles bleues
+  ctx.fillStyle=RED; ctx.fillRect(-6,-24,12,4);
+  ctx.fillStyle=BLUE; ctx.fillRect(-4,-24,2,3); ctx.fillRect(2,-24,2,3);
+  ctx.fillStyle='#ffd23a'; ctx.fillRect(-1,-21,2,2); // bouton
+  // bras (chemise rouge) + main
+  ctx.fillStyle=RED; ctx.fillRect(f>0?5:-8,-23,3,6);
+  ctx.fillStyle=SKIN; ctx.fillRect(f>0?7:-9,-18,2,2);
   // tête
-  ctx.fillStyle='#e0b48c'; ctx.fillRect(-5,-30,10,9);
-  // casquette
-  ctx.fillStyle='#e53935'; ctx.fillRect(-6,-31,12,4);
-  ctx.fillRect(-6+ (p.facing>0?6:-2),-30,4,2);
+  ctx.fillStyle=SKIN; ctx.fillRect(-5,-33,10,9);
+  // favoris / cheveux à l'arrière
+  ctx.fillStyle=BR; ctx.fillRect(f>0?-6:4,-32,2,8);
+  // nez
+  ctx.fillStyle='#d89a6a'; ctx.fillRect(f>0?3:-5,-29,3,3);
+  // œil
+  ctx.fillStyle='#000'; ctx.fillRect(f>0?1:-2,-30,1.5,2);
   // moustache
-  ctx.fillStyle='#3a2410'; ctx.fillRect(-4,-24,8,2);
+  ctx.fillStyle=BR; ctx.fillRect(-4,-27,8,2);
+  // casquette rouge + visière
+  ctx.fillStyle=RED; ctx.fillRect(-6,-35,12,3);
+  ctx.fillRect(f>0?4:-9,-33,5,2);
   ctx.restore();
 }
 
 function drawBarrel(b){
   const x=b.x, y=b.y-10;
+  // corps bombé
   ctx.fillStyle='#a9621f';
-  ctx.beginPath(); ctx.ellipse(x,y,10,9,0,0,Math.PI*2); ctx.fill();
-  ctx.fillStyle='#7a4214';
-  ctx.fillRect(x-10,y-2,20,2); ctx.fillRect(x-10,y+2,20,2);
-  ctx.strokeStyle='#5a300c'; ctx.lineWidth=1.5;
-  const a=(b.x*0.18)%(Math.PI); // rotation visuelle
-  ctx.beginPath(); ctx.moveTo(x-7*Math.cos(a),y-7*Math.sin(a)); ctx.lineTo(x+7*Math.cos(a),y+7*Math.sin(a)); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(x,y,11,9,0,0,Math.PI*2); ctx.fill();
+  // bande centrale plus claire
+  ctx.fillStyle='#c9832e'; ctx.fillRect(x-10,y-3,20,6);
+  // cercles métalliques (hoops)
+  ctx.fillStyle='#5a300c';
+  ctx.fillRect(x-10,y-7,20,2); ctx.fillRect(x-10,y+5,20,2);
+  ctx.fillStyle='#3a2008'; ctx.fillRect(x-11,y-1,22,1.5);
+  // douves verticales animées → effet de roulement
+  const a=(b.x*0.25)%6.283;
+  ctx.strokeStyle='#7a4214'; ctx.lineWidth=1.2;
+  for(let k=0;k<3;k++){ const px=x+Math.sin(a+k*2.1)*7; ctx.beginPath(); ctx.moveTo(px,y-7); ctx.lineTo(px,y+7); ctx.stroke(); }
+  // reflet
+  ctx.fillStyle='rgba(255,225,160,.4)'; ctx.fillRect(x-7,y-6,3,3);
 }
 
 function drawHammerPickup(h){
@@ -389,48 +592,125 @@ function drawHeldHammer(p){
 
 function drawDK(x,y){
   ctx.save(); ctx.translate(x,y);
-  ctx.fillStyle='#6d4322';
-  ctx.fillRect(-22,-46,44,40);                 // corps
-  ctx.fillStyle='#8a5a2e';
-  ctx.beginPath(); ctx.arc(0,-46,15,Math.PI,0); ctx.fill(); // épaules
-  // tête
-  ctx.fillStyle='#6d4322'; ctx.fillRect(-13,-66,26,20);
-  ctx.fillStyle='#c79a6b'; ctx.fillRect(-9,-58,18,12); // museau
-  ctx.fillStyle='#000'; ctx.fillRect(-8,-63,4,4); ctx.fillRect(4,-63,4,4); // yeux
-  ctx.fillStyle='#000'; ctx.fillRect(-6,-51,12,2); // bouche
-  // ventre clair
-  ctx.fillStyle='#c79a6b'; ctx.fillRect(-12,-30,24,12);
+  const BR='#7a4a1e', DK='#4f3010', TAN='#d2a878';
   // bras (animation de lancer)
-  ctx.fillStyle='#6d4322';
-  const ay = dk.arm>0 ? -50 : -34;
-  ctx.fillRect(-30,ay,10,16); ctx.fillRect(20,ay,10,16);
+  const ay = dk.arm>0 ? -54 : -40;
+  ctx.fillStyle=BR; ctx.fillRect(-33,ay,12,22); ctx.fillRect(21,ay,12,22);
+  ctx.fillStyle=TAN; ctx.fillRect(-33,ay+22,12,5); ctx.fillRect(21,ay+22,12,5); // poings
+  // corps
+  ctx.fillStyle=BR; ctx.fillRect(-22,-50,44,44);
+  // poitrine claire
+  ctx.fillStyle=TAN; ctx.fillRect(-15,-34,30,24);
+  ctx.fillStyle=DK; ctx.fillRect(-5,-34,2,24); // creux central
+  // tête
+  ctx.fillStyle=BR; ctx.fillRect(-17,-72,34,24);
+  ctx.fillRect(-21,-66,5,9); ctx.fillRect(16,-66,5,9);       // oreilles
+  // museau clair
+  ctx.fillStyle=TAN; ctx.fillRect(-12,-60,24,13);
+  // narines + bouche
+  ctx.fillStyle=DK; ctx.fillRect(-6,-58,3,3); ctx.fillRect(3,-58,3,3);
+  ctx.fillRect(-9,-51,18,2);
+  // sourcil épais + yeux
+  ctx.fillStyle=DK; ctx.fillRect(-13,-68,26,3);
+  ctx.fillStyle='#fff'; ctx.fillRect(-10,-66,7,4); ctx.fillRect(3,-66,7,4);
+  ctx.fillStyle='#000'; ctx.fillRect(-6,-65,3,3); ctx.fillRect(4,-65,3,3);
   ctx.restore();
 }
 
 function drawPauline(x,y){
   ctx.save(); ctx.translate(x,y);
-  // robe
-  ctx.fillStyle='#ff4fa3';
-  ctx.beginPath(); ctx.moveTo(0,-22); ctx.lineTo(-8,-4); ctx.lineTo(8,-4); ctx.closePath(); ctx.fill();
-  ctx.fillRect(-4,-30,8,10);
-  // tête
-  ctx.fillStyle='#e0b48c'; ctx.fillRect(-4,-38,8,8);
-  // cheveux
-  ctx.fillStyle='#ffd54f'; ctx.fillRect(-5,-40,10,4); ctx.fillRect(-5,-38,2,6);
+  const SKIN='#f0c090', DRESS='#ff3b8d';
   // jambes
-  ctx.fillStyle='#e0b48c'; ctx.fillRect(-4,-4,3,4); ctx.fillRect(1,-4,3,4);
-  // cœur
+  ctx.fillStyle=SKIN; ctx.fillRect(-3,-5,2,5); ctx.fillRect(1,-5,2,5);
+  // robe (jupe évasée + buste)
+  ctx.fillStyle=DRESS;
+  ctx.beginPath(); ctx.moveTo(0,-24); ctx.lineTo(-9,-5); ctx.lineTo(9,-5); ctx.closePath(); ctx.fill();
+  ctx.fillRect(-5,-29,10,8);
+  ctx.fillStyle='#ff7ab8'; ctx.fillRect(-5,-29,10,2); // liseré clair
+  // bras
+  ctx.fillStyle=SKIN; ctx.fillRect(-7,-27,2,8); ctx.fillRect(5,-27,2,8);
+  // tête
+  ctx.fillStyle=SKIN; ctx.fillRect(-4,-37,8,8);
+  // cheveux blonds (frange + mèches latérales)
+  ctx.fillStyle='#ffd54f';
+  ctx.fillRect(-5,-39,10,4); ctx.fillRect(-5,-37,2,9); ctx.fillRect(3,-37,2,9);
+  // œil
+  ctx.fillStyle='#000'; ctx.fillRect(1,-34,1.5,2);
+  // cœur au-dessus
   ctx.fillStyle='#ff5252'; ctx.font='10px monospace'; ctx.textAlign='center';
   ctx.fillText('♥', 0, -44);
   ctx.restore();
 }
 
+// tonneau statique centré (pour le décor)
+function drawKeg(x,cy){
+  ctx.fillStyle='#a9621f'; ctx.beginPath(); ctx.ellipse(x,cy,11,9,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#c9832e'; ctx.fillRect(x-10,cy-3,20,6);
+  ctx.fillStyle='#5a300c'; ctx.fillRect(x-10,cy-7,20,2); ctx.fillRect(x-10,cy+5,20,2);
+  ctx.strokeStyle='#7a4214'; ctx.lineWidth=1;
+  for(let k=-1;k<=1;k++){ ctx.beginPath(); ctx.moveTo(x+k*5,cy-7); ctx.lineTo(x+k*5,cy+7); ctx.stroke(); }
+}
+// tas de tonneaux près de DK
+function drawBarrelStack(){
+  const bx=280, fy=platY(TOP,bx);
+  drawKeg(bx-9, fy-9); drawKeg(bx+9, fy-9); drawKeg(bx, fy-26);
+}
+// baril d'huile en flammes (bas-gauche)
+function drawOilDrum(){
+  const x=oilX, base=platY(oilPlat,x);
+  ctx.fillStyle='#1f4fd0'; ctx.fillRect(x-14, base-30, 28, 30);
+  ctx.fillStyle='#2f6fff'; ctx.fillRect(x-14, base-30, 28, 3);
+  ctx.fillStyle='#15349a'; ctx.fillRect(x-14, base-24, 28, 2); ctx.fillRect(x-14, base-8, 28, 2);
+  ctx.fillStyle='#ffd23a'; ctx.font='bold 9px "Courier New",monospace'; ctx.textAlign='center'; ctx.fillText('OIL', x, base-13);
+  const t=performance.now()*0.013;
+  for(let i=-1;i<=1;i++){
+    const fx=x+i*7, h=11+Math.sin(t+i*1.7)*5;
+    ctx.fillStyle='#ff3b00'; ctx.beginPath(); ctx.moveTo(fx-4,base-30); ctx.quadraticCurveTo(fx,base-30-h,fx+4,base-30); ctx.fill();
+    ctx.fillStyle='#ffc000'; ctx.beginPath(); ctx.moveTo(fx-2,base-30); ctx.quadraticCurveTo(fx,base-30-h*0.6,fx+2,base-30); ctx.fill();
+  }
+}
+// boule de feu (ennemi du baril d'huile)
+function drawFireball(f){
+  const x=f.x, y=f.y-10, t=performance.now()*0.02;
+  // flammes
+  for(let i=-1;i<=1;i++){ const h=8+Math.sin(t+i*2+f.walkT*0.2)*3;
+    ctx.fillStyle='#ff3b00'; ctx.beginPath(); ctx.moveTo(x+i*4-3,y); ctx.quadraticCurveTo(x+i*4,y-h,x+i*4+3,y); ctx.fill(); }
+  // corps
+  ctx.fillStyle='#ffb000'; ctx.beginPath(); ctx.arc(x,y,8,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#ff6a00'; ctx.beginPath(); ctx.arc(x,y+2,5,0,Math.PI*2); ctx.fill();
+  // yeux
+  ctx.fillStyle='#fff'; ctx.fillRect(x-4,y-2,3,4); ctx.fillRect(x+1,y-2,3,4);
+  ctx.fillStyle='#000'; ctx.fillRect(x-3,y-1,1.5,2); ctx.fillRect(x+2,y-1,1.5,2);
+}
+
+// tarte / plat sur tapis roulant (à éviter)
+function drawPie(pe){
+  const x=pe.x, y=pe.y-6;
+  ctx.fillStyle='#c0392b'; ctx.beginPath(); ctx.ellipse(x,y,11,7,0,0,Math.PI*2); ctx.fill();   // moule
+  ctx.fillStyle='#e8c060'; ctx.beginPath(); ctx.ellipse(x,y-1,9,5,0,0,Math.PI*2); ctx.fill();    // garniture
+  ctx.fillStyle='#fff'; for(let i=-1;i<=1;i++) ctx.fillRect(x+i*5-1,y-4,2,7);                     // bandes de pâte
+  ctx.fillStyle='#a52e22'; ctx.fillRect(x-11,y+5,22,2);                                            // base
+}
+
+// petit Mario d'icône de vie
+function drawLifeIcon(x,y){
+  ctx.fillStyle='#e53935'; ctx.fillRect(x-3,y-7,6,2);     // casquette
+  ctx.fillStyle='#f0c090'; ctx.fillRect(x-3,y-5,6,3);     // visage
+  ctx.fillStyle='#1e5fd0'; ctx.fillRect(x-3,y-2,6,4);     // corps
+}
+
 function drawHUD(){
   ctx.fillStyle='#000'; ctx.fillRect(0,0,W,HUD);
-  ctx.fillStyle='#fff'; ctx.font='14px "Courier New",monospace';
-  ctx.textAlign='left'; ctx.fillText('SCORE '+score, 10, 23);
-  ctx.textAlign='center'; ctx.fillStyle='#e85d2a'; ctx.fillText('★'.repeat(Math.max(0,lives)), W/2, 24);
-  ctx.textAlign='right'; ctx.fillStyle='#5ad1e8'; ctx.fillText('RECORD '+hi, W-10, 23);
+  ctx.font='bold 14px "Courier New",monospace';
+  ctx.textAlign='left';
+  ctx.fillStyle='#e53935'; ctx.fillText('SCORE', 10, 14);
+  ctx.fillStyle='#fff';    ctx.fillText(String(score).padStart(6,'0'), 10, 28);
+  // vies (petits Mario)
+  for(let i=0;i<Math.max(0,lives);i++) drawLifeIcon(86+i*16, 14);
+  // boîte BONUS
+  ctx.strokeStyle='#e53935'; ctx.lineWidth=1.5; ctx.strokeRect(W-92,4,84,26);
+  ctx.fillStyle='#e53935'; ctx.textAlign='center'; ctx.fillText('BONUS', W-50, 14);
+  ctx.fillStyle='#5ad1e8'; ctx.fillText(String(bonus), W-50, 27);
   ctx.strokeStyle='#333'; ctx.beginPath(); ctx.moveTo(0,HUD-1); ctx.lineTo(W,HUD-1); ctx.stroke();
 }
 

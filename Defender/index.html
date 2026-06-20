@@ -253,10 +253,12 @@ function update(){
 }
 
 function loseLife(){
-  lives--;
-  explode(player.x, player.y, '#4ecca3', 30);
-  if (lives<=0){ gameOver('Vaisseau détruit. Score : '+score); }
-  else { player.x = mod(camX+VW/2,WORLD); player.y = VH/2; player.vx=player.vy=0; }
+  if (!running) return;
+  lives--; running=false;
+  ArcadeFX.die(cv, sx(player.x), player.y, 'explosion', ()=>{
+    if (lives<=0){ gameOver('Vaisseau détruit. Score : '+score); }
+    else { player.x = mod(camX+VW/2,WORLD); player.y = VH/2; player.vx=player.vy=0; running=true; }
+  });
 }
 
 function gameOver(msg){

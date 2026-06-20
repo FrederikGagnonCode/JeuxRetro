@@ -227,6 +227,86 @@
     }
   }
 
+  /* ════ Effets sonores + animation de mort (3 s) — dispo sur toutes les pages ════ */
+  let _ac=null;
+  function actx(){ try{ if(!_ac) _ac=new (window.AudioContext||window.webkitAudioContext)(); if(_ac.state==='suspended') _ac.resume(); }catch(e){} return _ac; }
+  function noiseBuf(ac,dur){ const n=Math.floor(ac.sampleRate*dur), b=ac.createBuffer(1,n,ac.sampleRate), d=b.getChannelData(0); for(let i=0;i<n;i++) d[i]=Math.random()*2-1; return b; }
+  function playSfx(kind){
+    const ac=actx(); if(!ac) return; const t=ac.currentTime;
+    const master=ac.createGain(); master.gain.value=0.5; master.connect(ac.destination);
+    if(kind==='explosion'||kind==='thud'||kind==='splat'){
+      const src=ac.createBufferSource(); src.buffer=noiseBuf(ac, kind==='splat'?0.5:1.4);
+      const lp=ac.createBiquadFilter(); lp.type='lowpass'; lp.frequency.setValueAtTime(1800,t); lp.frequency.exponentialRampToValueAtTime(120,t+0.9);
+      const g=ac.createGain(); g.gain.setValueAtTime(kind==='splat'?0.5:0.9,t); g.gain.exponentialRampToValueAtTime(0.001,t+(kind==='splat'?0.5:1.4));
+      src.connect(lp); lp.connect(g); g.connect(master); src.start(t);
+      if(kind!=='splat'){ const o=ac.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(160,t); o.frequency.exponentialRampToValueAtTime(40,t+0.8);
+        const og=ac.createGain(); og.gain.setValueAtTime(0.7,t); og.gain.exponentialRampToValueAtTime(0.001,t+1.0); o.connect(og); og.connect(master); o.start(t); o.stop(t+1.1); }
+    } else if(kind==='zap'){
+      const o=ac.createOscillator(); o.type='square'; o.frequency.setValueAtTime(900,t); o.frequency.exponentialRampToValueAtTime(80,t+0.5);
+      const g=ac.createGain(); g.gain.setValueAtTime(0.5,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.6); o.connect(g); g.connect(master); o.start(t); o.stop(t+0.7);
+    } else if(kind==='fall'){
+      const o=ac.createOscillator(); o.type='sawtooth'; o.frequency.setValueAtTime(700,t); o.frequency.exponentialRampToValueAtTime(90,t+1.0);
+      const g=ac.createGain(); g.gain.setValueAtTime(0.4,t); g.gain.exponentialRampToValueAtTime(0.001,t+1.1); o.connect(g); g.connect(master); o.start(t); o.stop(t+1.2);
+    } else if(kind==='chomp'){
+      for(let i=0;i<7;i++){ const o=ac.createOscillator(); o.type='square'; const f=520-i*55;
+        o.frequency.setValueAtTime(f,t+i*0.12); o.frequency.linearRampToValueAtTime(f*0.5,t+i*0.12+0.1);
+        const g=ac.createGain(); g.gain.setValueAtTime(0.0001,t+i*0.12); g.gain.linearRampToValueAtTime(0.4,t+i*0.12+0.02); g.gain.exponentialRampToValueAtTime(0.001,t+i*0.12+0.11);
+        o.connect(g); g.connect(master); o.start(t+i*0.12); o.stop(t+i*0.12+0.13); }
+    }
+  }
+  window.ArcadeSFX = { play: playSfx };
+
+  // animation de mort/explosion de 3 s sur un calque au-dessus du canvas, clavier gelé
+  function die(cv, x, y, kind, onDone){
+    kind = kind||'explosion';
+    // coordonnées sûres : un x/y invalide (NaN) ferait planter le dessin → repli au centre
+    if(!isFinite(x)) x = (cv && cv.width) ? cv.width/2 : 200;
+    if(!isFinite(y)) y = (cv && cv.height) ? cv.height/2 : 200;
+    playSfx(kind);
+    let ov=null, octx=null;
+    try{
+      const host=cv.parentNode||document.body;
+      ov=document.createElement('canvas'); ov.width=cv.width; ov.height=cv.height;
+      ov.style.position='absolute'; ov.style.left=cv.offsetLeft+'px'; ov.style.top=cv.offsetTop+'px';
+      ov.style.width=cv.clientWidth+'px'; ov.style.height=cv.clientHeight+'px';
+      ov.style.pointerEvents='auto'; ov.style.zIndex='8';
+      // surtout pas hériter du style canvas{} du jeu (fond/bordure/ombre) → calque transparent
+      ov.style.background='transparent'; ov.style.border='0'; ov.style.boxShadow='none'; ov.style.borderRadius='0';
+      host.appendChild(ov); octx=ov.getContext('2d');
+    }catch(e){}
+    // on bloque les keydown (pas de redémarrage/action pendant la mort) mais on LAISSE
+    // passer les keyup, sinon un relâchement de touche est avalé → touche « collée »
+    const block=e=>{ e.stopImmediatePropagation(); e.preventDefault(); };
+    window.addEventListener('keydown',block,true);
+    const t0=performance.now(), DUR=3000;
+    const tint = kind==='fall'?[150,190,255] : kind==='splat'?[120,230,120] : kind==='zap'?[140,210,255] : kind==='chomp'?[255,230,80] : [255,150,40];
+    const ps=[], N=kind==='fall'?26:42;
+    for(let i=0;i<N;i++){ const a=Math.random()*Math.PI*2, sp=Math.random()*(kind==='explosion'?5:3.4)+1;
+      ps.push({x,y,vx:Math.cos(a)*sp, vy:Math.sin(a)*sp+(kind==='fall'?1:0), life:1,
+        col: Math.random()<0.5?`rgb(${tint[0]},${tint[1]},${tint[2]})`:'#fff'}); }
+    function frame(now){
+      const e=(now-t0)/DUR;
+      try{
+        if(octx){
+          octx.clearRect(0,0,ov.width,ov.height);
+          if(e<0.5 && kind!=='fall'){ octx.strokeStyle=`rgba(${tint[0]},${tint[1]},${tint[2]},${Math.max(0,1-e*2)})`; octx.lineWidth=4; octx.beginPath(); octx.arc(x,y,e*130,0,Math.PI*2); octx.stroke(); }
+          if(e<0.4 && kind!=='fall'){ const r=10+e*60, g=octx.createRadialGradient(x,y,0,x,y,r);
+            g.addColorStop(0,'#fff'); g.addColorStop(0.4,`rgb(${tint[0]},${tint[1]},${tint[2]})`); g.addColorStop(1,'rgba(0,0,0,0)');
+            octx.globalAlpha=1-e/0.4; octx.fillStyle=g; octx.beginPath(); octx.arc(x,y,r,0,Math.PI*2); octx.fill(); octx.globalAlpha=1; }
+          ps.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; p.vy+=0.12; p.vx*=0.99; });
+          octx.globalAlpha=Math.max(0,1-e);
+          ps.forEach(p=>{ octx.fillStyle=p.col; octx.fillRect(p.x-1.5,p.y-1.5,3,3); });
+          octx.globalAlpha=1;
+        }
+      }catch(err){ /* le dessin ne doit jamais bloquer la boucle ni onDone */ }
+      if(e>=1) cleanup(); else requestAnimationFrame(frame);
+    }
+    function cleanup(){ window.removeEventListener('keydown',block,true);
+      if(ov&&ov.parentNode) ov.parentNode.removeChild(ov); if(onDone){ try{onDone();}catch(e){} } }
+    requestAnimationFrame(frame);
+  }
+  window.ArcadeFX = { die };
+
   /* ── API publique ── */
   window.ArcadeMusic = {
     isPlaying:   () => !audio.paused && !!audio.src,

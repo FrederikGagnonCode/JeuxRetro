@@ -194,8 +194,8 @@ function overlap(ax, ay, aw, ah, bx, by, bw, bh){
 
 function die(){
   if (st.deadT > 0) return;
-  st.deadT = 1.4; st.vine = false; st.climbing = false;
-  sDeath();
+  st.deadT = 3; st.vine = false; st.climbing = false;     // séquence de mort de 3 s
+  ArcadeFX.die(cv, st.x, st.y-20, 'fall');                 // animation + son
 }
 
 // ---------- Mise à jour ----------

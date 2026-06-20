@@ -270,11 +270,13 @@ function update() {
     if (rectHit(b, player)) {
       b.dead = true;
       lives--;
-      explode(player.x + player.w / 2, player.y + player.h / 2, '#0f0', 25);
-      beep(110, 0.4, 'sawtooth', 0.08);
-      if (lives <= 0) return gameOver();
-      player.x = W / 2 - 20;
-      enemyBullets = [];
+      const px = player.x + player.w / 2, py = player.y + player.h / 2;
+      state = 'DYING';                          // gèle pendant l'explosion (3 s)
+      ArcadeFX.die(canvas, px, py, 'explosion', () => {
+        if (lives <= 0) { gameOver(); }
+        else { player.x = W / 2 - 20; enemyBullets = []; state = STATE.PLAYING; }
+      });
+      break;
     }
   }
 

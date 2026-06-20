@@ -570,11 +570,13 @@
       clearInterval(loop);
       running = false;
       stopMusic();
-      sfxDead();
-      overlayTitle.textContent = 'Game Over';
-      overlayMsg.textContent = `Score : ${score}`;
-      btn.textContent = 'Rejouer';
-      overlay.style.display = 'flex';
+      const hx = snake[0].x*CELL + CELL/2, hy = snake[0].y*CELL + CELL/2;
+      ArcadeFX.die(canvas, hx, hy, 'splat', () => {
+        overlayTitle.textContent = 'Game Over';
+        overlayMsg.textContent = `Score : ${score}`;
+        btn.textContent = 'Rejouer';
+        overlay.style.display = 'flex';
+      });
     }
 
     function updateScore() { scoreEl.textContent = score; }

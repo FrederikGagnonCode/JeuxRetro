@@ -214,10 +214,12 @@ function updateSpider(){
 }
 
 function hit(){
-  if(player.inv>0||over) return;
-  lives--; burst(player.x,player.y,'#ff5252',24);
-  if(lives<=0){ over=true; running=false; if(score>hi)hi=score; showOverlay('GAME OVER','Score : '+score); }
-  else { player.x=W/2; player.y=H-CELL; player.inv=100; bullet=null; }
+  if(player.inv>0||over||!running) return;
+  lives--; running=false;
+  ArcadeFX.die(cv, player.x, player.y, 'explosion', ()=>{
+    if(lives<=0){ over=true; if(score>hi)hi=score; showOverlay('GAME OVER','Score : '+score); }
+    else { player.x=W/2; player.y=H-CELL; player.inv=100; bullet=null; running=true; }
+  });
 }
 
 function burst(x,y,color,n){ n=n||12;

@@ -220,10 +220,12 @@ function update(){
 }
 
 function hit(){
-  if(over) return;
-  lives--; burst(player.x,player.y,'#36c5f0',26);
-  if(lives<=0){ over=true; running=false; if(score>hi)hi=score; showOverlay('GAME OVER','Score : '+score); }
-  else { player.x=W/2; player.inv=110; bombs=[]; }
+  if(over || !running) return;
+  lives--; running=false;                      // gèle pendant l'explosion (3 s)
+  ArcadeFX.die(cv, player.x, player.y, 'explosion', ()=>{
+    if(lives<=0){ over=true; if(score>hi)hi=score; showOverlay('GAME OVER','Score : '+score); }
+    else { player.x=W/2; player.inv=110; bombs=[]; running=true; }
+  });
 }
 
 function burst(x,y,color,n){ n=n||14;
