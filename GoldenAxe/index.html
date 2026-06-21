@@ -33,11 +33,11 @@
       <h2 id="ovTitle">GOLDEN AXE</h2>
       <p>Taille-toi un chemin à travers les hordes</p>
       <p>← → courir · ↑ ↓ profondeur · Espace : épée · X : saut · C : magie</p>
-      <p>La magie foudroie tous les ennemis (charges limitées)</p>
+      <p>Ramassez la nourriture (soin) · montez les bizarriens (souffle de feu)</p>
       <p class="blink" style="margin-top:14px">▶ Cliquez ou Espace pour jouer</p>
     </div>
   </div>
-  <div id="hint">← → courir · ↑ ↓ profondeur · Espace : épée · X : saut · C : magie · P = pause</div>
+  <div id="hint">← → courir · ↑ ↓ profondeur · Espace : attaque · X : saut · C : magie · approchez un dragon pour le monter · P = pause</div>
   <a class="back" href="../index.html">← Menu Arcade</a>
 
 <script>
@@ -52,27 +52,80 @@ const DY0=190, DY1=288;                    // bande de profondeur (pieds)
 const GRAV=0.6;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 
-let player, enemies, parts, floats;
+let player, enemies, parts, floats, foods, bizarrians, eprojs;
 let cam=0, score=0, lives=3, wave=1, toSpawn=0, spawnT=0, magic=3;
 let running=false, paused=false, over=false;
 let flashT=0, shake=0, flashMsg=null, flashMsgT=0;
 const keys={};
 
+// ── sons ──
+let _ac=null;
+function actx(){ try{ if(!_ac) _ac=new (window.AudioContext||window.webkitAudioContext)(); if(_ac.state==='suspended') _ac.resume(); }catch(e){} return _ac; }
+function noiseBuf(ac,dur){ const n=Math.floor(ac.sampleRate*dur),b=ac.createBuffer(1,n,ac.sampleRate),d=b.getChannelData(0); for(let i=0;i<n;i++) d[i]=Math.random()*2-1; return b; }
+function sfxSlash(){          // coup d'épée : whoosh tranchant
+  const ac=actx(); if(!ac) return; const t=ac.currentTime;
+  const s=ac.createBufferSource(); s.buffer=noiseBuf(ac,0.18);
+  const bp=ac.createBiquadFilter(); bp.type='bandpass'; bp.Q.value=1.3;
+  bp.frequency.setValueAtTime(3200,t); bp.frequency.exponentialRampToValueAtTime(650,t+0.16);
+  const g=ac.createGain(); g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(0.3,t+0.015); g.gain.exponentialRampToValueAtTime(0.0001,t+0.18);
+  s.connect(bp); bp.connect(g); g.connect(ac.destination); s.start(t);
+}
+function sfxClang(){         // impact métallique (lame qui touche)
+  const ac=actx(); if(!ac) return; const t=ac.currentTime;
+  [1250,1870,2640].forEach((f,i)=>{ const o=ac.createOscillator(),g=ac.createGain();
+    o.type='triangle'; o.frequency.setValueAtTime(f*(1+Math.random()*0.03),t);
+    g.gain.setValueAtTime(0.16/(i+1),t); g.gain.exponentialRampToValueAtTime(0.0001,t+0.2);
+    o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t+0.22); });
+  const s=ac.createBufferSource(); s.buffer=noiseBuf(ac,0.05);
+  const hp=ac.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=2200;
+  const g=ac.createGain(); g.gain.setValueAtTime(0.22,t); g.gain.exponentialRampToValueAtTime(0.0001,t+0.05);
+  s.connect(hp); hp.connect(g); g.connect(ac.destination); s.start(t);
+}
+function sfxFlame(){         // souffle de feu : fwoosh + grondement
+  const ac=actx(); if(!ac) return; const t=ac.currentTime;
+  const s=ac.createBufferSource(); s.buffer=noiseBuf(ac,0.55);
+  const lp=ac.createBiquadFilter(); lp.type='lowpass';
+  lp.frequency.setValueAtTime(380,t); lp.frequency.exponentialRampToValueAtTime(1900,t+0.12); lp.frequency.exponentialRampToValueAtTime(280,t+0.55);
+  const g=ac.createGain(); g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(0.34,t+0.06); g.gain.exponentialRampToValueAtTime(0.0001,t+0.55);
+  s.connect(lp); lp.connect(g); g.connect(ac.destination); s.start(t);
+  const o=ac.createOscillator(),og=ac.createGain(); o.type='sawtooth'; o.frequency.setValueAtTime(72,t);
+  og.gain.setValueAtTime(0.0001,t); og.gain.linearRampToValueAtTime(0.16,t+0.06); og.gain.exponentialRampToValueAtTime(0.0001,t+0.5);
+  o.connect(og); og.connect(ac.destination); o.start(t); o.stop(t+0.55);
+}
+function sfxThrow(){         // jet de projectile
+  const ac=actx(); if(!ac) return; const t=ac.currentTime;
+  const s=ac.createBufferSource(); s.buffer=noiseBuf(ac,0.14);
+  const bp=ac.createBiquadFilter(); bp.type='bandpass'; bp.Q.value=2;
+  bp.frequency.setValueAtTime(1400,t); bp.frequency.exponentialRampToValueAtTime(3200,t+0.12);
+  const g=ac.createGain(); g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(0.2,t+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t+0.14);
+  s.connect(bp); bp.connect(g); g.connect(ac.destination); s.start(t);
+}
+
 function makePlayer(){
   return { x:120, y:250, jz:0, jvz:0, face:1, hp:100, maxhp:100,
-           atkT:0, atkHit:null, hurtT:0, inv:0, walkT:0, dead:false };
+           atkT:0, atkHit:null, hurtT:0, inv:0, walkT:0, dead:false, mount:null, fireT:0 };
 }
 function newGame(){
-  player=makePlayer(); enemies=[]; parts=[]; floats=[];
+  player=makePlayer(); enemies=[]; parts=[]; floats=[]; foods=[]; bizarrians=[]; eprojs=[];
   cam=0; score=0; lives=3; wave=1; magic=3;
   startWave();
   over=false; paused=false; running=true;
   hideOverlay();
 }
 function startWave(){
-  toSpawn = 3 + Math.floor(wave*1.5);
-  spawnT = 30;
-  flash('VAGUE '+wave);
+  if(wave%5===0){ toSpawn=0; spawnT=9999; spawnBoss(); flash('★ BOSS ★'); }   // boss tous les 5 niveaux
+  else { toSpawn=3+Math.floor(wave*1.5); spawnT=30; flash('VAGUE '+wave); }
+  if(!player.mount && bizarrians.length===0 && Math.random()<0.55) spawnBizarrian();   // un bizarrien apparaît
+}
+function spawnBoss(){
+  const hp=18+wave;
+  enemies.push({ type:'boss', x:cam+W+50, y:(DY0+DY1)/2, hp, maxhp:hp,
+    face:-1, kb:0, state:'walk', atkCd:70, telT:0, atkT:0, hurtT:0, flash:0, dead:false, deadT:0, walkT:0 });
+}
+function spawnBizarrian(){
+  const fromLeft=Math.random()<0.5;
+  bizarrians.push({ biz:true, x: fromLeft? cam-30 : cam+W+30, y:DY0+Math.random()*(DY1-DY0),
+    face:fromLeft?1:-1, vx:(fromLeft?1:-1)*1.0, walkT:0, fleeing:false, mounted:false });
 }
 
 const stage=()=>1+Math.floor((wave-1)/3);
@@ -85,6 +138,7 @@ function flash(m){ flashMsg=m; flashMsgT=70; }
 document.addEventListener('keydown',e=>{
   const k=e.key.toLowerCase(); keys[k]=true;
   if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)) e.preventDefault();
+  if(paused && ['arrowup','arrowdown','arrowleft','arrowright',' ','w','a','s','d','x','c'].includes(k)){ paused=false; return; }
   if(k===' '){ if(!running||over){ newGame(); return; } attack(); }
   if(k==='x' && running && !over) jump();
   if(k==='c' && running && !over) castMagic();
@@ -95,8 +149,10 @@ overlay.addEventListener('click',()=>{ if(!running||over) newGame(); });
 cv.addEventListener('touchstart',e=>{ e.preventDefault(); if(!running||over){ newGame(); return; } attack(); },{passive:false});
 
 function attack(){
-  if(player.atkT>0 || player.dead) return;
-  player.atkT=16; player.atkHit=new Set();
+  if(player.dead) return;
+  if(player.mount){ if(player.fireT<=0){ player.fireT=20; player.atkHit=new Set(); sfxFlame(); } return; }  // souffle de feu
+  if(player.atkT>0) return;
+  player.atkT=16; player.atkHit=new Set(); sfxSlash();
 }
 function jump(){ if(player.jz===0 && !player.dead){ player.jvz=8.5; } }
 function castMagic(){
@@ -116,6 +172,9 @@ function update(){
   updateSpawns();
   enemies.forEach(updateEnemy);
   enemies=enemies.filter(e=>!(e.dead && e.deadT<=0));
+  updateBizarrians();
+  updateEprojs();
+  foods=foods.filter(fd=>!fd.gone && (fd.life--)>0);
 
   // caméra suit le joueur
   cam = clamp(player.x - W*0.42, 0, WORLD - W);
@@ -140,7 +199,7 @@ function updatePlayer(){
   const canMove = p.hurtT<=0;
   let mv=false;
   if(canMove){
-    const sp=2.4;
+    const sp=p.mount?3.4:2.4;
     if(keys['arrowleft']){ p.x-=sp; p.face=-1; mv=true; }
     if(keys['arrowright']){ p.x+=sp; p.face=1; mv=true; }
     if(p.jz===0){
@@ -152,28 +211,52 @@ function updatePlayer(){
   p.y=clamp(p.y, DY0, DY1);
   if(mv) p.walkT++;
 
-  // dégâts de l'épée
-  if(p.atkT>=6 && p.atkT<=12){
+  // dégâts de l'épée (à pied)
+  if(!p.mount && p.atkT>=6 && p.atkT<=12){
     const hx=p.x + p.face*30, hy=p.y;
     enemies.forEach(e=>{
       if(e.dead||p.atkHit.has(e)) return;
       if(Math.abs(e.x-hx)<26 && Math.abs(e.y-hy)<22){
-        p.atkHit.add(e); hurtEnemy(e, 2, p.face);
+        p.atkHit.add(e); hurtEnemy(e, 2, p.face); sfxClang();
       }
     });
   }
+  // souffle de feu du bizarrien (large portée devant)
+  if(p.fireT>0){ p.fireT--;
+    if(p.mount) for(let i=0;i<2;i++){ const ex=p.x+p.face*(40+Math.random()*90), ey=p.y-31+(Math.random()-0.5)*16;
+      parts.push({x:ex,y:ey,vx:p.face*(0.4+Math.random()*1.4),vy:-(0.4+Math.random()*1.2),life:9+Math.random()*9,color:Math.random()<0.5?'#ffd54f':'#ff7043'}); }
+    if(p.fireT>=6 && p.fireT<=15){
+      enemies.forEach(e=>{
+        if(e.dead||p.atkHit.has(e)) return;
+        if(Math.sign(e.x-p.x)===p.face && Math.abs(e.x-p.x)<95 && Math.abs(e.y-p.y)<26){
+          p.atkHit.add(e); hurtEnemy(e, 3, p.face);
+        }
+      });
+    }
+  }
+  // la monture suit le joueur
+  if(p.mount){ p.mount.x=p.x; p.mount.y=p.y; p.mount.face=p.face; p.mount.walkT=p.walkT; }
+
+  // ramasser des vivres → soin
+  foods.forEach(fd=>{
+    if(Math.abs(fd.x-p.x)<18 && Math.abs(fd.y-p.y)<16){
+      fd.gone=true; p.hp=clamp(p.hp+30,0,p.maxhp);
+      floatText(p.x,p.y-34,'+VIE'); score+=50; burst(fd.x,fd.y-6,'#7CFC00',8);
+    }
+  });
 }
 
 function spawnEnemy(){
   const fromLeft = Math.random()<0.5;
-  const heavy = wave>=2 && Math.random()<0.35;
   const x = fromLeft ? cam-20 : cam+W+20;
+  let type='grunt'; const r=Math.random();
+  if(wave>=3 && r<0.25) type='thrower';
+  else if(wave>=2 && r<0.55) type='heavy';
+  const hp = type==='heavy'?6:3;
   enemies.push({
-    type: heavy?'heavy':'grunt',
-    x, y: DY0+Math.random()*(DY1-DY0),
-    hp: heavy?6:3, maxhp: heavy?6:3,
+    type, x, y: DY0+Math.random()*(DY1-DY0), hp, maxhp:hp,
     face: fromLeft?1:-1, kb:0,
-    state:'walk', atkCd:30+Math.random()*40, telT:0, atkT:0, hurtT:0, flash:0,
+    state:'walk', atkCd:(type==='thrower'?70:30)+Math.random()*40, telT:0, atkT:0, hurtT:0, flash:0,
     dead:false, deadT:0, walkT:Math.random()*20
   });
 }
@@ -191,25 +274,78 @@ function updateEnemy(e){
   if(e.flash>0) e.flash--;
   if(e.hurtT>0){ e.hurtT--; e.x+=e.kb; e.kb*=0.8; return; }
 
-  const sp = e.type==='heavy'?0.9:1.25;
+  // ── lanceur : garde ses distances et jette des projectiles ──
+  if(e.type==='thrower'){
+    const dx=player.x-e.x, dy=player.y-e.y, DESIRED=150;
+    e.face = dx<0?-1:1; e.walkT++;
+    if(e.telT>0){ e.telT--; if(e.telT===0) throwProj(e); return; }
+    if(Math.abs(dx)>DESIRED+25) e.x += Math.sign(dx)*1.2;        // trop loin → s'approche
+    else if(Math.abs(dx)<DESIRED-25) e.x -= Math.sign(dx)*1.1;   // trop près → recule
+    if(Math.abs(dy)>4) e.y += Math.sign(dy)*0.6; e.y=clamp(e.y,DY0,DY1);
+    e.atkCd--;
+    if(e.atkCd<=0 && Math.abs(dy)<46){ e.telT=18; e.atkCd=90+Math.random()*70; }
+    return;
+  }
+
+  const boss = e.type==='boss';
+  const sp = boss?0.7 : e.type==='heavy'?0.9:1.25;
   const dx = player.x - e.x, dy = player.y - e.y;
   e.face = dx<0?-1:1;
 
-  if(e.telT>0){ e.telT--; if(e.telT===0){ e.atkT=10;
+  if(e.telT>0){ e.telT--; if(e.telT===0){ e.atkT=boss?16:10;
       // frappe : joueur à portée et au sol ?
-      if(Math.abs(player.x-e.x)<38 && Math.abs(player.y-e.y)<22 && player.jz<16 && player.inv<=0)
-        hurtPlayer(e.type==='heavy'?12:7, Math.sign(player.x-e.x)||1);
+      const range=boss?54:38, dmg=boss?20:e.type==='heavy'?12:7;
+      if(Math.abs(player.x-e.x)<range && Math.abs(player.y-e.y)<26 && player.jz<16 && player.inv<=0)
+        hurtPlayer(dmg, Math.sign(player.x-e.x)||1);
     } return; }
   if(e.atkT>0){ e.atkT--; return; }
 
   // approche
-  if(Math.abs(dx)>30) e.x += Math.sign(dx)*sp;
+  if(Math.abs(dx)>(boss?42:30)) e.x += Math.sign(dx)*sp;
   if(Math.abs(dy)>4)  e.y += Math.sign(dy)*0.8;
   e.y=clamp(e.y,DY0,DY1);
   e.walkT++;
   // attaque si proche
   e.atkCd--;
-  if(e.atkCd<=0 && Math.abs(dx)<36 && Math.abs(dy)<20){ e.telT=16; e.atkCd=50+Math.random()*40; }
+  if(e.atkCd<=0 && Math.abs(dx)<(boss?52:36) && Math.abs(dy)<22){ e.telT=boss?24:16; e.atkCd=(boss?70:50)+Math.random()*40; }
+}
+
+function updateBizarrians(){
+  bizarrians.forEach(b=>{
+    b.walkT++;
+    if(b.fleeing){ b.x += b.vx*3.2; return; }
+    b.x += b.vx;
+    if(b.x<cam+30){ b.x=cam+30; b.vx=Math.abs(b.vx); b.face=1; }
+    if(b.x>cam+W-30){ b.x=cam+W-30; b.vx=-Math.abs(b.vx); b.face=-1; }
+    // monter : le joueur s'en approche (à pied)
+    if(!player.mount && !player.dead && Math.abs(b.x-player.x)<24 && Math.abs(b.y-player.y)<18){
+      b.mounted=true; player.mount=b; floatText(player.x,player.y-38,'MONTURE !');
+    }
+  });
+  bizarrians = bizarrians.filter(b=> !b.mounted && !(b.fleeing && (b.x<cam-70 || b.x>cam+W+70)));
+}
+
+function throwProj(e){
+  const dx=player.x-e.x, dy=player.y-e.y, d=Math.hypot(dx,dy)||1, sp=3.4;
+  eprojs.push({ x:e.x+e.face*10, y:e.y-22, vx:dx/d*sp, vy:dy/d*sp, dist:0, spin:0 });
+  sfxThrow();
+}
+function updateEprojs(){
+  eprojs.forEach(pr=>{
+    pr.x+=pr.vx; pr.y+=pr.vy; pr.dist+=Math.hypot(pr.vx,pr.vy); pr.spin+=0.5;
+    // détruit par un coup d'épée
+    if(!player.mount && player.atkT>=6 && player.atkT<=12 && Math.sign(pr.x-player.x)===player.face &&
+       Math.abs(pr.x-(player.x+player.face*30))<28 && Math.abs(pr.y-player.y)<22){ pr.dead=true; burst(pr.x,pr.y,'#cfcfcf',6); }
+    // ou par le souffle de feu
+    else if(player.fireT>=6 && player.fireT<=15 && Math.sign(pr.x-player.x)===player.face &&
+       Math.abs(pr.x-player.x)<95 && Math.abs(pr.y-player.y)<26){ pr.dead=true; burst(pr.x,pr.y,'#ff8a2a',6); }
+    // touche le joueur (esquivable en sautant haut)
+    else if(player.inv<=0 && !player.dead && Math.abs(pr.x-player.x)<14 && Math.abs(pr.y-player.y)<18 && player.jz<22){
+      pr.dead=true; hurtPlayer(8, Math.sign(player.x-pr.x)||1);
+    }
+    if(pr.dist>520 || pr.x<cam-50 || pr.x>cam+W+50) pr.dead=true;
+  });
+  eprojs=eprojs.filter(pr=>!pr.dead);
 }
 
 function hurtEnemy(e, dmg, dir, magic){
@@ -217,19 +353,30 @@ function hurtEnemy(e, dmg, dir, magic){
   burst(e.x, e.y-26, '#ffdd55', magic?14:7);
   if(e.hp<=0){
     e.dead=true; e.deadT=24; e.kb=dir*5;
-    const pts=e.type==='heavy'?500:200; score+=pts; floatText(e.x, e.y-40, '+'+pts);
-    burst(e.x, e.y-26, '#c83232', 16);
+    const pts=e.type==='boss'?5000 : e.type==='heavy'?500:200; score+=pts; floatText(e.x, e.y-40, '+'+pts);
+    burst(e.x, e.y-26, e.type==='boss'?'#ffaa33':'#c83232', e.type==='boss'?40:16);
+    if(e.type==='boss' || Math.random()<0.25) dropFood(e.x, e.y);   // les ennemis (et le boss) lâchent de la nourriture
   }
+}
+function dropFood(x,y){
+  foods.push({ x:clamp(x,cam+10,cam+W-10), y:clamp(y,DY0,DY1), kind:Math.random()<0.5?'meat':'fruit', life:540, gone:false });
 }
 function hurtPlayer(dmg, dir){
   const p=player;
+  // si on est sur un bizarrien : il encaisse et s'enfuit, on est désarçonné (pas de dégâts)
+  if(p.mount){
+    p.mount.mounted=false; p.mount.fleeing=true; p.mount.vx=(dir>0?1:-1)*1.2; bizarrians.push(p.mount); p.mount=null;
+    p.fireT=0; p.hurtT=12; p.inv=60; p.kb=dir*5; shake=8;
+    burst(p.x,p.y-26,'#ffaa44',16); floatText(p.x,p.y-40,'DÉSARÇONNÉ');
+    return;
+  }
   p.hp-=dmg; p.hurtT=14; p.inv=40; p.kb=dir*5; p.atkT=0;
   burst(p.x, p.y-26, '#ff5252', 14); shake=6;
   if(p.hp<=0 && running){
     lives--; running=false; p.dead=true;
     ArcadeFX.die(cv, p.x-cam, p.y-20, 'splat', ()=>{
       if(lives<=0){ over=true; showOverlay('GAME OVER','Score : '+score+'  ·  Vague '+wave); }
-      else { const x=p.x; player=makePlayer(); player.x=x; player.inv=80; running=true; }
+      else { const x=p.x; player=makePlayer(); player.x=x; player.inv=80; eprojs=[]; running=true; }
     });
   }
 }
@@ -245,10 +392,18 @@ function draw(){
   ctx.save(); ctx.translate(sx,0);
   drawBg();
 
+  // vivres au sol
+  foods.forEach(fd=>drawFood(fd));
   // entités triées par profondeur (y)
-  const ents=[player, ...enemies];
+  const ents=[player, ...enemies, ...bizarrians];
   ents.sort((a,b)=>a.y-b.y);
-  ents.forEach(e=> e===player ? drawPlayer() : drawEnemy(e));
+  ents.forEach(e=>{
+    if(e===player){ if(player.mount) drawBizarrian(player.mount, true); drawPlayer(); }
+    else if(e.biz) drawBizarrian(e, false);
+    else drawEnemy(e);
+  });
+  // projectiles ennemis
+  eprojs.forEach(pr=>drawEproj(pr));
 
   // particules / textes
   parts.forEach(p=>{ ctx.globalAlpha=Math.min(1,p.life/16); ctx.fillStyle=p.color; ctx.fillRect(p.x-cam-1,p.y-1,3,3); });
@@ -296,7 +451,7 @@ function hpBar(x,y,w,frac,col){
 }
 
 function drawPlayer(){
-  const p=player, x=p.x-cam, y=p.y-p.jz, f=p.face;
+  const p=player, x=p.x-cam, y=p.y-p.jz-(p.mount?22:0), f=p.face;
   if(p.dead) return;
   if(p.inv>0 && Math.floor(p.inv/4)%2) ctx.globalAlpha=0.5;
   // ombre
@@ -325,34 +480,113 @@ function drawPlayer(){
   ctx.globalAlpha=1;
 }
 
+function drawFood(fd){
+  if(fd.life<120 && Math.floor(fd.life/6)%2) return;   // clignote avant de disparaître
+  const x=fd.x-cam, y=fd.y;
+  ctx.fillStyle='rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(x,y,8,3,0,0,Math.PI*2); ctx.fill();
+  if(fd.kind==='meat'){
+    ctx.fillStyle='#8a4b2a'; ctx.beginPath(); ctx.ellipse(x-2,y-7,6,5,0.3,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle='#f0e0c0'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(x+3,y-5); ctx.lineTo(x+8,y-2); ctx.stroke();
+  } else {
+    ctx.fillStyle='#d83030'; ctx.beginPath(); ctx.arc(x,y-6,5,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#2e7d32'; ctx.fillRect(x-1,y-13,2,4);
+    ctx.fillStyle='#7CFC00'; ctx.beginPath(); ctx.ellipse(x+3,y-12,2.5,1.4,-0.6,0,Math.PI*2); ctx.fill();
+  }
+}
+function drawBizarrian(b, mounted){
+  const x=b.x-cam, y=b.y, f=b.face, step=Math.floor(b.walkT/6)%2;
+  ctx.fillStyle='rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(x,y,17,5,0,0,Math.PI*2); ctx.fill();
+  // pattes
+  ctx.fillStyle='#7a1f17'; ctx.fillRect(x-9,y-10,5,10+(step?-2:0)); ctx.fillRect(x+4,y-10,5,10+(step?0:-2));
+  // queue
+  ctx.strokeStyle='#c0392b'; ctx.lineWidth=6; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(x-f*14,y-20); ctx.quadraticCurveTo(x-f*30,y-24,x-f*34,y-10); ctx.stroke();
+  // corps
+  ctx.fillStyle='#c0392b'; ctx.beginPath(); ctx.ellipse(x,y-20,18,12,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#8a1f17'; for(let i=-2;i<=2;i++){ ctx.beginPath(); ctx.moveTo(x+i*6,y-31); ctx.lineTo(x+i*6+3,y-37); ctx.lineTo(x+i*6+6,y-31); ctx.closePath(); ctx.fill(); }
+  // cou + tête
+  ctx.strokeStyle='#c0392b'; ctx.lineWidth=8; ctx.beginPath(); ctx.moveTo(x+f*12,y-24); ctx.lineTo(x+f*27,y-31); ctx.stroke();
+  ctx.fillStyle='#c0392b'; ctx.beginPath(); ctx.ellipse(x+f*31,y-31,7,6,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#ffd23a'; ctx.fillRect(x+f*31-1,y-34,3,3);
+  // souffle de feu (flammes en couches, façon Dig Dug)
+  if(mounted && player.fireT>0) drawDragonFire(x+f*36, y-31, f, player.fireT);
+}
+
+function drawDragonFire(x0, y, dir, fireT){
+  const FT=20, age=FT-fireT, grow=Math.min(1,age/4), fade=Math.min(1,fireT/6);
+  const x1=x0+dir*110*grow, t=performance.now()*0.018;
+  ctx.save(); ctx.globalCompositeOperation='lighter';
+  const layers=[
+    {col:'rgba(213,40,30,0.5)',   h:19},
+    {col:'rgba(255,140,0,0.6)',   h:13},
+    {col:'rgba(255,236,140,0.85)',h:8}
+  ];
+  for(let li=0; li<layers.length; li++){
+    const L=layers[li], steps=16;
+    ctx.beginPath();
+    for(let i=0;i<=steps;i++){ const u=i/steps, px=x0+(x1-x0)*u;
+      const env=Math.sin(Math.min(u,0.999)*Math.PI);
+      const wob=1 + 0.22*Math.sin(u*11 - t*1.4 + li) + 0.12*Math.sin(u*23 + t*2.1);
+      const hh=L.h*fade*(0.28+env)*wob;
+      if(i===0) ctx.moveTo(px,y-hh); else ctx.lineTo(px,y-hh); }
+    for(let i=steps;i>=0;i--){ const u=i/steps, px=x0+(x1-x0)*u;
+      const env=Math.sin(Math.min(u,0.999)*Math.PI);
+      const wob=1 + 0.22*Math.sin(u*11 + t*1.6 + li+3) + 0.12*Math.sin(u*19 - t*1.9);
+      const hh=L.h*fade*(0.28+env)*wob;
+      ctx.lineTo(px,y+hh); }
+    ctx.closePath();
+    const g=ctx.createLinearGradient(x0,y,x1,y);
+    g.addColorStop(0,L.col); g.addColorStop(0.85, L.col.replace(/0\.\d+\)/,'0.25)')); g.addColorStop(1,'rgba(255,80,0,0)');
+    ctx.fillStyle=g; ctx.fill();
+  }
+  const glow=ctx.createRadialGradient(x0,y,0, x0,y, 20*fade);
+  glow.addColorStop(0,'rgba(255,230,150,0.7)'); glow.addColorStop(1,'rgba(255,120,0,0)');
+  ctx.fillStyle=glow; ctx.beginPath(); ctx.arc(x0,y,20*fade,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+
+function drawEproj(pr){
+  const x=pr.x-cam, y=pr.y-2;
+  ctx.save(); ctx.translate(x,y); ctx.rotate(pr.spin);
+  ctx.fillStyle='#9a8a6a'; ctx.beginPath();
+  ctx.moveTo(-5,0); ctx.lineTo(2,-4); ctx.lineTo(6,2); ctx.lineTo(0,5); ctx.closePath(); ctx.fill();
+  ctx.fillStyle='#6b5d40'; ctx.fillRect(-1,-1,2,2);
+  ctx.restore();
+}
+
 function drawEnemy(e){
   const x=e.x-cam, y=e.y;
   const dead=e.dead;
   ctx.save();
   if(dead){ ctx.globalAlpha=Math.max(0,e.deadT/24); ctx.translate(x,y); ctx.rotate(e.face*0.9); ctx.translate(-x,-y); }
+  if(e.type==='boss'){ ctx.translate(x,y); ctx.scale(1.9,1.9); ctx.translate(-x,-y); }   // boss imposant
   ctx.fillStyle='rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(x,y,11,4,0,0,Math.PI*2); ctx.fill();
   const f=e.face, step=Math.floor(e.walkT/6)%2;
-  const skin = e.type==='heavy' ? '#c0392b' : '#5a8f3a';
+  const skin = e.type==='boss' ? '#5a3a7a' : e.type==='heavy' ? '#c0392b' : e.type==='thrower' ? '#b0a890' : '#5a8f3a';
   const tone = e.flash>0 ? '#ffffff' : skin;
   // jambes
   ctx.fillStyle='#333'; ctx.fillRect(x-6,y-15,4,15+(step?-2:0)); ctx.fillRect(x+2,y-15,4,15+(step?0:-2));
   // corps
   ctx.fillStyle=tone; ctx.fillRect(x-7,y-29,14,15);
   if(e.type==='heavy'){ ctx.fillStyle=e.flash>0?'#fff':'#7a1f17'; ctx.fillRect(x-7,y-29,14,5); } // armure
+  if(e.type==='boss'){ ctx.fillStyle=e.flash>0?'#fff':'#2b1840'; ctx.fillRect(x-8,y-30,16,7); } // plastron sombre
   // tête
-  ctx.fillStyle = e.flash>0?'#fff':(e.type==='heavy'?'#e0b0a0':'#a8d080');
+  ctx.fillStyle = e.flash>0?'#fff':(e.type==='boss'?'#3a2255':e.type==='heavy'?'#e0b0a0':'#a8d080');
   ctx.fillRect(x-5,y-39,10,10);
   ctx.fillStyle='#000'; ctx.fillRect(x-3+f,y-36,2,2); ctx.fillRect(x+1+f,y-36,2,2);
+  if(e.type==='boss'){ ctx.fillStyle=e.flash>0?'#fff':'#c0392b';  // cornes
+    ctx.beginPath(); ctx.moveTo(x-5,y-39); ctx.lineTo(x-9,y-46); ctx.lineTo(x-3,y-40); ctx.closePath();
+    ctx.moveTo(x+5,y-39); ctx.lineTo(x+9,y-46); ctx.lineTo(x+3,y-40); ctx.closePath(); ctx.fill(); }
   // arme (massue/hache), levée si télégraphe
   ctx.strokeStyle=tone; ctx.lineWidth=4; ctx.lineCap='round';
   const raise = e.telT>0?1:0;
   const wx=x+f*12, wy=y-26-raise*12;
   ctx.beginPath(); ctx.moveTo(x+f*4,y-27); ctx.lineTo(wx,wy); ctx.stroke();
-  ctx.fillStyle = e.type==='heavy'?'#bbbbc4':'#8a5a2a';
-  if(e.type==='heavy'){ ctx.fillRect(wx+f*2,wy-6,8,8); } else { ctx.beginPath(); ctx.arc(wx+f*3,wy-2,5,0,Math.PI*2); ctx.fill(); }
+  ctx.fillStyle = e.type==='heavy'?'#bbbbc4':e.type==='boss'?'#9a8aa8':'#8a5a2a';
+  if(e.type==='heavy'||e.type==='boss'){ ctx.fillRect(wx+f*2,wy-7,9,9); } else { ctx.beginPath(); ctx.arc(wx+f*3,wy-2,5,0,Math.PI*2); ctx.fill(); }
   ctx.restore();
-  // barre de vie
-  if(!dead && e.hp<e.maxhp) hpBar(x-12, y-48, 24, e.hp/e.maxhp, '#ff5252');
+  // barre de vie (les boss : grande barre en haut)
+  if(!dead && e.type!=='boss' && e.hp<e.maxhp) hpBar(x-12, y-48, 24, e.hp/e.maxhp, '#ff5252');
 }
 
 function drawHUD(){
@@ -370,10 +604,20 @@ function drawHUD(){
   ctx.textAlign='right'; ctx.fillStyle='#fff'; ctx.font='14px "Courier New",monospace';
   ctx.fillText('SCORE '+score, W-8, 18);
   ctx.fillStyle='#f5b21a'; ctx.fillText('VAGUE '+wave+'  NIV '+stage(), W-8, 34);
+  // barre de vie du boss
+  const boss = enemies.find(e=>e.type==='boss' && !e.dead);
+  if(boss){
+    const bw=W-120, bx=60, by=H-22;
+    ctx.fillStyle='#000'; ctx.fillRect(bx-2,by-2,bw+4,12);
+    ctx.fillStyle='#5a1010'; ctx.fillRect(bx,by,bw,8);
+    ctx.fillStyle='#c0392b'; ctx.fillRect(bx,by,bw*clamp(boss.hp/boss.maxhp,0,1),8);
+    ctx.fillStyle='#f5b21a'; ctx.font='bold 11px "Courier New",monospace'; ctx.textAlign='center';
+    ctx.fillText('BOSS', W/2, by-5);
+  }
 }
 
 function loop(){ update(); draw(); requestAnimationFrame(loop); }
-player=makePlayer(); enemies=[]; parts=[]; floats=[];
+player=makePlayer(); enemies=[]; parts=[]; floats=[]; foods=[]; bizarrians=[]; eprojs=[];
 loop();
 </script>
 <script src="../music/playlist.js"></script>

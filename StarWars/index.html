@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Star Wars</title>
+<style>
+  html,body{margin:0;padding:0;height:100%;background:#000;color:#fff;
+    font-family:'Courier New',monospace;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;user-select:none;overflow:hidden}
+  h1{letter-spacing:6px;margin:0 0 8px;font-size:20px;color:#ffe81f;
+     text-shadow:0 0 8px #ffe81f,0 0 18px #b8a000}
+  #wrap{position:relative}
+  canvas{background:#000;border:2px solid #fff;display:block;cursor:crosshair;
+    box-shadow:0 0 24px rgba(80,200,120,.35);touch-action:none}
+  #hint{color:#777;font-size:12px;margin-top:10px;text-align:center;line-height:1.6}
+  #overlay{position:absolute;inset:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;background:rgba(0,0,0,.82);
+    text-align:center;cursor:pointer}
+  #overlay h2{font-size:24px;letter-spacing:3px;margin:0 0 12px;color:#ffe81f}
+  #overlay p{color:#bbb;font-size:13px;margin:4px 0}
+  .blink{animation:blink 1.1s steps(2,start) infinite}
+  @keyframes blink{50%{opacity:0}}
+  a.back{color:#4ecca3;font-size:12px;margin-top:8px;text-decoration:none;letter-spacing:1px}
+  a.back:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+  <h1>STAR WARS</h1>
+  <div id="wrap">
+    <canvas id="game" width="480" height="360"></canvas>
+    <div id="overlay">
+      <h2 id="ovTitle">STAR WARS</h2>
+      <p>Détruisez les TIE fighters et les boules de feu</p>
+      <p>Souris : viser · clic / Espace : tirer</p>
+      <p>Ne laissez pas les tirs atteindre votre vaisseau (bouclier)</p>
+      <p class="blink" style="margin-top:14px">▶ Cliquez ou Espace pour décoller</p>
+    </div>
+  </div>
+  <div id="hint">Souris (ou flèches) : viser · clic / Espace : tirer · P = pause</div>
+  <a class="back" href="../index.html">← Menu Arcade</a>
+
+<script>
+const cv = document.getElementById('game');
+const ctx = cv.getContext('2d');
+const W=cv.width, H=cv.height, CX=W/2, CY=H/2;
+const FOV=300;
+const overlay=document.getElementById('overlay');
+const ovTitle=document.getElementById('ovTitle');
+
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp=(a,b,t)=>a+(b-a)*t;
+
+let stars, ties, fires, lasers, parts, towers, aim;
+let score=0, shield=6, wave=1, toSpawn=0, spawnT=0, fireCd=0, flashT=0, msgT=0;
+let running=false, paused=false, over=false;
+const keys={};
+
+// ── sons laser ──
+let _ac=null;
+function actx(){ try{ if(!_ac) _ac=new (window.AudioContext||window.webkitAudioContext)(); if(_ac.state==='suspended') _ac.resume(); }catch(e){} return _ac; }
+function laserSfx(freq, dur, vol, type){
+  const ac=actx(); if(!ac) return; const t=ac.currentTime;
+  const o=ac.createOscillator(), g=ac.createGain();
+  o.type=type; o.frequency.setValueAtTime(freq,t); o.frequency.exponentialRampToValueAtTime(freq*0.25,t+dur);
+  g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t+dur+0.03);
+}
+function sfxEnemyFire(){ laserSfx(440, 0.20, 0.18, 'sawtooth'); }   // tir ennemi (grave)
+function sfxPlayerFire(){ laserSfx(950, 0.12, 0.13, 'square'); }    // ton tir (aigu)
+
+function newGame(){
+  stars=[]; for(let i=0;i<120;i++) stars.push(rndStar(Math.random()*900+50));
+  ties=[]; fires=[]; lasers=[]; parts=[]; towers=[];
+  for(let i=0;i<6;i++) towers.push({side:i%2?1:-1, z:150+i*150});
+  aim={x:CX, y:CY};
+  score=0; shield=6; wave=1; toSpawn=4; spawnT=40; fireCd=0; flashT=0; msgT=180;
+  over=false; paused=false; running=true;
+  hideOverlay();
+}
+function rndStar(z){ return { x:(Math.random()*2-1)*600, y:(Math.random()*2-1)*450, z }; }
+
+function showOverlay(t,s){ ovTitle.textContent=t; overlay.querySelector('p:nth-of-type(1)').textContent=s; overlay.style.display='flex'; }
+function hideOverlay(){ overlay.style.display='none'; }
+
+// ── entrées ──
+document.addEventListener('keydown',e=>{
+  const k=e.key.toLowerCase(); keys[k]=true;
+  if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)) e.preventDefault();
+  if(paused && ['arrowup','arrowdown','arrowleft','arrowright',' ','w','a','s','d'].includes(k)){ paused=false; return; }
+  if(k===' '){ if(!running||over){ newGame(); } else fire(); }
+  if(k==='p' && running && !over) paused=!paused;
+});
+document.addEventListener('keyup',e=>{ keys[e.key.toLowerCase()]=false; });
+cv.addEventListener('mousemove',e=>{ const r=cv.getBoundingClientRect();
+  aim.x=clamp((e.clientX-r.left)*(W/r.width),0,W); aim.y=clamp((e.clientY-r.top)*(H/r.height),0,H); });
+cv.addEventListener('mousedown',e=>{ e.preventDefault(); if(!running||over){ newGame(); return; } fire(); });
+cv.addEventListener('touchstart',e=>{ e.preventDefault(); const t=e.touches[0], r=cv.getBoundingClientRect();
+  aim.x=clamp((t.clientX-r.left)*(W/r.width),0,W); aim.y=clamp((t.clientY-r.top)*(H/r.height),0,H);
+  if(!running||over){ newGame(); return; } fire(); },{passive:false});
+overlay.addEventListener('click',()=>{ if(!running||over) newGame(); });
+
+function fire(){
+  if(fireCd>0 || over) return;
+  fireCd=9;
+  lasers.push({x:aim.x, y:aim.y, t:6});
+  sfxPlayerFire();
+  // tir au réticule : on touche la cible la plus proche dans le rayon
+  let best=null, bestZ=1e9;
+  for(const t of ties){ if(!t.alive) continue; const p=projTie(t);
+    if(p && Math.hypot(p.x-aim.x,p.y-aim.y)<28+p.k*8 && t.z<bestZ){ best={kind:'tie',o:t}; bestZ=t.z; } }
+  for(const f of fires){ const r=fireR(f);
+    if(Math.hypot(f.sx-aim.x,f.sy-aim.y)<r+10 && f.z<bestZ){ best={kind:'fire',o:f}; bestZ=f.z; } }
+  if(best){
+    if(best.kind==='tie'){ best.o.alive=false; score+=100; boom(projTie(best.o).x, projTie(best.o).y, '#46d846', 16); }
+    else { best.o.dead=true; score+=50; boom(best.o.sx, best.o.sy, '#ff8a2a', 12); }
+  }
+}
+
+function projTie(t){ if(t.z<=1) return null; const k=FOV/t.z; return { x:CX+t.x*k/ (FOV/300), y:CY+t.y*k/(FOV/300), k:FOV/t.z*1 , sc:clamp(FOV/t.z,0.25,6) }; }
+function fireR(f){ return clamp(lerp(28,3, f.z/f.z0), 3, 30); }
+
+// ── mise à jour ──
+function update(){
+  if(!running||paused||over) return;
+  if(fireCd>0) fireCd--; if(flashT>0) flashT--; if(msgT>0) msgT--;
+
+  // viser au clavier
+  const ks=4;
+  if(keys['arrowleft']) aim.x-=ks; if(keys['arrowright']) aim.x+=ks;
+  if(keys['arrowup']) aim.y-=ks; if(keys['arrowdown']) aim.y+=ks;
+  aim.x=clamp(aim.x,0,W); aim.y=clamp(aim.y,0,H);
+
+  // étoiles
+  stars.forEach(s=>{ s.z-=8; if(s.z<10){ const n=rndStar(900); s.x=n.x; s.y=n.y; s.z=n.z; } });
+  // tours (surface étoile noire) qui défilent
+  towers.forEach(t=>{ t.z-=6; if(t.z<10){ t.z=900; t.side=Math.random()<.5?-1:1; } });
+
+  // apparition des TIE
+  if(toSpawn>0){ spawnT--; if(spawnT<=0 && ties.filter(t=>t.alive).length<5){
+    ties.push({ x:(Math.random()*2-1)*420, y:(Math.random()*2-1)*200, z:900,
+      sway:Math.random()*Math.PI*2, alive:true, shootCd:50+Math.random()*60 });
+    toSpawn--; spawnT=35+Math.random()*30;
+  }}
+
+  // TIE : avancent vers le joueur, tirent
+  ties.forEach(t=>{
+    if(!t.alive) return;
+    t.z -= 3.2 + wave*0.25;
+    t.sway += 0.04; t.x += Math.sin(t.sway)*1.2;
+    t.shootCd--;
+    if(t.shootCd<=0 && t.z>150 && t.z<800){ spawnFire(t); t.shootCd=70+Math.random()*70 - wave*4; }
+    if(t.z<=45){ t.alive=false; damage(); boom(CX,CY,'#46d846',10); }   // collision
+  });
+  ties = ties.filter(t=>t.alive);   // les TIE détruits/passés sont retirés
+
+  // boules de feu : grossissent en place puis touchent
+  fires.forEach(f=>{ f.z -= 4.5 + wave*0.3; if(f.z<=20 && !f.dead){ f.dead=true; damage(); } });
+  fires = fires.filter(f=>!f.dead);
+
+  lasers.forEach(l=>l.t--); lasers=lasers.filter(l=>l.t>0);
+  parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.life--;}); parts=parts.filter(p=>p.life>0);
+
+  // vague suivante
+  if(toSpawn<=0 && ties.length===0){ wave++; toSpawn=3+wave; spawnT=30; msgT=150; }
+}
+
+function spawnFire(t){
+  const p=projTie(t); if(!p) return;
+  fires.push({ sx:p.x, sy:p.y, z:t.z, z0:t.z, dead:false });
+  sfxEnemyFire();
+}
+function damage(){
+  if(over) return;
+  shield--; flashT=10;
+  if(shield<=0){ shield=0; over=true; running=false; ArcadeFX.die(cv, CX, CY, 'explosion', ()=>{ showOverlay('VAISSEAU DÉTRUIT','Score : '+score); }); }
+}
+function boom(x,y,color,n){ for(let i=0;i<n;i++){ const a=Math.random()*Math.PI*2,s=Math.random()*4+1;
+  parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:18+Math.random()*12,color}); } }
+
+// ── rendu ──
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  ctx.lineCap='round';
+
+  // étoiles
+  stars.forEach(s=>{ const k=FOV/s.z; const x=CX+s.x*k/ (FOV/300), y=CY+s.y*k/(FOV/300);
+    if(x>=0&&x<W&&y>=0&&y<H){ const b=clamp(1-s.z/900,0.1,1); ctx.fillStyle='rgba(255,255,255,'+b+')'; ctx.fillRect(x,y,b>0.6?2:1,b>0.6?2:1); } });
+
+  ctx.save(); ctx.shadowBlur=6;
+  // tours de la surface (rouge/bleu) sur les côtés
+  towers.forEach(t=>drawTower(t));
+  // TIE fighters
+  ties.forEach(t=>{ if(t.alive){ const p=projTie(t); if(p) drawTie(p.x,p.y,p.sc); } });
+  // boules de feu
+  fires.forEach(f=>drawFire(f));
+  ctx.restore();
+
+  // lasers du joueur (canons convergents)
+  lasers.forEach(l=>{
+    const a=l.t/6;
+    ctx.strokeStyle='rgba(90,210,255,'+a+')'; ctx.lineWidth=2; ctx.shadowColor='#5ad1ff'; ctx.shadowBlur=8;
+    [[8,H-2],[W-8,H-2]].forEach(c=>{ ctx.beginPath(); ctx.moveTo(c[0],c[1]); ctx.lineTo(l.x,l.y); ctx.stroke(); });
+    ctx.shadowBlur=0;
+  });
+
+  // particules
+  parts.forEach(p=>{ ctx.globalAlpha=Math.min(1,p.life/18); ctx.fillStyle=p.color; ctx.fillRect(p.x-1,p.y-1,3,3); });
+  ctx.globalAlpha=1;
+
+  // réticule
+  drawReticle(aim.x, aim.y);
+
+  // flash de dégât
+  if(flashT>0){ ctx.fillStyle='rgba(255,40,40,'+(flashT/10*0.35)+')'; ctx.fillRect(0,0,W,H); }
+
+  drawHUD();
+
+  if(paused){ ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#ffe81f'; ctx.textAlign='center'; ctx.font='30px "Courier New",monospace'; ctx.fillText('PAUSE',CX,CY); }
+}
+
+function drawTie(x,y,sc){
+  const wing=18*sc, ball=6*sc, gap=14*sc;
+  ctx.strokeStyle='#46d846'; ctx.lineWidth=Math.max(1,1.4*Math.min(sc,2));
+  // pylônes
+  ctx.beginPath(); ctx.moveTo(x-gap,y); ctx.lineTo(x-ball,y); ctx.moveTo(x+ball,y); ctx.lineTo(x+gap,y); ctx.stroke();
+  // ailes hexagonales
+  for(const s of [-1,1]){
+    const wx=x+s*gap;
+    ctx.beginPath();
+    ctx.moveTo(wx, y-wing); ctx.lineTo(wx+s*wing*0.5, y-wing*0.6);
+    ctx.lineTo(wx+s*wing*0.5, y+wing*0.6); ctx.lineTo(wx, y+wing);
+    ctx.lineTo(wx-s*wing*0.5, y+wing*0.6); ctx.lineTo(wx-s*wing*0.5, y-wing*0.6);
+    ctx.closePath(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(wx,y-wing); ctx.lineTo(wx,y+wing); ctx.stroke();
+  }
+  // boule centrale
+  ctx.beginPath(); ctx.arc(x,y,ball,0,Math.PI*2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(x,y,ball*0.5,0,Math.PI*2); ctx.stroke();
+}
+function drawFire(f){
+  const r=fireR(f);
+  ctx.strokeStyle='#ff8a2a'; ctx.fillStyle='rgba(255,90,0,.5)'; ctx.lineWidth=2; ctx.shadowColor='#ff6a00'; ctx.shadowBlur=10;
+  ctx.beginPath(); ctx.arc(f.sx,f.sy,r,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle='#ffd23a';
+  for(let i=0;i<6;i++){ const a=i/6*Math.PI*2; ctx.beginPath(); ctx.moveTo(f.sx,f.sy); ctx.lineTo(f.sx+Math.cos(a)*r,f.sy+Math.sin(a)*r); ctx.stroke(); }
+  ctx.shadowBlur=0;
+}
+function drawTower(t){
+  const k=FOV/t.z, sc=clamp(k/(FOV/300),0.2,5);
+  const x=CX + t.side*(220)*k/(FOV/300);
+  const y=CY + 120*k/(FOV/300);
+  if(x<-60||x>W+60) return;
+  const w=22*sc, h=44*sc;
+  ctx.strokeStyle='#d23b3b'; ctx.lineWidth=Math.max(1,1.2*Math.min(sc,2));
+  ctx.strokeRect(x-w/2, y-h/2, w, h);
+  ctx.strokeStyle='#2b6dff';
+  ctx.beginPath(); ctx.moveTo(x-w/2,y); ctx.lineTo(x+w/2,y);
+  ctx.moveTo(x,y-h/2); ctx.lineTo(x,y+h/2); ctx.stroke();
+}
+function drawReticle(x,y){
+  ctx.strokeStyle='#5ad1ff'; ctx.lineWidth=1.5; ctx.shadowColor='#5ad1ff'; ctx.shadowBlur=6;
+  ctx.beginPath(); ctx.arc(x,y,10,0,Math.PI*2); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x-16,y); ctx.lineTo(x-6,y); ctx.moveTo(x+6,y); ctx.lineTo(x+16,y);
+  ctx.moveTo(x,y-16); ctx.lineTo(x,y-6); ctx.moveTo(x,y+6); ctx.lineTo(x,y+16);
+  ctx.stroke(); ctx.shadowBlur=0;
+}
+
+function drawHUD(){
+  ctx.textAlign='left'; ctx.font='bold 15px "Courier New",monospace';
+  ctx.fillStyle='#d23b3b'; ctx.fillText('SCORE', 12, 20);
+  ctx.fillStyle='#ff5a5a'; ctx.fillText(String(score).padStart(5,'0'), 12, 36);
+  ctx.textAlign='right';
+  ctx.fillStyle='#d23b3b'; ctx.fillText(wave+' WAVE', W-12, 20);
+  // jauge de bouclier (vert) au centre haut
+  ctx.strokeStyle='#46d846'; ctx.lineWidth=1.5; ctx.shadowColor='#46d846'; ctx.shadowBlur=4;
+  ctx.beginPath(); ctx.moveTo(CX-70,30); ctx.lineTo(CX,10); ctx.lineTo(CX+70,30); ctx.stroke();
+  for(let i=0;i<6;i++){ const t=i/6; const xx=lerp(CX-66,CX-2,t), yy=lerp(28,12,t);
+    ctx.globalAlpha = i<shield?1:0.2; ctx.beginPath(); ctx.moveTo(xx,yy); ctx.lineTo(xx,yy+8); ctx.stroke();
+    const x2=CX+66-(xx-(CX-66)); ctx.beginPath(); ctx.moveTo(x2,yy); ctx.lineTo(x2,yy+8); ctx.stroke(); }
+  ctx.globalAlpha=1; ctx.shadowBlur=0;
+  ctx.fillStyle='#46d846'; ctx.textAlign='center'; ctx.font='bold 13px "Courier New",monospace';
+  ctx.fillText('SHIELD', CX, 44);
+  // message
+  if(msgT>0){ ctx.fillStyle='#d23b3b'; ctx.font='bold 16px "Courier New",monospace';
+    ctx.fillText('SHOOT TIE FIGHTERS', CX, 64); }
+}
+
+function loop(){ update(); draw(); requestAnimationFrame(loop); }
+aim={x:CX,y:CY}; stars=[]; for(let i=0;i<120;i++) stars.push(rndStar(Math.random()*900+50));
+ties=[]; fires=[]; lasers=[]; parts=[]; towers=[];
+loop();
+</script>
+<script src="../music/playlist.js"></script>
+<script src="../music/player.js"></script>
+</body>
+</html>
