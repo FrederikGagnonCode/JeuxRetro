@@ -43,6 +43,9 @@
   #arcade-music .am-title{font-size:12px;letter-spacing:1px;color:#4ecca3;white-space:nowrap;
     overflow:hidden;text-overflow:ellipsis;flex:1;}
   #arcade-music .am-toggle{background:none;border:none;color:#888;font-size:14px;cursor:pointer;}
+  #arcade-music .am-pausebtn{background:none;border:none;color:#4ecca3;font-size:15px;cursor:pointer;
+    padding:0 2px;line-height:1;}
+  #arcade-music .am-pausebtn:hover{color:#7df0c8;}
   #arcade-music .am-body{display:none;padding:0 10px 10px;}
   #arcade-music.open .am-body{display:block;}
   #arcade-music .am-row{display:flex;gap:6px;align-items:center;margin-top:6px;}
@@ -63,6 +66,7 @@
     <div class="am-head">
       <span style="font-size:14px">🎵</span>
       <span class="am-title" id="am-now">Musique</span>
+      <button class="am-pausebtn" id="am-pause" title="Lecture / Pause">▶</button>
       <button class="am-toggle" id="am-toggle" title="Afficher/masquer">▸</button>
     </div>
     <div class="am-body">
@@ -151,6 +155,7 @@
     elStop    = root.querySelector('#am-stop');
     elVol     = root.querySelector('#am-vol');
     const elToggle = root.querySelector('#am-toggle');
+    const elPause  = root.querySelector('#am-pause');
     const elHead   = root.querySelector('.am-head');
     const elPrev   = root.querySelector('#am-prev');
     const elNext   = root.querySelector('#am-next');
@@ -167,6 +172,19 @@
     };
     elHead.addEventListener('click', toggle);
     elToggle.addEventListener('click', (e) => { e.stopPropagation(); toggle(); });
+
+    // bouton lecture/pause (visible en mode compressé, dans le head)
+    const updatePauseIcon = () => { elPause.textContent = (!audio.paused && audio.src) ? '⏸' : '▶'; };
+    elPause.addEventListener('click', (e) => {
+      e.stopPropagation();                       // ne pas déplier/replier la barre
+      if (!audio.paused && audio.src) audio.pause();
+      else if (current >= 0 && audio.src) audio.play().catch(()=>{});
+      else playRandom().catch(()=>{});           // rien en cours → démarre un morceau
+      elPause.blur();
+    });
+    audio.addEventListener('play', updatePauseIcon);
+    audio.addEventListener('pause', updatePauseIcon);
+    updatePauseIcon();
 
     elSelect.addEventListener('change', () => {
       if (elSelect.value === '') stop(); else play(+elSelect.value).catch(()=>{});

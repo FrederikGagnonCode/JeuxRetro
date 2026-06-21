@@ -48,9 +48,10 @@ const overlay=document.getElementById('overlay');
 const ovTitle=document.getElementById('ovTitle');
 
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-let player, bullets, ebullets, enemies, pows, parts, decor;
+let player, bullets, ebullets, enemies, pows, parts, decor, wrecks;
 let score=0, lives=3, wave=1, hi=0;
 let spawnT=0, fireCd=0, fidCounter=0, bossDoneWave=0;
+let stage=1, stagePlanes=0, stageDowned=0, stageGoal=20, stageClear=false, scT=0, scPct=0, scAcc=0, scPlanes=0;
 const redForms={};
 let running=false, paused=false, over=false, flashMsg=null, flashT=0;
 const keys={};
@@ -128,18 +129,28 @@ function makePlayer(){
   return { x:W/2, y:H-70, power:0, loops:3, loopT:0, loopPh:0, inv:90, dead:false };
 }
 function newGame(){
-  player=makePlayer(); bullets=[]; ebullets=[]; enemies=[]; pows=[]; parts=[];
+  player=makePlayer(); bullets=[]; ebullets=[]; enemies=[]; pows=[]; parts=[]; wrecks=[];
   initDecor();
   score=0; lives=3; wave=1; spawnT=40; fireCd=0; bossDoneWave=0;
+  stage=1; stagePlanes=0; stageDowned=0; stageGoal=20; stageClear=false; scT=0;
   over=false; paused=false; running=true;
   hideOverlay();
 }
 function makeWave(y){ return {type:'wave', x:Math.random()*W, y, r:10+Math.random()*16, s:0.7+Math.random()*0.5}; }
 function makeLand(y){
-  const r=34+Math.random()*44;
-  const lobes=[]; const n=5+Math.floor(Math.random()*3);
-  for(let i=0;i<n;i++){ const a=i/n*Math.PI*2 + Math.random()*0.4; lobes.push({a, rr:r*(0.55+Math.random()*0.5)}); }
-  return {type:'land', x:40+Math.random()*(W-80), y, r, s:0.7, lobes};
+  const r=34+Math.random()*46;
+  const N=14;
+  // littoral et forêt irréguliers (facteurs de rayon par angle)
+  const coast=[], forest=[];
+  for(let i=0;i<N;i++){ coast.push(0.72+Math.random()*0.42); forest.push(0.55+Math.random()*0.4); }
+  // la forêt est décalée et ne couvre pas toute l'île
+  const fox=(Math.random()-0.5)*r*0.5, foy=(Math.random()-0.5)*r*0.5;
+  // taches de canopée / clairières pour la texture
+  const blobs=[];
+  const nb=5+Math.floor(Math.random()*4);
+  for(let i=0;i<nb;i++){ const a=Math.random()*Math.PI*2, rr=Math.random()*r*0.5;
+    blobs.push({x:Math.cos(a)*rr+fox, y:Math.sin(a)*rr*0.9+foy, s:r*(0.07+Math.random()*0.13), shade:Math.random()}); }
+  return {type:'land', x:40+Math.random()*(W-80), y, r, s:0.7, rot:Math.random()*Math.PI*2, coast, forest, fox, foy, blobs};
 }
 function initDecor(){
   decor=[];
@@ -184,6 +195,7 @@ function spawnFormation(){
   const fid = ++fidCounter;
   const n = 4 + Math.floor(Math.random()*3);
   const type = Math.random();
+  stagePlanes += n;
   if(red) redForms[fid]={left:n, escaped:false};
   const startX = 40+Math.random()*(W-80);
   const dir = Math.random()<0.5?1:-1;
@@ -200,13 +212,48 @@ function spawnFormation(){
     enemies.push(e);
   }
 }
+function spawnBomberBottom(){
+  // vague d'avions intermédiaires surgissant du bas, qui remontent l'écran
+  const n = 2 + Math.floor(Math.random()*2);
+  stagePlanes += n;
+  const dir = Math.random()<0.5?1:-1;
+  const startX = 60+Math.random()*(W-120);
+  for(let i=0;i<n;i++){
+    const e={ x: clamp(startX+i*32*dir,20,W-20), y: H+40+i*44, baseX:0, t:i*8,
+      vy: -(1.1+wave*0.05+Math.random()*0.3), amp:36+Math.random()*30,
+      freq:0.012+Math.random()*0.01, phase:Math.random()*Math.PI*2,
+      hp:14, red:false, fid:0, shootCd:50+Math.random()*60, escaped:false, big:true, boss:false,
+      fromBottom:true, willLoop:false, looping:false, climbing:false, rot:Math.PI };
+    e.baseX=e.x; enemies.push(e);
+  }
+}
+function spawnSideFormation(){
+  // escadrille rouge entrant par un côté et traversant l'écran
+  const fid = ++fidCounter;
+  const n = 4 + Math.floor(Math.random()*3);
+  stagePlanes += n;
+  redForms[fid]={left:n, escaped:false};
+  const fromLeft = Math.random()<0.5;
+  const vx = (fromLeft?1:-1)*(1.5+wave*0.05);
+  const baseY = 70+Math.random()*(H*0.45);
+  const x0 = fromLeft ? -30 : W+30;
+  for(let i=0;i<n;i++){
+    const e={ x: x0 - (fromLeft?1:-1)*i*30, y: baseY+i*6,
+      baseX:0, baseY: baseY+i*6, t:i*8, vy:0, vx,
+      amp:22+Math.random()*16, freq:0.03+Math.random()*0.02, phase:i*0.5,
+      hp:1, red:true, fid, shootCd:60+Math.random()*100, escaped:false, big:false, boss:false,
+      fromSide:true, willLoop:false, looping:false, climbing:false,
+      rot: vx>0?-Math.PI/2:Math.PI/2 };
+    enemies.push(e);
+  }
+}
 function updateBoss(e){
-  // entrée puis va-et-vient en haut de l'écran
-  if(e.y < 96){ e.y += 1.3; }
+  // arrive du haut (en marche arrière, nez vers le haut) puis va-et-vient
+  if(e.y < 104){ e.y += 1.3; }
   else {
-    e.x += e.swayDir * (1.3 + wave*0.05);
-    if(e.x > W-46){ e.x=W-46; e.swayDir=-1; }
-    if(e.x < 46){ e.x=46; e.swayDir=1; }
+    e.x += e.swayDir * (1.2 + wave*0.05);
+    if(e.x > W-90){ e.x=W-90; e.swayDir=-1; }
+    if(e.x < 90){ e.x=90; e.swayDir=1; }
   }
   if(e.y < 80 || player.dead) return;
   // patterns de tir alternés, de plus en plus rapides selon la vague
@@ -243,6 +290,7 @@ function startLoop(e){
 }
 function spawnBomber(){
   // avion intermédiaire : plus gros et résistant qu'un chasseur, mais pas un boss
+  stagePlanes++;
   enemies.push({ x:40+Math.random()*(W-80), y:-50, baseX:0, t:0, vy:0.8,
     amp:70+Math.random()*40, freq:0.012+Math.random()*0.01, phase:Math.random()*Math.PI*2,
     hp:18, red:false, fid:0, shootCd:50, escaped:false, big:true, boss:false,
@@ -260,6 +308,7 @@ function spawnBoss(){
 function update(){
   if(!running||paused||over) return;
   if(flashT>0) flashT--;
+  if(stageClear){ updateStageClear(); return; }
 
   // décor défilant (océan + îles)
   decor.forEach((d,i)=>{ d.y+=d.s; if(d.y-d.r>H){
@@ -280,6 +329,8 @@ function update(){
       spawnBoss(); bossDoneWave=wave; flash('★ AVION BOSS ★'); spawnT=400;
     }
     else if(enemies.some(e=>e.boss)){ spawnT=120; }   // pas d'escadrille pendant le boss
+    else if(wave>=3 && Math.random()<0.14 && !enemies.some(e=>e.big)){ spawnBomberBottom(); flash('ATTAQUE PAR LE BAS !'); spawnT=Math.max(60, 130-wave*4); }
+    else if(wave>=3 && Math.random()<0.18){ spawnSideFormation(); flash('ESCADRILLE LATÉRALE !'); spawnT=Math.max(50, 120-wave*4); }
     else if(wave>=2 && Math.random()<0.22 && !enemies.some(e=>e.big)){ spawnBomber(); spawnT=Math.max(50, 120-wave*4); }
     else { spawnFormation(); spawnT=Math.max(40, 110-wave*4); }
   }
@@ -305,18 +356,30 @@ function update(){
       e.rot = Math.atan2(-hx, hy);
       if(e.lsweep >= Math.PI*2){ e.looping=false; e.climbing=true; }
     } else {
-      e.x = e.baseX + Math.sin(e.t*e.freq + e.phase)*e.amp;
-      e.y += e.vy;
-      // déclenche un looping si l'avion survit assez longtemps
-      if(!e.big && e.willLoop && e.y > H*0.42 && e.y < H*0.62){ startLoop(e); }
+      // position selon le type d'entrée
+      if(e.fromSide){
+        e.x += e.vx;                                            // traverse horizontalement
+        e.y = e.baseY + Math.sin(e.t*e.freq + e.phase)*e.amp;
+        e.rot = e.vx>0 ? -Math.PI/2 : Math.PI/2;
+      } else {
+        e.x = e.baseX + Math.sin(e.t*e.freq + e.phase)*e.amp;
+        e.y += e.vy;                                            // vy négatif si venu du bas
+        if(e.fromBottom) e.rot = Math.PI;
+        // looping seulement pour les avions venant du haut
+        if(!e.big && !e.fromBottom && e.willLoop && e.y > H*0.42 && e.y < H*0.62){ startLoop(e); }
+      }
       // tir ennemi
       e.shootCd--;
-      if(e.shootCd<=0 && e.y>0 && e.y<H*0.7 && !player.dead){
+      if(e.shootCd<=0 && e.x>4 && e.x<W-4 && e.y>0 && e.y<H && !player.dead){
         const dx=player.x-e.x, dy=player.y-e.y, d=Math.hypot(dx,dy)||1, sp=2.2+wave*0.04;
         ebullets.push({x:e.x, y:e.y+10, vx:dx/d*sp, vy:dy/d*sp}); sfxEnemyShot();
         e.shootCd = (e.big?35:90)+Math.random()*80;
       }
-      if(e.y>H+30){ e.escaped=true; if(e.red && redForms[e.fid]) redForms[e.fid].escaped=true; }
+      // sortie d'écran selon la direction
+      const out = e.fromSide   ? (e.x < -40 || e.x > W+40)
+                : e.fromBottom ? (e.y < -40)
+                :                (e.y > H+30);
+      if(out){ e.escaped=true; if(e.red && redForms[e.fid]) redForms[e.fid].escaped=true; }
     }
   });
 
@@ -324,7 +387,7 @@ function update(){
   bullets.forEach(b=>{
     enemies.forEach(e=>{
       if(e.dead) return;
-      const r=e.boss?36:(e.big?26:14);
+      const r=e.boss?50:(e.big?26:14);
       if(Math.abs(b.x-e.x)<r && Math.abs(b.y-e.y)<r){
         e.hp--; b.dead=true; burst(b.x,b.y,'#ffd23a',4);
         if(e.hp<=0) killEnemy(e);
@@ -342,7 +405,7 @@ function update(){
   if(!player.dead && player.inv<=0 && player.loopT<=0){
     for(const b of ebullets){ if(Math.abs(b.x-player.x)<8 && Math.abs(b.y-player.y)<8){ b.dead=true; hitPlayer(); break; } }
     ebullets=ebullets.filter(b=>!b.dead);
-    for(const e of enemies){ const r=e.boss?30:(e.big?24:14); if(Math.abs(e.x-player.x)<r && Math.abs(e.y-player.y)<r){ hitPlayer(); break; } }
+    for(const e of enemies){ const r=e.boss?44:(e.big?24:14); if(Math.abs(e.x-player.x)<r && Math.abs(e.y-player.y)<r){ hitPlayer(); break; } }
   } else if(player.inv>0) player.inv--;
 
   // POW
@@ -354,13 +417,43 @@ function update(){
     return p.y<H+20;
   });
 
-  // particules / textes
+  // épaves en chute + particules / textes
+  updateWrecks();
   parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=0.12;p.life--;});
   parts=parts.filter(p=>p.life>0);
   floaters.forEach(f=>{f.y-=0.6;f.life--;});
 
   // progression de vague selon le score
   wave = 1 + Math.floor(score/3000);
+
+  // fin de stage : quota d'avions atteint et écran nettoyé
+  if(!stageClear && stagePlanes>=stageGoal && enemies.length===0 && !player.dead && !enemies.some(e=>e.boss)){
+    startStageClear();
+  }
+}
+
+// ── stages ──
+function startStageClear(){
+  stageClear=true; scT=0; ebullets=[]; bullets=[]; wrecks=[];
+  player.loops=3;                                  // tonneaux remplis
+  scPct = stagePlanes ? Math.round(stageDowned/stagePlanes*100) : 100;
+  scAcc = scPct>=100?10000 : scPct>=80?4000 : scPct>=50?2000 : scPct>=20?1000 : 300;
+  scPlanes = stageDowned*100;
+  score += scAcc + scPlanes; if(score>hi) hi=score;
+}
+function updateStageClear(){
+  scT++;
+  // l'océan défile à la même vitesse que le porte-avions descend (l'avion avance)
+  const arrF=(H/2-(-CARR_H/2-30))/CARR_V;
+  const sp = scT<arrF ? CARR_V : 0.5;
+  decor.forEach((d,i)=>{ d.y+=sp; if(d.y-d.r>H){
+    if(d.type==='land') decor[i]=makeLand(-40-Math.random()*60); else decor[i]=makeWave(-20);
+  } });
+  if(scT>=arrF+300) nextStage();
+}
+function nextStage(){
+  stage++; stagePlanes=0; stageDowned=0; stageGoal=20+stage*5; stageClear=false;
+  spawnT=70; flash('STAGE '+stage);
 }
 
 let floaters=[];
@@ -377,10 +470,50 @@ function updatePlayer(){
   p.x=clamp(p.x,16,W-16); p.y=clamp(p.y,30,H-20);
 }
 
+function spawnWreck(e){
+  // z = altitude apparente (1 = près de la caméra, 0 = surface de l'océan au loin)
+  wrecks.push({ x:e.x, y:e.y, z:1, vz:0.010, vx:(Math.random()-0.5)*0.7,
+    spin:(Math.random()-0.5)*0.34, rot:Math.random()*6.28,
+    col: e.red?'#b23030':(e.big?'#587f33':'#9aa3ad'), big:!!e.big, t:0 });
+}
+function wreckScale(w){ return (0.22+0.78*Math.max(0,w.z))*(w.big?1.7:1); }
+function updateWrecks(){
+  for(const w of wrecks){
+    w.t++; w.vz+=0.0004; w.z-=w.vz;        // chute en profondeur (Z) : l'avion s'éloigne
+    w.x+=w.vx; w.y+=0.55;                   // léger glissement avec le défilement
+    w.rot+=w.spin;
+    const sc=wreckScale(w);
+    // traînée de feu et de fumée (réduite avec l'éloignement)
+    if(w.t%2===0) parts.push({x:w.x,y:w.y,vx:(Math.random()-0.5)*0.6*sc,vy:(Math.random()-0.5)*0.6*sc,
+      life:11+Math.random()*9,color:Math.random()<0.5?'#ff7a1a':'#ffd23a'});
+    if(w.t%4===0) parts.push({x:w.x,y:w.y,vx:(Math.random()-0.5)*0.4,vy:-0.1,
+      life:18+Math.random()*14,color:'rgba(90,90,90,1)'});
+    if(w.z<=0){                             // touche l'océan au loin : petite éclaboussure
+      for(let i=0;i<7;i++){ const a=Math.random()*Math.PI*2, s=0.4+Math.random()*1.1;
+        parts.push({x:w.x,y:w.y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:12+Math.random()*7,color:'rgba(205,232,242,1)'}); }
+      w.dead=true;
+    }
+  }
+  wrecks=wrecks.filter(w=>!w.dead);
+}
+function drawWreck(w){
+  const sc=wreckScale(w);
+  ctx.save(); ctx.translate(w.x,w.y); ctx.rotate(w.rot); ctx.scale(sc,sc);
+  // flammes
+  ctx.fillStyle='#ffd23a'; ctx.beginPath(); ctx.ellipse(0,-9,5,9,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#ff6a1a'; ctx.beginPath(); ctx.ellipse(0,-6,3.5,6,0,0,Math.PI*2); ctx.fill();
+  // avion endommagé qui chute
+  ctx.fillStyle=w.col; ctx.beginPath(); ctx.moveTo(0,10); ctx.lineTo(6,-6); ctx.lineTo(-6,-6); ctx.closePath(); ctx.fill();
+  ctx.fillStyle='#33373d'; ctx.fillRect(-13,-3,22,5);    // aile (bout arraché)
+  ctx.restore();
+}
+
 function killEnemy(e){
   e.dead=true;
+  if(!e.boss) stageDowned++;            // pour le % de fin de stage
   const pts=e.boss?5000:(e.big?2000:(e.red?200:100)); score+=pts;
   burst(e.x,e.y,e.big?'#ffae34':'#ff7a3d', e.boss?44:(e.big?28:12));
+  spawnWreck(e); if(e.boss){ spawnWreck(e); spawnWreck(e); }   // chute en flammes
   if(e.boss){ floatTxt(e.x,e.y,'+5000'); flash('BOSS DÉTRUIT !'); }
   else if(e.big) floatTxt(e.x,e.y,'+2000');
   if(e.red && redForms[e.fid]){
@@ -408,28 +541,162 @@ function drawWave(d){
   ctx.strokeStyle='rgba(255,255,255,.14)'; ctx.lineWidth=1.5;
   ctx.beginPath(); ctx.ellipse(d.x,d.y-d.r*0.2,d.r*0.7,d.r*0.28,0,Math.PI*0.1,Math.PI*0.9); ctx.stroke();
 }
+// trace un contour organique fermé et lissé à partir de facteurs de rayon par angle
+function blobPath(cx,cy,r,arr,rot){
+  const N=arr.length, pts=[];
+  for(let i=0;i<N;i++){ const a=rot + i/N*Math.PI*2, rad=r*arr[i];
+    pts.push([cx+Math.cos(a)*rad, cy+Math.sin(a)*rad*0.9]); }   // léger aplatissement (perspective)
+  ctx.beginPath();
+  ctx.moveTo((pts[0][0]+pts[N-1][0])/2, (pts[0][1]+pts[N-1][1])/2);
+  for(let i=0;i<N;i++){ const n=pts[(i+1)%N];
+    ctx.quadraticCurveTo(pts[i][0], pts[i][1], (pts[i][0]+n[0])/2, (pts[i][1]+n[1])/2); }
+  ctx.closePath();
+}
 function drawLand(d){
   ctx.save(); ctx.translate(d.x,d.y);
-  // plage (sable)
-  ctx.fillStyle='#d8c187';
-  d.lobes.forEach(l=>{ const lx=Math.cos(l.a)*d.r*0.42, ly=Math.sin(l.a)*d.r*0.42;
-    ctx.beginPath(); ctx.ellipse(lx,ly,l.rr*0.7,l.rr*0.6,l.a,0,Math.PI*2); ctx.fill(); });
-  ctx.beginPath(); ctx.ellipse(0,0,d.r*0.85,d.r*0.72,0,0,Math.PI*2); ctx.fill();
-  // végétation
-  ctx.fillStyle='#4f9d3a';
-  d.lobes.forEach(l=>{ const lx=Math.cos(l.a)*d.r*0.3, ly=Math.sin(l.a)*d.r*0.3;
-    ctx.beginPath(); ctx.ellipse(lx,ly,l.rr*0.48,l.rr*0.4,l.a,0,Math.PI*2); ctx.fill(); });
-  ctx.beginPath(); ctx.ellipse(0,0,d.r*0.62,d.r*0.52,0,0,Math.PI*2); ctx.fill();
-  // forêt plus dense
-  ctx.fillStyle='#37772a';
-  ctx.beginPath(); ctx.ellipse(-d.r*0.14,d.r*0.1,d.r*0.32,d.r*0.26,0,0,Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(d.r*0.2,-d.r*0.16,d.r*0.22,d.r*0.18,0,0,Math.PI*2); ctx.fill();
+  // hauts-fonds turquoise autour de l'île
+  ctx.fillStyle='rgba(120,205,220,.16)'; blobPath(0,0,d.r*1.22,d.coast,d.rot); ctx.fill();
+  // écume / ressac (anneau blanc)
+  ctx.fillStyle='rgba(255,255,255,.34)'; blobPath(0,0,d.r*1.07,d.coast,d.rot); ctx.fill();
+  // plage de sable
+  ctx.fillStyle='#c9ab73'; blobPath(0,0,d.r,d.coast,d.rot); ctx.fill();
+  ctx.fillStyle='#d8bd86'; blobPath(0,0,d.r*0.92,d.coast,d.rot); ctx.fill();
+  // forêt décalée : vert foncé puis variations
+  ctx.fillStyle='#2c6526'; blobPath(d.fox,d.foy,d.r*0.8,d.forest,d.rot*1.3); ctx.fill();
+  ctx.fillStyle='#3a7e30'; blobPath(d.fox,d.foy,d.r*0.62,d.forest,d.rot*1.3+0.7); ctx.fill();
+  // taches : canopée dense (sombre) et clairières (clair)
+  d.blobs.forEach(b=>{ ctx.fillStyle = b.shade<0.45?'#1f4a1c':(b.shade<0.8?'#4f9d3a':'#caa86a');
+    ctx.beginPath(); ctx.ellipse(b.x,b.y,b.s,b.s*0.85,0,0,Math.PI*2); ctx.fill(); });
   ctx.restore();
+}
+
+// ── écran de fin de stage (pont du porte-avions) ──
+function roundedRectPath(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+}
+const CARR_W=252, CARR_H=540, CARR_V=2.8;
+// coque oblongue (bombée au centre, extrémités arrondies)
+function hullPath(w,h){
+  const x=w/2, yT=-h/2, yB=h/2;
+  ctx.beginPath();
+  ctx.moveTo(-x*0.62, yT+34);
+  ctx.quadraticCurveTo(0, yT, x*0.62, yT+34);     // proue
+  ctx.quadraticCurveTo(x, yT+h*0.28, x, 0);       // flanc droit bombé
+  ctx.quadraticCurveTo(x, yB-h*0.28, x*0.7, yB-26);
+  ctx.quadraticCurveTo(x*0.45, yB, 0, yB);        // poupe
+  ctx.quadraticCurveTo(-x*0.45, yB, -x*0.7, yB-26);
+  ctx.quadraticCurveTo(-x, yB-h*0.28, -x, 0);     // flanc gauche bombé
+  ctx.quadraticCurveTo(-x, yT+h*0.28, -x*0.62, yT+34);
+  ctx.closePath();
+}
+// petit avion garé (vue de dessus)
+function deckPlane(px,py){
+  ctx.strokeStyle='#3b4047'; ctx.lineWidth=1.6;
+  ctx.beginPath(); ctx.moveTo(px-6,py+4); ctx.lineTo(px,py-2); ctx.lineTo(px+6,py+4); ctx.stroke(); // ailes
+  ctx.beginPath(); ctx.moveTo(px-3,py+7); ctx.lineTo(px,py+4); ctx.lineTo(px+3,py+7); ctx.stroke(); // empennage
+  ctx.beginPath(); ctx.moveTo(px,py-5); ctx.lineTo(px,py+7); ctx.stroke();                          // fuselage
+}
+function drawCarrier(cx,cy){
+  const wd=CARR_W, ht=CARR_H, X=wd/2;
+  ctx.save(); ctx.translate(cx,cy);
+  // ombre dans l'eau
+  ctx.save(); ctx.translate(8,10); ctx.fillStyle='rgba(0,0,0,.16)'; hullPath(wd,ht); ctx.fill(); ctx.restore();
+  // coque foncée (liseré)
+  ctx.fillStyle='#5b616a'; hullPath(wd,ht); ctx.fill();
+  // pont d'envol (gris clair)
+  ctx.fillStyle='#9aa1a9'; hullPath(wd-18,ht-22); ctx.fill();
+  // léger dégradé d'ombrage longitudinal
+  const g=ctx.createLinearGradient(-X,0,X,0);
+  g.addColorStop(0,'rgba(0,0,0,.10)'); g.addColorStop(0.5,'rgba(255,255,255,.05)'); g.addColorStop(1,'rgba(0,0,0,.12)');
+  ctx.fillStyle=g; hullPath(wd-18,ht-22); ctx.fill();
+  // découpe pour rester dans le pont
+  ctx.save(); hullPath(wd-18,ht-22); ctx.clip();
+  // lignes de séparation horizontales (sections de pont)
+  ctx.strokeStyle='#7e858e'; ctx.lineWidth=2;
+  for(const yy of [-ht*0.30, -ht*0.06, ht*0.18, ht*0.34]){ ctx.beginPath(); ctx.moveTo(-X,yy); ctx.lineTo(X,yy); ctx.stroke(); }
+  // ligne centrale pointillée
+  ctx.strokeStyle='#eceff2'; ctx.lineWidth=3; ctx.setLineDash([18,15]);
+  ctx.beginPath(); ctx.moveTo(0,-ht/2+50); ctx.lineTo(0,ht/2-70); ctx.stroke(); ctx.setLineDash([]);
+  // avions garés en colonnes le long des bords
+  const cols=[-X+30, -X+60, X-60, X-30];
+  for(let r=0;r<18;r++){
+    const py=-ht/2+50 + r*27;
+    for(const pcx of cols){
+      if(pcx>0 && py>-120 && py<150) continue;   // laisse la place aux îlots à droite
+      deckPlane(pcx, py);
+    }
+  }
+  // catapultes à la proue
+  ctx.strokeStyle='#b9bdc4'; ctx.lineWidth=2.5;
+  ctx.beginPath(); ctx.moveTo(-14,-ht/2+58); ctx.lineTo(-7,-ht/2+170); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(14,-ht/2+58); ctx.lineTo(7,-ht/2+170); ctx.stroke();
+  // bandes de précaution jaunes près de la poupe
+  ctx.fillStyle='#d8b53a';
+  ctx.fillRect(-X+26, ht/2-150, 16, 5); ctx.fillRect(X-42, ht/2-150, 16, 5);
+  ctx.restore(); // fin clip
+  // ── îlots / superstructures à droite ──
+  // grande île centrale (capsule sombre)
+  ctx.fillStyle='#34383f'; roundedRectPath(20,-66,52,150,24); ctx.fill();
+  ctx.fillStyle='#23262b'; roundedRectPath(28,-54,36,30,12); ctx.fill();        // passerelle
+  ctx.fillStyle='#3f444c'; for(let i=0;i<4;i++) ctx.fillRect(28,-6+i*16,36,8);   // ponts/fenêtres
+  ctx.strokeStyle='#9aa1a9'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(46,-66); ctx.lineTo(46,-92); ctx.stroke(); // mât
+  // structure supérieure droite
+  ctx.fillStyle='#3a3f47'; roundedRectPath(X-58,-ht*0.34,40,70,8); ctx.fill();
+  ctx.strokeStyle='#262a30'; ctx.lineWidth=2;
+  for(let i=1;i<4;i++){ ctx.beginPath(); ctx.moveTo(X-58,-ht*0.34+i*18); ctx.lineTo(X-18,-ht*0.34+i*18); ctx.stroke(); }
+  // structure inférieure droite
+  ctx.fillStyle='#3a3f47'; roundedRectPath(X-58, ht*0.12,40,64,8); ctx.fill();
+  ctx.strokeStyle='#262a30';
+  for(let i=1;i<3;i++){ ctx.beginPath(); ctx.moveTo(X-58, ht*0.12+i*20); ctx.lineTo(X-18, ht*0.12+i*20); ctx.stroke(); }
+  ctx.restore();
+}
+function drawDeckPlane(x,y,sc){
+  ctx.save(); ctx.translate(x,y); ctx.scale(sc,sc);
+  ctx.fillStyle='rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(0,11,15,5,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#dfe6ee'; ctx.beginPath(); ctx.moveTo(0,-18); ctx.lineTo(5,8); ctx.lineTo(-5,8); ctx.closePath(); ctx.fill();
+  ctx.fillStyle='#b9c4cf'; ctx.fillRect(-16,-2,32,6); ctx.fillRect(-8,8,16,4);
+  ctx.fillStyle='#2b6db0'; ctx.fillRect(-2,-8,4,6);
+  ctx.fillStyle='#ffd23a'; ctx.beginPath(); ctx.arc(-9,1,2,0,Math.PI*2); ctx.arc(9,1,2,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+function drawStageClear(){
+  ctx.clearRect(0,0,W,H);
+  decor.forEach(d=>{ if(d.type==='land') drawLand(d); else drawWave(d); });
+  // le porte-avions descend à vitesse constante (synchro avec l'océan)
+  const cy0=-CARR_H/2-30, cyT=H/2, arrF=(cyT-cy0)/CARR_V;
+  const cy=Math.min(cyT, cy0+CARR_V*scT);
+  // sillage à la poupe pendant la descente
+  if(cy<cyT){ ctx.fillStyle='rgba(255,255,255,.20)';
+    ctx.beginPath(); ctx.ellipse(W/2, cy+CARR_H/2+14, 60, 24,0,0,Math.PI*2); ctx.fill(); }
+  drawCarrier(W/2, cy);
+  // l'avion descend et se pose sur le pont une fois le porte-avions arrivé
+  const land=clamp((scT-arrF-5)/70,0,1), eL=1-(1-land)*(1-land);
+  const py=-34+(cyT+38-(-34))*eL, psc=1.8-0.8*eL;
+  drawDeckPlane(W/2, py, psc);
+  if(land>=1 && (scT-arrF-75)<10){ ctx.fillStyle='rgba(255,255,255,.5)';   // nuage au toucher
+    ctx.beginPath(); ctx.ellipse(W/2,cyT+46,14,5,0,0,Math.PI*2); ctx.fill(); }
+  // textes (révélés progressivement, après l'appontage)
+  ctx.textAlign='center';
+  ctx.fillStyle='#fff'; ctx.font='bold 20px "Courier New",monospace';
+  ctx.fillText('STAGE '+stage+' TERMINÉ', W/2, 60);
+  if(scT>arrF+80){ ctx.fillStyle='#fff'; ctx.font='bold 17px "Courier New",monospace';
+    ctx.fillText('SHOOTING DOWN', W/2-30, 150); ctx.fillStyle='#ffd23a'; ctx.fillText(scPct+'%', W/2+112, 150); }
+  if(scT>arrF+120){ ctx.fillStyle='#ff5a3d'; ctx.font='bold 16px "Courier New",monospace'; ctx.fillText('BONUS', W/2, 248);
+    ctx.fillStyle='#ffd23a'; ctx.fillText(scAcc+' PTS', W/2, 276); }
+  if(scT>arrF+160){ ctx.fillStyle='#ffd23a'; ctx.font='bold 16px "Courier New",monospace';
+    ctx.fillText(stageDowned+' x 100 = '+scPlanes+' PTS', W/2, 318); }
+  if(scT>arrF+200){ ctx.fillStyle='#9ffeea'; ctx.font='bold 15px "Courier New",monospace';
+    ctx.fillText('★ TONNEAUX REMPLIS ★', W/2, 360); }
+  if(scT>arrF+250 && Math.floor(scT/15)%2){ ctx.fillStyle='#fff'; ctx.font='13px "Courier New",monospace';
+    ctx.fillText('STAGE SUIVANT…', W/2, 414); }
 }
 
 // ── rendu ──
 function draw(){
   ctx.clearRect(0,0,W,H);
+  if(stageClear){ drawStageClear(); return; }
   // mer + décor
   decor.forEach(d=>{ if(d.type==='land') drawLand(d); else drawWave(d); });
 
@@ -439,6 +706,7 @@ function draw(){
   });
 
   enemies.forEach(drawEnemy);
+  wrecks.forEach(drawWreck);
 
   // balles
   ctx.fillStyle='#fff'; bullets.forEach(b=>ctx.fillRect(b.x-1.5,b.y-6,3,8));
@@ -496,39 +764,65 @@ function drawEnemy(e){
 }
 
 function drawBoss(e){
-  const x=e.x, y=e.y, s=2.7;
-  ctx.save(); ctx.translate(x,y); ctx.scale(s,s);
-  // ailes principales (grande envergure)
-  ctx.fillStyle='#4a5a3e'; ctx.fillRect(-26,-3,52,8);
-  ctx.fillStyle='#3a4a30'; ctx.fillRect(-26,-3,52,3);
-  // moteurs sur les ailes
-  ctx.fillStyle='#2b2b2b';
-  ctx.fillRect(-20,-1,5,8); ctx.fillRect(15,-1,5,8);
-  ctx.fillStyle='rgba(255,200,90,.8)'; ctx.fillRect(-19,6,3,3); ctx.fillRect(16,6,3,3);
-  // fuselage
-  ctx.fillStyle='#5c6b4c'; ctx.beginPath();
-  ctx.moveTo(0,16); ctx.lineTo(8,-10); ctx.lineTo(5,-14); ctx.lineTo(-5,-14); ctx.lineTo(-8,-10); ctx.closePath(); ctx.fill();
-  // marquages rouges
+  const x=e.x, y=e.y;
+  ctx.save(); ctx.translate(x,y);
+  // ombre portée
+  ctx.save(); ctx.translate(5,7); ctx.globalAlpha=0.18; ctx.fillStyle='#000';
+  ctx.fillRect(-82,-12,164,28); ctx.fillRect(-11,-52,22,98); ctx.restore();
+
+  // ── empennage (stabilisateur arrière) ──
+  ctx.fillStyle='#3f6526';
+  ctx.beginPath(); ctx.moveTo(-34,30); ctx.lineTo(-30,24); ctx.lineTo(30,24); ctx.lineTo(34,30);
+  ctx.lineTo(18,40); ctx.lineTo(-18,40); ctx.closePath(); ctx.fill();
+
+  // ── ailes principales (grande envergure, légère flèche) ──
+  ctx.fillStyle='#578534';
+  ctx.beginPath();
+  ctx.moveTo(-84,4); ctx.lineTo(-80,-10); ctx.lineTo(80,-10); ctx.lineTo(84,4);
+  ctx.lineTo(68,16); ctx.lineTo(-68,16); ctx.closePath(); ctx.fill();
+  ctx.fillStyle='rgba(0,0,0,.12)'; ctx.fillRect(-80,10,160,6);          // ombre sous-aile
+  ctx.fillStyle='#69a043'; ctx.fillRect(-80,-10,160,4);                 // reflet bord d'attaque
+
+  // ── moteurs + hélices (4 par aile, vers le haut = l'avant) ──
+  for(const sx of [-66,-46,-26, 26,46,66]){
+    ctx.fillStyle='#3a5a23'; ctx.fillRect(sx-5,-16,10,24);             // nacelle
+    ctx.fillStyle='#243a16'; ctx.fillRect(sx-5,-16,10,4);             // capot moteur
+    ctx.fillStyle='rgba(215,225,205,.32)';                            // disque d'hélice flou
+    ctx.beginPath(); ctx.ellipse(sx,-20,8,8,0,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,.28)'; ctx.lineWidth=1.2;
+    ctx.beginPath(); ctx.moveTo(sx-8,-20); ctx.lineTo(sx+8,-20); ctx.stroke();
+  }
+
+  // ── fuselage (nez vers le haut) ──
+  ctx.fillStyle='#5f8a3a'; roundedRectPath(-11,-46,22,92,9); ctx.fill();
+  ctx.fillStyle='#6f9d45'; roundedRectPath(-4,-44,8,88,4); ctx.fill();   // arête centrale
+
+  // ── nez vitré (poste avant) en haut ──
+  ctx.fillStyle='#2a3b22';
+  ctx.beginPath(); ctx.moveTo(0,-54); ctx.quadraticCurveTo(12,-46,10,-32);
+  ctx.lineTo(-10,-32); ctx.quadraticCurveTo(-12,-46,0,-54); ctx.closePath(); ctx.fill();
+  ctx.fillStyle='#9fd0e0'; ctx.beginPath(); ctx.ellipse(0,-40,5,7,0,0,Math.PI*2); ctx.fill();
+
+  // ── marquages rouges + tourelles ──
   ctx.fillStyle='#c81414';
-  ctx.beginPath(); ctx.arc(-11,1,2.4,0,Math.PI*2); ctx.arc(11,1,2.4,0,Math.PI*2); ctx.fill();
-  // double empennage
-  ctx.fillStyle='#3a4a30'; ctx.fillRect(-10,-14,4,6); ctx.fillRect(6,-14,4,6);
-  // cockpit / poste de tir
-  ctx.fillStyle='#1a1a1a'; ctx.fillRect(-3,-2,6,8);
-  ctx.fillStyle='#7fd6e8'; ctx.fillRect(-2,0,4,3);
+  ctx.beginPath(); ctx.arc(-40,3,4,0,Math.PI*2); ctx.arc(40,3,4,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#2f4420'; ctx.fillRect(-3,40,6,9);                      // gouverne de queue
+  ctx.beginPath(); ctx.arc(0,6,6,0,Math.PI*2); ctx.fill();               // tourelle dorsale
+  ctx.fillStyle='#1f2c16'; ctx.beginPath(); ctx.arc(0,6,3,0,Math.PI*2); ctx.fill();
   ctx.restore();
+
   // barre de vie du boss
-  const bw=70, hpf=Math.max(0,e.hp/e.maxHp);
-  ctx.fillStyle='#000'; ctx.fillRect(x-bw/2-1,y-46,bw+2,7);
-  ctx.fillStyle='#5a1a1a'; ctx.fillRect(x-bw/2,y-45,bw,5);
-  ctx.fillStyle = hpf>0.4? '#ff5252' : '#ffaa00'; ctx.fillRect(x-bw/2,y-45,bw*hpf,5);
+  const bw=92, hpf=Math.max(0,e.hp/e.maxHp);
+  ctx.fillStyle='#000'; ctx.fillRect(x-bw/2-1,y-70,bw+2,7);
+  ctx.fillStyle='#5a1a1a'; ctx.fillRect(x-bw/2,y-69,bw,5);
+  ctx.fillStyle = hpf>0.4? '#ff5252' : '#ffaa00'; ctx.fillRect(x-bw/2,y-69,bw*hpf,5);
 }
 
 function drawHUD(){
   ctx.fillStyle='#fff'; ctx.font='14px "Courier New",monospace';
   ctx.textAlign='left'; ctx.fillText('SCORE '+score, 8, 18);
   ctx.textAlign='center'; ctx.fillStyle='#ffd23a'; ctx.fillText('✈'.repeat(Math.max(0,lives)), W/2, 18);
-  ctx.textAlign='right'; ctx.fillStyle='#5ad1e8'; ctx.fillText('VAGUE '+wave, W-8, 18);
+  ctx.textAlign='right'; ctx.fillStyle='#5ad1e8'; ctx.fillText('STAGE '+stage, W-8, 18);
   // tonneaux dispo
   ctx.textAlign='left'; ctx.fillStyle='#9fe'; ctx.font='12px "Courier New",monospace';
   ctx.fillText('TONNEAU '+'◐'.repeat(player?player.loops:0), 8, H-8);
@@ -542,7 +836,7 @@ function loop(){
   setBossDrone(flying && enemies.some(e=>e.boss));
   requestAnimationFrame(loop);
 }
-player=makePlayer(); bullets=[]; ebullets=[]; enemies=[]; pows=[]; parts=[]; floaters=[]; initDecor();
+player=makePlayer(); bullets=[]; ebullets=[]; enemies=[]; pows=[]; parts=[]; wrecks=[]; floaters=[]; initDecor();
 loop();
 </script>
 <script src="../music/playlist.js"></script>
