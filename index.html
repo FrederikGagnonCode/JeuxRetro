@@ -62,7 +62,12 @@
     text-shadow:0 0 8px var(--neon),0 0 18px var(--neon),0 0 38px var(--neon);
     animation:flicker 4s infinite;
   }
-  .sub{color:var(--muted);letter-spacing:3px;margin-bottom:36px;font-size:13px;text-transform:uppercase}
+  .sub{color:var(--muted);letter-spacing:3px;margin-bottom:16px;font-size:13px;text-transform:uppercase}
+  .count{display:inline-flex;align-items:center;gap:9px;margin:0 0 34px;
+    padding:7px 18px;border:2px solid var(--neon);border-radius:30px;
+    background:rgba(19,19,43,.6);color:var(--neon);font-weight:bold;letter-spacing:2px;
+    font-size:14px;text-shadow:0 0 8px rgba(78,204,163,.6);box-shadow:0 0 14px rgba(78,204,163,.25);}
+  .count b{color:#fff;font-size:20px;text-shadow:0 0 10px var(--neon)}
   @keyframes flicker{
     0%,18%,22%,100%{opacity:1}
     20%{opacity:.55}
@@ -113,6 +118,7 @@
   <div id="veil"></div>
   <h1>★ ARCADE RÉTRO ★</h1>
   <div class="sub">Choisis ton jeu — Insert Coin</div>
+  <div class="count"><span>🕹️</span><b id="gameCount">0</b> JEUX</div>
 
   <div class="grid">
 
@@ -706,6 +712,46 @@
       </div>
     </a>
 
+    <!-- NETHACK -->
+    <a class="card" href="./NetHack/index.html">
+      <div class="year">1987</div>
+      <div class="thumb">
+        <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
+          <rect width="80" height="60" fill="#05050f"/>
+          <!-- salles ASCII : murs # verts -->
+          <g font-family="monospace" font-size="7" fill="#4f8f4f">
+            <text x="8"  y="12">#########</text>
+            <text x="8"  y="20">#.......#</text>
+            <text x="8"  y="28">#.......#</text>
+            <text x="8"  y="36">####.####</text>
+            <text x="44" y="36">#######</text>
+            <text x="44" y="44">#.....#</text>
+            <text x="44" y="52">#######</text>
+          </g>
+          <!-- couloir -->
+          <g font-family="monospace" font-size="7" fill="#2a402a">
+            <text x="30" y="44">....</text>
+          </g>
+          <!-- joueur @ jaune -->
+          <text x="20" y="28" font-family="monospace" font-size="8" fill="#ffe23a" font-weight="bold">@</text>
+          <!-- escalier > -->
+          <text x="58" y="20" font-family="monospace" font-size="8" fill="#ffd23a">&gt;</text>
+          <!-- monstres : d chien, k kobold, D dragon -->
+          <text x="44" y="28" font-family="monospace" font-size="8" fill="#d4c0a0">d</text>
+          <text x="51" y="44" font-family="monospace" font-size="8" fill="#7ccb5a">k</text>
+          <text x="58" y="44" font-family="monospace" font-size="8" fill="#ef5252">D</text>
+          <!-- or $ et potion ! -->
+          <text x="30" y="20" font-family="monospace" font-size="8" fill="#ffd23a">$</text>
+          <text x="37" y="28" font-family="monospace" font-size="8" fill="#ff6ad5">!</text>
+        </svg>
+        <div class="play"><span>▶ JOUER</span></div>
+      </div>
+      <div class="meta">
+        <p class="title">NetHack</p>
+        <p class="tag">Roguelike · Donjon</p>
+      </div>
+    </a>
+
     <!-- GOLDEN AXE -->
     <a class="card" href="./GoldenAxe/index.html">
       <div class="year">1989</div>
@@ -749,6 +795,11 @@
   </div>
 
   <footer>Clique sur un jeu pour lancer · ↑ ↓ ← → pour jouer</footer>
+  <script>
+    // compteur de jeux calculé dynamiquement (reste exact si on ajoute des cartes)
+    document.getElementById('gameCount').textContent =
+      document.querySelectorAll('.grid .card').length;
+  </script>
   <script src="music/playlist.js"></script>
   <script src="music/player.js"></script>
 </body>
