@@ -33,7 +33,7 @@
       <h2 id="ovTitle">OUT RUN</h2>
       <p>Roulez le plus loin avant la fin du temps</p>
       <p>← → diriger · ↑ accélérer · ↓ freiner</p>
-      <p>Évitez le trafic, passez les checkpoints (+temps)</p>
+      <p>Évitez le trafic · chaque arrivée 🏁 ouvre un nouveau parcours !</p>
       <p class="blink" style="margin-top:14px">▶ Cliquez ou Espace pour démarrer</p>
     </div>
   </div>
@@ -68,11 +68,15 @@ const MAP_W=98, MAP_H=74, MAP_PAD=10, MAP_STEP=4;
 let trackPath=null, trackMapPts=[];
 let finishPos=0, finished=false;            // ligne d'arrivée
 let finishGantry=null;                       // portique capté pendant le rendu
-let position, speed, playerX, totalDist, timeLeft, stage, score, nextCP;
+let position, speed, playerX, totalDist, timeLeft, stage, score, nextCP, bonusScore;
 let running=false, paused=false, over=false;
+let flashMsg='', flashT=0;
 const keys={};
 let last=0;
 
+const rand=n=>Math.floor(Math.random()*n);
+const pick=a=>a[rand(a.length)];
+function flash(m){ flashMsg=m; flashT=110; }
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const interp=(a,b,p)=>a+(b-a)*p;
 const easeInOut=(a,b,p)=>a+(b-a)*(-Math.cos(p*Math.PI)/2+0.5);
@@ -109,18 +113,15 @@ function addRoad(enter,hold,leave,curve,height){
 const S=25,M=50,L=100, CE=2.4,CM=4.2,CH=6.5, HL=20,HM=40,HH=60;
 function buildTrack(){
   segments=[];
-  addRoad(M,M,M,0,0);
-  addRoad(M,M,M,CM,HL);
-  addRoad(L,L,L,CE,-HM);
-  addRoad(M,M,M,-CM,HM);
-  addRoad(S,S,S,CH,0);
-  addRoad(L,M,L,0,HH);
-  addRoad(M,M,M,-CH,-HL);
-  addRoad(L,L,L,CM,-HM);
-  addRoad(M,S,M,-CE,HM);
-  addRoad(L,L,L,0,0);
-  addRoad(M,M,M,CH,HH);
-  addRoad(M,M,M,-CM,-HH);
+  addRoad(M,M,M,0,0);                          // ligne de départ plate
+  const nSec = 8 + rand(5);                    // 8 à 12 sections, différentes à chaque fois
+  for(let i=0;i<nSec;i++){
+    const enter=pick([S,M,M,L]), hold=pick([S,M,L]), leave=pick([S,M,M,L]);
+    const curve = pick([0,0,CE,CM,CM,CH]) * (Math.random()<0.5?-1:1);
+    const hill  = pick([0,HL,HM,HM,HH])    * (Math.random()<0.5?-1:1);
+    addRoad(enter,hold,leave,curve,hill);
+  }
+  addRoad(L,M,M,0,0);                           // dernière ligne droite plate vers l'arrivée
   // palmiers alternés en bordure
   for(let n=10;n<segments.length;n+=6){
     const side = (n%12<6)? -1.5 : 1.5;
@@ -167,11 +168,12 @@ function spawnTraffic(){
 }
 
 function newGame(){
-  if(!segments.length){ buildTrack(); }
+  buildTrack();                         // nouveau parcours aléatoire à chaque partie
   spawnTraffic();
   position=0; speed=0; playerX=0; totalDist=0;
-  timeLeft=90; stage=1; score=0; nextCP=6000;
+  timeLeft=90; stage=1; score=0; nextCP=6000; bonusScore=0;
   over=false; paused=false; running=true; finished=false;
+  flashMsg=''; flashT=0;
   hideOverlay();
 }
 
@@ -226,17 +228,21 @@ function update(dt){
   position+=speed*dt;
   totalDist+=speed*dt;
 
-  // arrivée : on a franchi la ligne à damier
+  // arrivée : franchi la ligne → on génère un NOUVEAU parcours et on continue
   if(position>=finishPos){
-    position=finishPos; finished=true; over=true; running=false;
-    const bonus=Math.floor(timeLeft)*50; score+=bonus;
-    showOverlay('🏁 ARRIVÉE !', 'Bonus temps +'+bonus+'  ·  Score : '+score);
+    const bonus=Math.floor(timeLeft)*20+500;
+    bonusScore+=bonus;
+    timeLeft=Math.min(timeLeft+34, 120);          // temps rechargé pour l'étape suivante
+    stage++;
+    buildTrack(); spawnTraffic();
+    position=0; playerX=0; finished=false;
+    flash('🏁 ÉTAPE '+stage+' — NOUVEAU PARCOURS  (+'+bonus+')');
     return;
   }
 
-  // checkpoints (+temps) et stages
-  if(totalDist>nextCP){ timeLeft+=14; stage++; nextCP+=6000+stage*500; }
-  score=Math.floor(totalDist/10);
+  // checkpoints (+temps) dans le parcours
+  if(totalDist>nextCP){ timeLeft+=10; nextCP+=6000; }
+  score=Math.floor(totalDist/10)+bonusScore;
 
   timeLeft-=dt;
   if(timeLeft<=0){ timeLeft=0; over=true; running=false; showOverlay('TEMPS ÉCOULÉ','Distance : '+Math.floor(totalDist/100)+'  ·  Score : '+score); }
@@ -387,6 +393,15 @@ function render(){
   drawHUD();
   drawMinimap();
 
+  if(flashT>0 && running && !paused){
+    flashT--;
+    ctx.globalAlpha=Math.min(1,flashT/30);
+    ctx.fillStyle='#ffd23a'; ctx.strokeStyle='#000'; ctx.lineWidth=4;
+    ctx.font='bold 20px "Courier New",monospace'; ctx.textAlign='center';
+    ctx.strokeText(flashMsg, W/2, H*0.4); ctx.fillText(flashMsg, W/2, H*0.4);
+    ctx.globalAlpha=1;
+  }
+
   if(paused){ ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(0,0,W,H);
     ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.font='30px "Courier New",monospace'; ctx.fillText('PAUSE',W/2,H/2); }
 }
@@ -455,7 +470,7 @@ function loop(now){
   requestAnimationFrame(loop);
 }
 buildTrack(); spawnTraffic();
-position=0; speed=0; playerX=0; totalDist=0; timeLeft=90; stage=1; score=0; nextCP=6000;
+position=0; speed=0; playerX=0; totalDist=0; timeLeft=90; stage=1; score=0; nextCP=6000; bonusScore=0;
 requestAnimationFrame(loop);
 </script>
 <script src="../music/playlist.js"></script>

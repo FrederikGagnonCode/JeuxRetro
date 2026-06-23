@@ -32,7 +32,7 @@
     <div id="overlay">
       <h2 id="ovTitle">NetHack</h2>
       <p>Explore le donjon, descends les escaliers, survis.</p>
-      <p>← ↑ ↓ → (ou WASD) bouger · fonce sur un monstre pour l'attaquer</p>
+      <p>← ↑ ↓ → · WASD · ou pavé numérique (1-9, diagonales incluses)</p>
       <p>. : ramasser l'objet sous tes pieds · Espace : descendre (sur &gt;)</p>
       <p>I : inventaire · Q : potion · R : parchemin · P : pause</p>
       <p>Visite les magasins (@ orange) : appuie sur . sur un article pour l'acheter.</p>
@@ -40,7 +40,7 @@
       <p class="blink" style="margin-top:14px">▶ Cliquez ou Espace pour descendre</p>
     </div>
   </div>
-  <div id="hint">Flèches / WASD · diagonales Y U B N · . : ramasser · Espace : escalier · I : inventaire · Q : potion · R : parchemin · P = pause</div>
+  <div id="hint">Flèches / WASD / pavé num. (1-9) · diagonales Y U B N · . : ramasser · Espace : escalier · I : inventaire · Q : potion · R : parchemin · P = pause</div>
   <a class="back" href="../index.html">← Menu Arcade</a>
 
 <script>
@@ -401,7 +401,7 @@ function showOverlay(t,s){
 // ── entrées ──
 document.addEventListener('keydown',e=>{
   const k=e.key.toLowerCase(); keys[k]=true;
-  if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)) e.preventDefault();
+  if(['arrowup','arrowdown','arrowleft','arrowright',' ','home','end','pageup','pagedown','clear'].includes(k)) e.preventDefault();
   if(paused && k!=='p'){ paused=false; return; }
   if((k===' '||k==='enter') && (!running||over)){ newGame(); return; }
   if(k==='p' && running && !over){ paused=!paused; return; }
@@ -413,14 +413,15 @@ document.addEventListener('keydown',e=>{
     return;
   }
   switch(k){
-    case 'arrowleft': case 'a': tryMove(-1,0); break;
-    case 'arrowright':case 'd': tryMove(1,0); break;
-    case 'arrowup':   case 'w': tryMove(0,-1); break;
-    case 'arrowdown': case 's': tryMove(0,1); break;
-    case 'y': tryMove(-1,-1); break;
-    case 'u': tryMove(1,-1); break;
-    case 'b': tryMove(-1,1); break;
-    case 'n': tryMove(1,1); break;
+    case 'arrowleft': case 'a': case '4': tryMove(-1,0); break;
+    case 'arrowright':case 'd': case '6': tryMove(1,0); break;
+    case 'arrowup':   case 'w': case '8': tryMove(0,-1); break;
+    case 'arrowdown': case 's': case '2': tryMove(0,1); break;
+    case 'y': case '7': case 'home':     tryMove(-1,-1); break;   // haut-gauche
+    case 'u': case '9': case 'pageup':   tryMove(1,-1);  break;   // haut-droite
+    case 'b': case '1': case 'end':      tryMove(-1,1);  break;   // bas-gauche
+    case 'n': case '3': case 'pagedown': tryMove(1,1);   break;   // bas-droite
+    case '5': case 'clear': if(running&&!over&&!paused){ lookHere(); endTurn(); } break; // attendre
     case 'q': quaff(); break;
     case 'r': readScroll(); break;
     case 'i': invOpen=true; break;
