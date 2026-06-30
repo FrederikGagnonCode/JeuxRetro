@@ -617,7 +617,7 @@ function drawHUD(){
   ctx.strokeStyle='#333'; ctx.beginPath(); ctx.moveTo(0,HUD-1); ctx.lineTo(GW,HUD-1); ctx.stroke();
 }
 
-function loop(){ update(); draw(); requestAnimationFrame(loop); }
+function loop(){ update(); draw(); if(window.ArcadeHi)ArcadeHi.submit(score); requestAnimationFrame(loop); }
 setupLevel();   // prépare le plateau pour le rendu derrière l'écran d'accueil
 loop();
 </script>

@@ -477,6 +477,7 @@ function draw(){
     ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.font='28px "Courier New",monospace';
     ctx.fillText('PAUSE', cv.width/2, cv.height/2);
   }
+  if(window.ArcadeHi && (running||over) && player) ArcadeHi.submit(scoreNow());
   requestAnimationFrame(draw);
 }
 function drawInventory(){

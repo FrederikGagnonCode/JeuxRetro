@@ -288,7 +288,7 @@ function drawHUD(){
     ctx.fillText('SHOOT TIE FIGHTERS', CX, 64); }
 }
 
-function loop(){ update(); draw(); requestAnimationFrame(loop); }
+function loop(){ update(); draw(); if(window.ArcadeHi)ArcadeHi.submit(score); requestAnimationFrame(loop); }
 aim={x:CX,y:CY}; stars=[]; for(let i=0;i<120;i++) stars.push(rndStar(Math.random()*900+50));
 ties=[]; fires=[]; lasers=[]; parts=[]; towers=[];
 loop();

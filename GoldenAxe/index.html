@@ -616,7 +616,7 @@ function drawHUD(){
   }
 }
 
-function loop(){ update(); draw(); requestAnimationFrame(loop); }
+function loop(){ update(); draw(); if(window.ArcadeHi)ArcadeHi.submit(score); requestAnimationFrame(loop); }
 player=makePlayer(); enemies=[]; parts=[]; floats=[]; foods=[]; bizarrians=[]; eprojs=[];
 loop();
 </script>

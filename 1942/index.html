@@ -834,6 +834,7 @@ function loop(){
   setEngine(flying);
   setBomberDrone(flying && enemies.some(e=>e.big && !e.boss));
   setBossDrone(flying && enemies.some(e=>e.boss));
+  if(window.ArcadeHi)ArcadeHi.submit(score);
   requestAnimationFrame(loop);
 }
 player=makePlayer(); bullets=[]; ebullets=[]; enemies=[]; pows=[]; parts=[]; wrecks=[]; floaters=[]; initDecor();

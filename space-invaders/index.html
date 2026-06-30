@@ -404,6 +404,7 @@ function drawCenteredScreen(title, subtitle) {
 function loop() {
   update();
   draw();
+  if(window.ArcadeHi)ArcadeHi.submit(score);
   requestAnimationFrame(loop);
 }
 loop();

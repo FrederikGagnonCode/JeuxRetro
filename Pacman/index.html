@@ -608,6 +608,7 @@ function frame(ts) {
   last = ts;
   if (!paused) update(dt);
   draw(ts / 1000);
+  if(window.ArcadeHi)ArcadeHi.submit(score);
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);

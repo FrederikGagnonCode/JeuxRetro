@@ -351,7 +351,7 @@ function drawHUD(){
   ctx.strokeStyle='#333'; ctx.beginPath(); ctx.moveTo(0,HUD-1); ctx.lineTo(W,HUD-1); ctx.stroke();
 }
 
-function loop(){ update(); draw(); requestAnimationFrame(loop); }
+function loop(){ update(); draw(); if(window.ArcadeHi)ArcadeHi.submit(score); requestAnimationFrame(loop); }
 resetPlayer(); enemies=[]; bubbles=[]; fruits=[]; parts=[]; floats=[];
 loop();
 </script>

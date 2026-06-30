@@ -115,6 +115,7 @@ let hiscore = 0;
 try { hiscore = +localStorage.getItem('pitfallHiscore') || 0; } catch(e){}
 function saveHiscore(){
   const sc = Math.floor(st.score);
+  if(window.ArcadeHi) ArcadeHi.submit(sc);       // record partagé (score final, plus haut = mieux)
   if (sc > hiscore){
     hiscore = sc; st.newHi = true;
     try { localStorage.setItem('pitfallHiscore', hiscore); } catch(e){}
@@ -122,6 +123,8 @@ function saveHiscore(){
 }
 let st;
 function reset(){
+  if(window.ArcadeHi) ArcadeHi.reset();          // nouvelle partie : réarme le record
+
   st = {
     started:false, over:false, win:false, paused:false, newHi:false,
     screen:0, x:60, y:GY, vx:0, vy:0, dir:1,

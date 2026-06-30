@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Castle Wolfenstein</title>
+<style>
+  html,body{margin:0;padding:0;height:100%;background:#000;color:#fff;
+    font-family:'Courier New',monospace;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;user-select:none;overflow:hidden}
+  h1{letter-spacing:5px;margin:0 0 8px;font-size:19px;
+     text-shadow:0 0 8px #fff,0 0 18px #7c8aa0}
+  #wrap{position:relative}
+  canvas{background:#16161e;border:2px solid #fff;display:block;
+    box-shadow:0 0 24px rgba(124,138,160,.4);touch-action:none}
+  #hint{color:#777;font-size:12px;margin-top:10px;text-align:center;line-height:1.6}
+  #overlay{position:absolute;inset:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;background:rgba(0,0,0,.82);
+    text-align:center;cursor:pointer}
+  #overlay h2{font-size:22px;letter-spacing:3px;margin:0 0 12px}
+  #overlay p{color:#bbb;font-size:13px;margin:4px 0}
+  .blink{animation:blink 1.1s steps(2,start) infinite}
+  @keyframes blink{50%{opacity:0}}
+  a.back{color:#4ecca3;font-size:12px;margin-top:8px;text-decoration:none;letter-spacing:1px}
+  a.back:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+  <h1>CASTLE WOLFENSTEIN</h1>
+  <div id="wrap">
+    <canvas id="game" width="448" height="320"></canvas>
+    <div id="overlay">
+      <h2 id="ovTitle">CASTLE WOLFENSTEIN</h2>
+      <p>Infiltre le château, trouve les plans secrets, rejoins la sortie.</p>
+      <p>← ↑ ↓ → (ou WASD) : se déplacer · tu vises là où tu vas</p>
+      <p>Espace : tirer · ouvre les coffres en les touchant · P : pause</p>
+      <p>Évite ou abats les gardes · un uniforme te déguise un moment</p>
+      <p class="blink" style="margin-top:12px">▶ Cliquez ou Espace pour commencer la mission</p>
+    </div>
+  </div>
+  <div id="hint">Flèches / WASD : bouger & viser · Espace : tirer · coffres : touche-les · P = pause</div>
+  <a class="back" href="../index.html">← Menu Arcade</a>
+
+<script>
+const cv = document.getElementById('game');
+const ctx = cv.getContext('2d');
+const overlay=document.getElementById('overlay');
+const ovTitle=document.getElementById('ovTitle');
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const rand=n=>Math.floor(Math.random()*n);
+
+const TS=16, COLS=28, ROWS=20;          // 448 x 320
+let map, rooms, chests, guards, bullets, ebullets, parts;
+let player, exit, hasPlans, disguise, score, msg, msgT;
+let running=false, paused=false, over=false, won=false;
+let last=0;
+const keys={};
+
+// ── audio ──
+let _ac=null;
+function ac(){ if(!_ac) _ac=new (window.AudioContext||window.webkitAudioContext)(); if(_ac.state==='suspended') _ac.resume(); return _ac; }
+function sfxShot(){ const a=ac(),t=a.currentTime; const o=a.createOscillator(); o.type='square';
+  o.frequency.setValueAtTime(680,t); o.frequency.exponentialRampToValueAtTime(150,t+0.05);
+  const g=a.createGain(); g.gain.setValueAtTime(0.06,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.06);
+  o.connect(g); g.connect(a.destination); o.start(t); o.stop(t+0.07); }
+function sfxEnemyShot(){ const a=ac(),t=a.currentTime; const o=a.createOscillator(); o.type='sawtooth';
+  o.frequency.setValueAtTime(280,t); o.frequency.exponentialRampToValueAtTime(110,t+0.1);
+  const g=a.createGain(); g.gain.setValueAtTime(0.045,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.11);
+  o.connect(g); g.connect(a.destination); o.start(t); o.stop(t+0.12); }
+function sfxPick(){ const a=ac(),t=a.currentTime; const o=a.createOscillator(); o.type='triangle';
+  o.frequency.setValueAtTime(440,t); o.frequency.linearRampToValueAtTime(880,t+0.12);
+  const g=a.createGain(); g.gain.setValueAtTime(0.07,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.16);
+  o.connect(g); g.connect(a.destination); o.start(t); o.stop(t+0.17); }
+
+// ── génération du château ──
+const XL=[0,7,14,21,27], YL=[0,7,13,19];     // lignes de murs (4 x 3 salles)
+function genCastle(){
+  map=[]; for(let y=0;y<ROWS;y++) map.push(new Array(COLS).fill('.'));
+  for(let x=0;x<COLS;x++){ map[0][x]='#'; map[ROWS-1][x]='#'; }
+  for(let y=0;y<ROWS;y++){ map[y][0]='#'; map[y][COLS-1]='#'; }
+  for(const x of [7,14,21]) for(let y=0;y<ROWS;y++) map[y][x]='#';
+  for(const y of [7,13])    for(let x=0;x<COLS;x++) map[y][x]='#';
+  // salles
+  rooms=[];
+  for(let r=0;r<3;r++) for(let c=0;c<4;c++){
+    const x0=XL[c]+1, x1=XL[c+1]-1, y0=YL[r]+1, y1=YL[r+1]-1;
+    rooms.push({r,c, x0,x1,y0,y1, cx:(x0+x1)>>1, cy:(y0+y1)>>1});
+  }
+  // portes entre salles voisines
+  const roomAt=(r,c)=>rooms[r*4+c];
+  for(let r=0;r<3;r++) for(let c=0;c<4;c++){
+    const a=roomAt(r,c);
+    if(c<3){ const wx=XL[c+1], dy=a.cy; map[dy][wx]='.'; map[dy+ (Math.random()<0.5?1:-1)][wx]='.'; }
+    if(r<2){ const wy=YL[r+1], dx=a.cx; map[wy][dx]='.'; map[wy][dx+ (Math.random()<0.5?1:-1)]='.'; }
+  }
+  // sortie : ouverture dans le mur du haut, salle du haut au centre
+  const topRoom=roomAt(0,1+rand(2));
+  exit={ tx:topRoom.cx, ty:0 };
+  map[0][topRoom.cx]='.';
+  // contenu des coffres
+  chests=[];
+  const start=roomAt(2,0);
+  const others=rooms.filter(rm=>rm!==start);
+  // plans dans la salle la plus éloignée (en haut)
+  const plansRoom=rooms.reduce((best,rm)=> (rm.r<best.r? rm:best), others[0]);
+  placeChest(plansRoom,'plans');
+  // uniforme + munitions répartis
+  placeChest(pickRoom(others,[plansRoom]),'uniform');
+  for(let i=0;i<3;i++) placeChest(pickRoom(others,[]), 'ammo');
+  // gardes
+  guards=[];
+  for(const rm of others){ if(Math.random()<0.6) spawnGuard(rm); }
+  while(guards.length<5) spawnGuard(pickRoom(others,[]));
+}
+function pickRoom(list,excl){ let rm; let t=0; do{ rm=list[rand(list.length)]; t++; }while(excl.includes(rm)&&t<20); return rm; }
+function freeCell(rm){ for(let t=0;t<24;t++){ const x=rm.x0+rand(rm.x1-rm.x0+1), y=rm.y0+rand(rm.y1-rm.y0+1);
+  if(map[y][x]==='.' && !chests.some(c=>c.tx===x&&c.ty===y)) return {x,y}; } return {x:rm.cx,y:rm.cy}; }
+function placeChest(rm,content){ const p=freeCell(rm); chests.push({tx:p.x,ty:p.y,content,opened:false}); }
+function spawnGuard(rm){ const p=freeCell(rm); const d=[[1,0],[-1,0],[0,1],[0,-1]][rand(4)];
+  guards.push({x:(p.x+0.5)*TS, y:(p.y+0.5)*TS, dx:d[0], dy:d[1], fx:d[0], fy:d[1], shootCd:1+Math.random(), alive:true}); }
+
+function makePlayer(){ const s=rooms[8]; return { x:(s.cx+0.5)*TS, y:(s.cy+0.5)*TS, fx:0, fy:-1, hp:4, ammo:24, shootCd:0, inv:1 }; }
+function newGame(){
+  genCastle();
+  player=makePlayer(); bullets=[]; ebullets=[]; parts=[];
+  hasPlans=false; disguise=0; score=0; msg='Trouve les plans secrets.'; msgT=4;
+  over=false; won=false; paused=false; running=true;
+  overlay.style.display='none';
+}
+function flash(m){ msg=m; msgT=3.5; }
+function showOverlay(t,s){ ovTitle.textContent=t; overlay.querySelector('p:nth-of-type(1)').textContent=s; overlay.style.display='flex'; }
+
+// ── entrées ──
+document.addEventListener('keydown',e=>{
+  const k=e.key.toLowerCase(); keys[k]=true;
+  if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)) e.preventDefault();
+  if(paused && ['arrowup','arrowdown','arrowleft','arrowright',' ','w','a','s','d'].includes(k)){ paused=false; return; }
+  if(k===' ' && (!running||over)){ newGame(); return; }
+  if(k==='p' && running && !over) paused=!paused;
+});
+document.addEventListener('keyup',e=>{ keys[e.key.toLowerCase()]=false; });
+overlay.addEventListener('click',()=>{ if(!running||over) newGame(); });
+cv.addEventListener('touchstart',e=>{ e.preventDefault(); if(!running||over) newGame(); },{passive:false});
+
+// ── collisions tuiles ──
+function wallAt(px,py){ const tx=Math.floor(px/TS), ty=Math.floor(py/TS);
+  if(tx<0||ty<0||tx>=COLS||ty>=ROWS) return true; return map[ty][tx]==='#'; }
+function boxBlocked(px,py,hs){ return wallAt(px-hs,py-hs)||wallAt(px+hs,py-hs)||wallAt(px-hs,py+hs)||wallAt(px+hs,py+hs); }
+function losClear(x0,y0,x1,y1){
+  const steps=Math.ceil(Math.hypot(x1-x0,y1-y0)/(TS*0.5));
+  for(let i=1;i<steps;i++){ const t=i/steps; if(wallAt(x0+(x1-x0)*t,y0+(y1-y0)*t)) return false; }
+  return true;
+}
+
+const PSPEED=104, BSPEED=300, GSPEED=42, EBSPEED=190;
+function fire(){
+  if(player.shootCd>0||player.ammo<=0) return;
+  player.shootCd=0.22; player.ammo--;
+  bullets.push({x:player.x+player.fx*9, y:player.y+player.fy*9, vx:player.fx*BSPEED, vy:player.fy*BSPEED, life:1.4});
+  sfxShot();
+}
+
+// ── mise à jour ──
+function update(dt){
+  if(!running||paused||over) return;
+  if(msgT>0) msgT-=dt;
+  if(disguise>0) disguise-=dt;
+
+  const p=player;
+  let mvx=0,mvy=0;
+  if(keys['arrowleft']||keys['a']) mvx-=1;
+  if(keys['arrowright']||keys['d']) mvx+=1;
+  if(keys['arrowup']||keys['w']) mvy-=1;
+  if(keys['arrowdown']||keys['s']) mvy+=1;
+  if(mvx||mvy){ const m=Math.hypot(mvx,mvy); p.fx=mvx/m; p.fy=mvy/m;
+    const nx=p.x+p.fx*PSPEED*dt, ny=p.y+p.fy*PSPEED*dt;
+    if(!boxBlocked(nx,p.y,5)) p.x=nx;
+    if(!boxBlocked(p.x,ny,5)) p.y=ny;
+  }
+  if(p.shootCd>0) p.shootCd-=dt;
+  if(p.inv>0) p.inv-=dt;
+  if(keys[' ']) fire();
+
+  // coffres : ouverture par contact
+  for(const c of chests){ if(c.opened) continue;
+    if(Math.hypot(p.x-(c.tx+0.5)*TS, p.y-(c.ty+0.5)*TS)<13){ openChest(c); } }
+
+  // sortie
+  if(Math.abs(p.x-(exit.tx+0.5)*TS)<12 && p.y<TS*1.2){
+    if(hasPlans){ won=true; over=true; running=false; score+=1000;
+      showOverlay('★ ÉVASION RÉUSSIE ★','Tu t\'enfuis avec les plans ! Score : '+(score+player.hp*100)); }
+    else flash('La sortie est verrouillée — trouve les plans !');
+  }
+
+  // balles joueur
+  bullets.forEach(b=>{ b.x+=b.vx*dt; b.y+=b.vy*dt; b.life-=dt; });
+  bullets=bullets.filter(b=>{ if(wallAt(b.x,b.y)){ burst(b.x,b.y,'#caa',3); return false; } return b.life>0; });
+
+  // gardes
+  guards.forEach(g=>{
+    if(!g.alive) return;
+    const dx=p.x-g.x, dy=p.y-g.y, d=Math.hypot(dx,dy)||1;
+    const seen = disguise<=0 && d<150 && losClear(g.x,g.y,p.x,p.y);
+    if(seen){
+      g.fx=dx/d; g.fy=dy/d;
+      // s'approche un peu
+      const nx=g.x+g.fx*GSPEED*dt, ny=g.y+g.fy*GSPEED*dt;
+      if(!boxBlocked(nx,g.y,5)) g.x=nx;
+      if(!boxBlocked(g.x,ny,5)) g.y=ny;
+      g.shootCd-=dt;
+      if(g.shootCd<=0){ ebullets.push({x:g.x,y:g.y, vx:dx/d*EBSPEED, vy:dy/d*EBSPEED, life:2.5});
+        g.shootCd=1.1+Math.random()*0.8; sfxEnemyShot(); }
+    } else {
+      // patrouille
+      const nx=g.x+g.dx*GSPEED*dt, ny=g.y+g.dy*GSPEED*dt;
+      if(!boxBlocked(nx,ny,5)){ g.x=nx; g.y=ny; }
+      else { const d2=[[1,0],[-1,0],[0,1],[0,-1]][rand(4)]; g.dx=d2[0]; g.dy=d2[1]; }
+      g.fx=g.dx; g.fy=g.dy;
+    }
+  });
+
+  // balles joueur -> gardes
+  bullets.forEach(b=>{ guards.forEach(g=>{ if(!g.alive) return;
+    if(Math.abs(b.x-g.x)<10 && Math.abs(b.y-g.y)<11){ g.alive=false; b.life=0; burst(g.x,g.y,'#3a3a44',9); score+=150; flash('Garde neutralisé.'); } }); });
+  bullets=bullets.filter(b=>b.life>0);
+
+  // balles ennemies
+  ebullets.forEach(b=>{ b.x+=b.vx*dt; b.y+=b.vy*dt; b.life-=dt; });
+  ebullets=ebullets.filter(b=>{ if(wallAt(b.x,b.y)){ burst(b.x,b.y,'#caa',2); return false; } return b.life>0; });
+
+  // collisions joueur
+  if(p.inv<=0){
+    for(const b of ebullets){ if(Math.abs(b.x-p.x)<8 && Math.abs(b.y-p.y)<9){ b.life=0; hitPlayer(); break; } }
+    if(disguise<=0) for(const g of guards){ if(g.alive && Math.abs(g.x-p.x)<13 && Math.abs(g.y-p.y)<14){ hitPlayer(); break; } }
+  }
+
+  parts.forEach(pt=>{ pt.x+=pt.vx*dt; pt.y+=pt.vy*dt; pt.life-=dt; });
+  parts=parts.filter(pt=>pt.life>0);
+}
+function openChest(c){
+  c.opened=true; sfxPick();
+  if(c.content==='plans'){ hasPlans=true; flash('PLANS SECRETS récupérés ! Rejoins la sortie en haut.'); score+=500; }
+  else if(c.content==='uniform'){ disguise=18; flash('Uniforme ennemi : déguisé 18 s !'); }
+  else { player.ammo+=12; flash('Munitions +12.'); }
+}
+function burst(x,y,col,n){ for(let i=0;i<n;i++){ const a=Math.random()*Math.PI*2,s=40+Math.random()*120;
+  parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:0.3+Math.random()*0.3,col}); } }
+function hitPlayer(){
+  if(player.inv>0||over) return;
+  player.hp--; player.inv=1.4; burst(player.x,player.y,'#fff',8);
+  if(player.hp<=0){ running=false;
+    ArcadeFX.die(cv, player.x, player.y, 'explosion', ()=>{ over=true; showOverlay('CAPTURÉ !','Score : '+score); }); }
+}
+
+// ── rendu ──
+function draw(){
+  ctx.fillStyle='#16161e'; ctx.fillRect(0,0,COLS*TS,ROWS*TS);
+  // tuiles
+  for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++){
+    if(map[y][x]==='#'){
+      ctx.fillStyle='#5a5a66'; ctx.fillRect(x*TS,y*TS,TS,TS);
+      ctx.fillStyle='#43434e'; ctx.fillRect(x*TS,y*TS,TS,2); ctx.fillRect(x*TS,y*TS,2,TS);
+      ctx.fillStyle='#6b6b78'; ctx.fillRect(x*TS+2,y*TS+2,TS-4,TS-5);
+    } else {
+      ctx.fillStyle=((x+y)&1)?'#23232c':'#262630'; ctx.fillRect(x*TS,y*TS,TS,TS);
+    }
+  }
+  // sortie (porte verte en haut)
+  ctx.fillStyle='#2bd06a'; ctx.fillRect(exit.tx*TS, 0, TS, 4);
+  ctx.fillStyle='#1c9a4c'; ctx.fillRect(exit.tx*TS+2, 4, TS-4, 5);
+  ctx.fillStyle='#0a3'; ctx.font='7px "Courier New",monospace'; ctx.textAlign='center';
+  ctx.fillText('SORTIE', (exit.tx+0.5)*TS, 16);
+  // coffres
+  for(const c of chests){ const cx=c.tx*TS, cy=c.ty*TS;
+    if(c.opened){ ctx.fillStyle='#5a4326'; ctx.fillRect(cx+2,cy+5,TS-4,TS-7); ctx.fillStyle='#2a1f12'; ctx.fillRect(cx+2,cy+3,TS-4,4); }
+    else { ctx.fillStyle='#8a6a2e'; ctx.fillRect(cx+2,cy+4,TS-4,TS-6);
+      ctx.fillStyle='#6b4f22'; ctx.fillRect(cx+2,cy+4,TS-4,3);
+      ctx.fillStyle='#d8b24a'; ctx.fillRect(cx+TS/2-1,cy+8,2,3); } }
+  // particules
+  parts.forEach(pt=>{ ctx.globalAlpha=Math.max(0,pt.life*3); ctx.fillStyle=pt.col; ctx.fillRect(pt.x-1.5,pt.y-1.5,3,3); });
+  ctx.globalAlpha=1;
+  // gardes
+  guards.forEach(g=>{ if(g.alive) drawSoldier(g.x,g.y,g.fx,g.fy,'#3c3c46',false); });
+  // joueur
+  const blink=player.inv>0 && Math.floor(player.inv*12)%2;
+  if(!blink) drawSoldier(player.x,player.y,player.fx,player.fy, disguise>0?'#7a6a3a':'#3f7fae', true);
+  // balles
+  ctx.fillStyle='#fff5c0'; bullets.forEach(b=>ctx.fillRect(b.x-1.5,b.y-1.5,3,3));
+  ctx.fillStyle='#ff7a3d'; ebullets.forEach(b=>{ ctx.beginPath(); ctx.arc(b.x,b.y,2.6,0,Math.PI*2); ctx.fill(); });
+
+  drawHUD();
+  if(paused){ ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(0,0,COLS*TS,ROWS*TS);
+    ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.font='28px "Courier New",monospace'; ctx.fillText('PAUSE',COLS*TS/2,ROWS*TS/2); }
+}
+function drawSoldier(x,y,fx,fy,col,isPlayer){
+  const a=Math.atan2(fy,fx);
+  ctx.save(); ctx.translate(x,y);
+  ctx.fillStyle='rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(0,7,8,3.5,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle=col; ctx.beginPath(); ctx.arc(0,0,7,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle=isPlayer?'#2c5a78':'#26262e'; ctx.beginPath(); ctx.arc(0,0,4,0,Math.PI*2); ctx.fill();
+  ctx.rotate(a); ctx.fillStyle='#1a1a1a'; ctx.fillRect(4,-1.6,12,3.2);
+  ctx.restore();
+}
+function drawHUD(){
+  ctx.fillStyle='rgba(0,0,0,.45)'; ctx.fillRect(0,0,COLS*TS,16);
+  ctx.textAlign='left'; ctx.font='bold 12px "Courier New",monospace';
+  ctx.fillStyle='#ff5a5a'; ctx.fillText('♥'.repeat(Math.max(0,player.hp)), 8, 12);
+  ctx.fillStyle='#ffd23a'; ctx.fillText('MUN '+player.ammo, 92, 12);
+  ctx.fillStyle=hasPlans?'#2bd06a':'#888'; ctx.fillText(hasPlans?'PLANS ✓':'PLANS ✗', 170, 12);
+  if(disguise>0){ ctx.fillStyle='#caa84a'; ctx.fillText('DÉGUISÉ '+Math.ceil(disguise), 262, 12); }
+  ctx.textAlign='right'; ctx.fillStyle='#fff'; ctx.fillText('SCORE '+score, COLS*TS-8, 12);
+  // message
+  if(msgT>0){ ctx.textAlign='center'; ctx.fillStyle='rgba(0,0,0,.6)'; ctx.fillRect(0,ROWS*TS-18,COLS*TS,18);
+    ctx.fillStyle='#fff'; ctx.font='11px "Courier New",monospace'; ctx.fillText(msg, COLS*TS/2, ROWS*TS-5); }
+}
+
+function loop(now){
+  const dt=Math.min(0.05,(now-(last||now))/1000); last=now;
+  update(dt); draw();
+  if(window.ArcadeHi)ArcadeHi.submit(score);
+  requestAnimationFrame(loop);
+}
+genCastle(); player=makePlayer(); bullets=[]; ebullets=[]; parts=[];
+hasPlans=false; disguise=0; score=0; msg=''; msgT=0;
+requestAnimationFrame(loop);
+</script>
+<script src="../music/playlist.js"></script>
+<script src="../music/player.js"></script>
+</body>
+</html>

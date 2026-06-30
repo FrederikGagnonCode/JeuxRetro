@@ -337,3 +337,57 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
   else mount();
 })();
+
+/* ════ Meilleur score par jeu (localStorage) + badge RECORD + message ════
+   Usage dans un jeu : appeler à chaque frame  ArcadeHi.submit(score)
+   (le module détecte tout seul le début d'une nouvelle partie quand le score
+    repart à la baisse). Affiche un badge « RECORD » et un message si battu.   */
+(function () {
+  if (window.ArcadeHi) return;
+  // clé stable basée sur le dossier du jeu
+  const segs = location.pathname.split('/').filter(s => s && !/index\.html?$/i.test(s));
+  const name = segs.length ? decodeURIComponent(segs[segs.length - 1]) : (document.title || 'jeu');
+  const KEY = 'arcadeHi_' + name;
+  let best = parseInt(localStorage.getItem(KEY) || '0', 10) || 0;
+  let prev = best, beaten = false, last = 0, badge = null, toast = null, toastT = null;
+
+  function mount() {
+    const st = document.createElement('style');
+    st.textContent = `
+      #arcade-hi{position:fixed;top:8px;right:10px;z-index:9998;font-family:'Courier New',monospace;
+        font-size:12px;letter-spacing:1px;color:#ffd23a;background:rgba(8,8,20,.72);
+        border:1px solid #3a3a52;border-radius:6px;padding:4px 9px;
+        text-shadow:0 0 6px rgba(255,210,58,.5);pointer-events:none;}
+      #arcade-hi b{color:#fff;}
+      #arcade-hi-toast{position:fixed;top:40px;left:50%;transform:translateX(-50%) scale(.5);
+        z-index:9998;font-family:'Courier New',monospace;font-weight:bold;font-size:18px;
+        color:#ffd23a;text-shadow:0 0 10px #ff2e88,0 0 22px #ffd23a;opacity:0;pointer-events:none;
+        transition:opacity .25s ease, transform .25s ease;white-space:nowrap;}
+      #arcade-hi-toast.show{opacity:1;transform:translateX(-50%) scale(1);}`;
+    document.head.appendChild(st);
+    badge = document.createElement('div'); badge.id = 'arcade-hi'; document.body.appendChild(badge);
+    toast = document.createElement('div'); toast.id = 'arcade-hi-toast';
+    toast.textContent = '★ NOUVEAU RECORD ! ★'; document.body.appendChild(toast);
+    refresh();
+  }
+  function refresh() { if (badge) badge.innerHTML = 'RECORD <b>' + best + '</b>'; }
+  function showToast() {
+    if (!toast) return;
+    toast.classList.add('show');
+    clearTimeout(toastT); toastT = setTimeout(() => toast.classList.remove('show'), 2800);
+  }
+  window.ArcadeHi = {
+    get: () => best,
+    beaten: () => beaten,
+    reset() { prev = best; beaten = false; last = 0; },     // optionnel : forcer un nouveau tour
+    submit(score) {
+      score = Math.floor(score) || 0;
+      if (score < last - 1) { prev = best; beaten = false; }  // score reparti à la baisse = nouvelle partie
+      last = score;
+      if (!beaten && prev > 0 && score > prev) { beaten = true; showToast(); }
+      if (score > best) { best = score; localStorage.setItem(KEY, best); refresh(); }
+    }
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
+  else mount();
+})();

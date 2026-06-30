@@ -34,7 +34,7 @@
       <p>Avance vers le haut, abats les soldats ennemis.</p>
       <p>← ↑ ↓ → (ou WASD) : se déplacer · tu tires dans la direction où tu vas</p>
       <p>Espace : tirer · X : lancer une grenade · P : pause</p>
-      <p>Les murets de sacs de sable arrêtent les balles — contourne-les ou grenade par-dessus !</p>
+      <p>Caisses de grenades à ramasser · gare aux motos et aux embusqués dans les crevasses !</p>
       <p class="blink" style="margin-top:14px">▶ Cliquez ou Espace pour partir au combat</p>
     </div>
   </div>
@@ -49,11 +49,13 @@ const overlay=document.getElementById('overlay');
 const ovTitle=document.getElementById('ovTitle');
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 
-let player, bullets, ebullets, enemies, grenades, blasts, decor, parts;
-let score, lives, grenadeCount, spawnT, dist;
+let player, bullets, ebullets, enemies, grenades, blasts, decor, parts, crates, holes;
+let score, lives, grenadeCount, spawnT, dist, crateT;
 let running=false, paused=false, over=false;
+let msg='', msgT=0;
 let last=0;
 const keys={};
+function flash(m){ msg=m; msgT=2.5; }
 
 // ── audio ──
 let _ac=null;
@@ -70,12 +72,18 @@ function sfxEnemyShot(){ const a=ac(),t=a.currentTime; const o=a.createOscillato
 function makePlayer(){ return { x:W/2, y:H-90, fx:0, fy:-1, shootCd:0, grenCd:0, inv:1, dead:false }; }
 function initDecor(){
   decor=[];
-  for(let i=0;i<16;i++) decor.push(makeDecor(Math.random()*H));
+  for(let i=0;i<28;i++) decor.push(makeDecor(Math.random()*H));
 }
 function makeDecor(y){
   const r=Math.random();
-  const type = r<0.5?'bush' : r<0.8?'rock' : 'sandbag';
-  return { x:14+Math.random()*(W-28), y, type, s:10+Math.random()*16 };
+  let type;
+  if(r<0.44) type='patch';        // taches de terrain (herbe / terre / sable)
+  else if(r<0.62) type='tree';    // arbres
+  else if(r<0.74) type='bush';
+  else if(r<0.86) type='rock';
+  else type='sandbag';            // murets (collision)
+  return { x:14+Math.random()*(W-28), y, type, s:10+Math.random()*16,
+           tone:Math.random(), seed:Math.random()*6.28 };
 }
 // les sacs de sable (murets) bloquent le déplacement et les balles
 function blockedPoint(x,y,pad){
@@ -84,9 +92,9 @@ function blockedPoint(x,y,pad){
   return false;
 }
 function newGame(){
-  player=makePlayer(); bullets=[]; ebullets=[]; enemies=[]; grenades=[]; blasts=[]; parts=[];
+  player=makePlayer(); bullets=[]; ebullets=[]; enemies=[]; grenades=[]; blasts=[]; parts=[]; crates=[]; holes=[];
   initDecor();
-  score=0; lives=3; grenadeCount=6; spawnT=0.6; dist=0; killScore=0;
+  score=0; lives=3; grenadeCount=6; spawnT=0.6; dist=0; killScore=0; crateT=5;
   over=false; paused=false; running=true;
   overlay.style.display='none';
 }
@@ -105,7 +113,7 @@ document.addEventListener('keyup',e=>{ keys[e.key.toLowerCase()]=false; });
 overlay.addEventListener('click',()=>{ if(!running||over) newGame(); });
 cv.addEventListener('touchstart',e=>{ e.preventDefault(); if(!running||over) newGame(); },{passive:false});
 
-const SCROLL=42;          // défilement (l'avancée du commando)
+const ADV_Y=H*0.55;       // ligne d'avancée : au-delà, monter fait défiler le niveau
 const PSPEED=148, BSPEED=440, GSPEED=210, ESPEED=46, EBSPEED=150;
 
 function fire(){
@@ -124,25 +132,49 @@ function throwGrenade(){
 }
 function spawnEnemy(){
   const side=Math.random();
-  let x,y;
-  if(side<0.7){ x=20+Math.random()*(W-40); y=-20; }            // du haut
-  else if(side<0.85){ x=-18; y=20+Math.random()*(H*0.5); }     // gauche
-  else { x=W+18; y=20+Math.random()*(H*0.5); }                 // droite
-  const runner=Math.random()<0.3;
-  enemies.push({ x, y, hp:1, shootCd:0.6+Math.random()*1.4, runner,
+  const runner=Math.random()<0.3, sp=ESPEED*(runner?1.5:1);
+  let x,y,vx,vy;
+  if(side<0.6){                         // du haut, trajectoire descendante / diagonale
+    x=20+Math.random()*(W-40); y=-20;
+    vx=(Math.random()*2-1)*sp; vy=sp*(0.5+Math.random()*0.6);
+  } else if(side<0.8){                  // de la gauche, traversée linéaire
+    x=-18; y=10+Math.random()*(H*0.55);
+    vx=sp*(0.8+Math.random()*0.6); vy=sp*(Math.random()*0.5-0.1);
+  } else {                              // de la droite
+    x=W+18; y=10+Math.random()*(H*0.55);
+    vx=-sp*(0.8+Math.random()*0.6); vy=sp*(Math.random()*0.5-0.1);
+  }
+  enemies.push({ x, y, hp:1, vx, vy, shootCd:0.6+Math.random()*1.4, runner,
     color: runner?'#c87a2a':'#b0432f' });
+}
+function spawnMoto(){
+  // ennemi à moto : traverse vite en ligne droite et tire sur le joueur
+  const fromLeft=Math.random()<0.5;
+  const sp=ESPEED*2.6;
+  const x=fromLeft?-26:W+26, y=30+Math.random()*(H*0.45);
+  enemies.push({ x, y, hp:3, vx:(fromLeft?1:-1)*sp, vy:ESPEED*(Math.random()*0.3-0.1),
+    shootCd:0.4+Math.random()*0.8, moto:true, dir:fromLeft?1:-1, color:'#3a3a44' });
+}
+function spawnCrate(){
+  // caisse de grenades qui descend avec le terrain
+  crates.push({ x:24+Math.random()*(W-48), y:-18 });
+}
+function spawnFoxhole(){
+  // crevasse (terrain persistant) abritant 1 ou 2 soldats embusqués
+  const two=Math.random()<0.4, n=two?2:1, occ=[];
+  for(let i=0;i<n;i++) occ.push({ hp:2, alive:true, shootCd:0.8+Math.random()*1.4,
+    ox:(n===1?0:(i===0?-7:7)) });
+  holes.push({ x:30+Math.random()*(W-60), y:-20, two, occ });
 }
 
 // ── mise à jour ──
 function update(dt){
   if(!running||paused||over) return;
-  dist += SCROLL*dt; score = Math.floor(dist/4) + killScore;
-
-  // décor qui défile vers le bas
-  decor.forEach((d,i)=>{ d.y+=SCROLL*dt; if(d.y-d.s>H){ decor[i]=makeDecor(-20); } });
+  if(msgT>0) msgT-=dt;
 
   // joueur
   const p=player;
+  let scroll=0;                           // défilement du niveau ce frame (= avancée du joueur)
   if(p.grenCd>0) p.grenCd-=dt;
   if(!p.dead){
     let mvx=0,mvy=0;
@@ -155,14 +187,21 @@ function update(dt){
       if(!blockedPoint(nx,p.y,11)) p.x=nx;    // déplacement par axe -> on longe le muret
       if(!blockedPoint(p.x,ny,11)) p.y=ny;
     }
-    p.x=clamp(p.x,16,W-16); p.y=clamp(p.y,40,H-24);
+    p.x=clamp(p.x,16,W-16);
+    // au-delà de la ligne d'avancée, monter ne déplace plus le joueur mais fait DÉFILER le niveau
+    if(p.y<ADV_Y){ scroll=ADV_Y-p.y; p.y=ADV_Y; }
+    p.y=clamp(p.y,ADV_Y,H-24);
     if(p.shootCd>0) p.shootCd-=dt;
     if(keys[' ']) fire();
     if(p.inv>0) p.inv-=dt;
   }
+  dist += scroll; score = Math.floor(dist/4) + killScore;
+
+  // décor : défile à la vitesse du joueur (s'arrête s'il s'arrête)
+  decor.forEach((d,i)=>{ d.y+=scroll; if(d.y-d.s>H){ decor[i]=makeDecor(-20); } });
 
   // balles joueur
-  bullets.forEach(b=>{ b.x+=b.vx*dt; b.y+=b.vy*dt; b.life-=dt; });
+  bullets.forEach(b=>{ b.x+=b.vx*dt; b.y+=b.vy*dt+scroll; b.life-=dt; });   // +scroll : suit le monde
   bullets=bullets.filter(b=>{ if(blockedPoint(b.x,b.y,0)){ burst(b.x,b.y,'#cbb88a',3); return false; }
     return b.life>0 && b.x>-10 && b.x<W+10 && b.y>-10 && b.y<H+10; });
 
@@ -177,20 +216,44 @@ function update(dt){
 
   // spawns
   spawnT-=dt;
-  if(spawnT<=0){ spawnEnemy(); spawnT=Math.max(0.35, 1.1 - dist/4000); }
+  if(spawnT<=0){
+    const r=Math.random();
+    if(dist>700 && r<0.12 && !enemies.some(e=>e.moto)) spawnMoto();   // moto parfois
+    else if(r<0.34) spawnFoxhole();                                   // embusqué en crevasse
+    else spawnEnemy();
+    spawnT=Math.max(0.35, 1.1 - dist/4000);
+  }
+  // caisses de grenades (parfois)
+  crateT-=dt;
+  if(crateT<=0){ spawnCrate(); crateT=9+Math.random()*9; }
+  crates.forEach(c=>{ c.y+=scroll;
+    if(Math.hypot(c.x-p.x, c.y-p.y)<14 && !p.dead){ c.got=true; grenadeCount+=3; burst(c.x,c.y,'#cfcf6a',8); flash('Caisse : grenades +3 !'); } });
+  crates=crates.filter(c=>!c.got && c.y<H+30);
 
-  // ennemis
+  // crevasses : trou persistant + occupants embusqués immobiles
+  holes.forEach(h=>{ h.y+=scroll;
+    for(const s of h.occ){ if(!s.alive) continue;
+      const sx=h.x+s.ox, sy=h.y; s.shootCd-=dt;
+      const dx=p.x-sx, dy=p.y-sy, d=Math.hypot(dx,dy)||1;
+      if(s.shootCd<=0 && !p.dead && h.y>0 && h.y<H-10 && d<185){   // n'ouvre le feu qu'à l'approche
+        ebullets.push({x:sx, y:sy, vx:dx/d*EBSPEED, vy:dy/d*EBSPEED, life:3});
+        s.shootCd=1.3+Math.random()*1.4; sfxEnemyShot();
+      }
+    }
+  });
+  holes=holes.filter(h=>h.y<H+30);          // le trou reste visible jusqu'à sortir de l'écran
+
+  // ennemis : trajectoires linéaires variées (pas de poursuite), tir visé vers le joueur
   enemies.forEach(e=>{
-    const dx=p.x-e.x, dy=p.y-e.y, d=Math.hypot(dx,dy)||1;
-    const sp=ESPEED*(e.runner?1.5:1);
-    e.y += SCROLL*dt;                                   // défilement (commun au décor)
-    const sx=dx/d*sp*dt, sy=dy/d*sp*0.6*dt;             // déplacement propre vers le joueur
-    if(!blockedPoint(e.x+sx, e.y, 12)) e.x+=sx;         // bloqué par les murets -> contourne
+    e.y += scroll;                                      // porté par le défilement du niveau
+    const sx=e.vx*dt, sy=e.vy*dt;
+    if(!blockedPoint(e.x+sx, e.y, 12)) e.x+=sx;         // bloqué par un muret -> longe (axe ignoré)
     if(!blockedPoint(e.x, e.y+sy, 12)) e.y+=sy;
     if(!e.runner){
       e.shootCd-=dt;
-      if(e.shootCd<=0 && !p.dead && e.y<H-20){
-        ebullets.push({x:e.x, y:e.y, vx:dx/d*EBSPEED, vy:dy/d*EBSPEED, life:3});
+      if(e.shootCd<=0 && !p.dead && e.y>0 && e.y<H-10){
+        const dx=p.x-e.x, dy=p.y-e.y, d=Math.hypot(dx,dy)||1;
+        ebullets.push({x:e.x, y:e.y, vx:dx/d*EBSPEED, vy:dy/d*EBSPEED, life:3});  // visé sur le joueur
         e.shootCd=1.1+Math.random()*1.4; sfxEnemyShot();
       }
     }
@@ -198,21 +261,30 @@ function update(dt){
 
   // balles joueur -> ennemis
   bullets.forEach(b=>{ enemies.forEach(e=>{ if(e.dead) return;
-    if(Math.abs(b.x-e.x)<15 && Math.abs(b.y-e.y)<16){ e.dead=true; b.life=0; killEnemy(e); } }); });
-  // explosions -> ennemis
+    const r=e.moto?20:15;
+    if(Math.abs(b.x-e.x)<r && Math.abs(b.y-e.y)<r+1){ b.life=0; e.hp--;
+      if(e.hp<=0){ e.dead=true; killEnemy(e); } else burst(b.x,b.y,'#fff',2); } }); });
+  // balles joueur -> embusqués dans les trous
+  bullets.forEach(b=>{ if(b.life<=0) return; for(const h of holes) for(const s of h.occ){ if(!s.alive) continue;
+    const sx=h.x+s.ox, sy=h.y;
+    if(Math.abs(b.x-sx)<10 && Math.abs(b.y-sy)<12){ b.life=0; s.hp--;
+      if(s.hp<=0){ s.alive=false; killScore+=150; burst(sx,sy,'#7a2e22',8); } else burst(b.x,b.y,'#fff',2); break; } } });
+  // explosions -> ennemis et embusqués
   blasts.forEach(bl=>{ enemies.forEach(e=>{ if(e.dead) return;
-    if(Math.hypot(bl.x-e.x,bl.y-e.y)<bl.r+11){ e.dead=true; killEnemy(e); } }); });
-  enemies=enemies.filter(e=>!e.dead && e.y<H+40);
+    if(Math.hypot(bl.x-e.x,bl.y-e.y)<bl.r+11){ e.dead=true; killEnemy(e); } });
+    for(const h of holes) for(const s of h.occ){ if(!s.alive) continue;
+      if(Math.hypot(bl.x-(h.x+s.ox),bl.y-h.y)<bl.r+10){ s.alive=false; killScore+=150; burst(h.x+s.ox,h.y,'#7a2e22',8); } } });
+  enemies=enemies.filter(e=>!e.dead && e.y<H+50 && e.y>-70 && e.x>-50 && e.x<W+50);
 
   // balles ennemies
-  ebullets.forEach(b=>{ b.x+=b.vx*dt; b.y+=b.vy*dt; b.life-=dt; });
+  ebullets.forEach(b=>{ b.x+=b.vx*dt; b.y+=b.vy*dt+scroll; b.life-=dt; });   // +scroll : suit le monde
   ebullets=ebullets.filter(b=>{ if(blockedPoint(b.x,b.y,0)){ burst(b.x,b.y,'#cbb88a',2); return false; }
     return b.life>0 && b.x>-10 && b.x<W+10 && b.y>-10 && b.y<H+10; });
 
   // collisions joueur
   if(!p.dead && p.inv<=0){
     for(const b of ebullets){ if(Math.abs(b.x-p.x)<11 && Math.abs(b.y-p.y)<12){ b.life=0; hitPlayer(); break; } }
-    for(const e of enemies){ if(Math.abs(e.x-p.x)<17 && Math.abs(e.y-p.y)<18){ hitPlayer(); break; } }
+    for(const e of enemies){ if(e.foxhole) continue; const r=e.moto?20:17; if(Math.abs(e.x-p.x)<r && Math.abs(e.y-p.y)<r+1){ hitPlayer(); break; } }
   }
 
   // particules
@@ -222,8 +294,9 @@ function update(dt){
 
 let killScore=0;
 function killEnemy(e){
-  killScore += e.runner?200:100;
-  burst(e.x,e.y, e.color, 8);
+  killScore += e.moto?400:(e.foxhole?150:(e.runner?200:100));
+  burst(e.x,e.y, e.color, e.moto?14:8);
+  if(e.moto) flash('Moto détruite !');
 }
 function burst(x,y,col,n){ for(let i=0;i<n;i++){ const a=Math.random()*Math.PI*2, s=40+Math.random()*120;
   parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:0.3+Math.random()*0.3,col}); } }
@@ -241,15 +314,19 @@ function hitPlayer(){
 
 // ── rendu ──
 function draw(){
-  // sol
-  ctx.fillStyle='#6b5a39'; ctx.fillRect(0,0,W,H);
-  // décor
+  // sol de base (terre)
+  ctx.fillStyle='#7e6c40'; ctx.fillRect(0,0,W,H);
+  // décor au sol (taches de terrain, troncs, buissons, rochers, murets)
   decor.forEach(d=>drawDecor(d));
+  // caisses de grenades
+  crates.forEach(c=>drawCrate(c));
+  // crevasses (trous + embusqués)
+  holes.forEach(h=>drawHole(h));
   // grenades (avec ombre)
   grenades.forEach(g=>{ ctx.fillStyle='rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(g.x,g.y+4,4,2,0,0,Math.PI*2); ctx.fill();
     ctx.fillStyle='#2c3a22'; ctx.beginPath(); ctx.arc(g.x,g.y,3.5,0,Math.PI*2); ctx.fill(); });
   // ennemis
-  enemies.forEach(e=>drawSoldier(e.x,e.y, (player.x-e.x), (player.y-e.y), e.color));
+  enemies.forEach(e=>{ if(e.moto) drawMoto(e); else drawSoldier(e.x,e.y, (player.x-e.x), (player.y-e.y), e.color); });
   // joueur
   if(!player.dead){ const blink=player.inv>0 && Math.floor(player.inv*12)%2;
     if(!blink) drawSoldier(player.x,player.y, player.fx, player.fy, '#3f8f3a', true); }
@@ -263,52 +340,159 @@ function draw(){
   // particules
   parts.forEach(pt=>{ ctx.globalAlpha=Math.max(0,pt.life*3); ctx.fillStyle=pt.col; ctx.fillRect(pt.x-1.5,pt.y-1.5,3,3); });
   ctx.globalAlpha=1;
+  // houppiers des arbres : dessinés PAR-DESSUS (les personnages passent dessous → profondeur)
+  decor.forEach(d=>{ if(d.type==='tree') drawTreeCanopy(d); });
 
   drawHUD();
   if(paused){ ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(0,0,W,H);
     ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.font='30px "Courier New",monospace'; ctx.fillText('PAUSE',W/2,H/2); }
 }
 function drawDecor(d){
-  if(d.type==='bush'){ ctx.fillStyle='#356e2c'; ctx.beginPath(); ctx.arc(d.x,d.y,d.s*0.6,0,Math.PI*2);
-    ctx.arc(d.x-d.s*0.4,d.y+3,d.s*0.4,0,Math.PI*2); ctx.arc(d.x+d.s*0.4,d.y+2,d.s*0.45,0,Math.PI*2); ctx.fill(); }
-  else if(d.type==='rock'){ ctx.fillStyle='#8a8478'; ctx.beginPath(); ctx.ellipse(d.x,d.y,d.s*0.5,d.s*0.4,0,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle='#6f6a60'; ctx.beginPath(); ctx.ellipse(d.x+2,d.y+2,d.s*0.25,d.s*0.2,0,0,Math.PI*2); ctx.fill(); }
-  else { ctx.fillStyle='#b8a062'; ctx.fillRect(d.x-d.s*0.7,d.y-5,d.s*1.4,10);
-    ctx.fillStyle='#9c8550'; for(let i=-1;i<2;i++) ctx.strokeRect(d.x-d.s*0.7+ (i+1)*d.s*0.47, d.y-5, d.s*0.46, 10); }
+  if(d.type==='patch') drawPatch(d);
+  else if(d.type==='tree') drawTreeBase(d);
+  else if(d.type==='bush') drawBush(d);
+  else if(d.type==='rock') drawRock(d);
+  else drawSandbag(d);
 }
+function drawPatch(d){
+  // tache de terrain fondue dans le sol (herbe / terre sombre / sable clair)
+  const col = d.tone<0.5?'#6f8a3e' : d.tone<0.8?'#6b5a30' : '#9d8a55';
+  ctx.globalAlpha=0.5; ctx.fillStyle=col;
+  ctx.beginPath(); ctx.ellipse(d.x, d.y, d.s*1.7, d.s*1.15, d.seed, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(d.x-d.s*0.7, d.y+d.s*0.4, d.s*0.95, d.s*0.7, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(d.x+d.s*0.6, d.y-d.s*0.3, d.s*0.8, d.s*0.6, 0, 0, Math.PI*2); ctx.fill();
+  ctx.globalAlpha=1;
+}
+function drawBush(d){
+  const r=d.s*0.55;
+  ctx.fillStyle='rgba(0,0,0,.2)'; ctx.beginPath(); ctx.ellipse(d.x+2,d.y+r*0.6,r*1.1,r*0.4,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#2e6326'; ctx.beginPath(); ctx.arc(d.x,d.y,r,0,Math.PI*2);
+  ctx.arc(d.x-r*0.7,d.y+3,r*0.6,0,Math.PI*2); ctx.arc(d.x+r*0.7,d.y+2,r*0.65,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#3f8033'; ctx.beginPath(); ctx.arc(d.x-r*0.25,d.y-r*0.3,r*0.55,0,Math.PI*2); ctx.fill();
+}
+function drawRock(d){
+  ctx.fillStyle='rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(d.x+2,d.y+d.s*0.3,d.s*0.55,d.s*0.25,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#8a8478'; ctx.beginPath(); ctx.ellipse(d.x,d.y,d.s*0.5,d.s*0.42,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#9c968a'; ctx.beginPath(); ctx.ellipse(d.x-d.s*0.12,d.y-d.s*0.12,d.s*0.28,d.s*0.22,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#6f6a60'; ctx.beginPath(); ctx.ellipse(d.x+d.s*0.15,d.y+d.s*0.12,d.s*0.22,d.s*0.16,0,0,Math.PI*2); ctx.fill();
+}
+function drawSandbag(d){
+  const w=d.s*0.7;
+  ctx.fillStyle='rgba(0,0,0,.25)'; ctx.fillRect(d.x-w, d.y+5, w*2, 4);
+  ctx.fillStyle='#9c8550'; ctx.fillRect(d.x-w, d.y-1, w*2, 9);
+  ctx.fillStyle='#c8b06e'; ctx.fillRect(d.x-w, d.y-7, w*2, 6);
+  ctx.fillStyle='#b8a062'; for(let i=0;i<3;i++) ctx.fillRect(d.x-w+i*(w*0.67)+1, d.y-7, w*0.6, 6);
+  ctx.strokeStyle='rgba(0,0,0,.2)'; ctx.lineWidth=1; ctx.strokeRect(d.x-w, d.y-7, w*2, 13);
+}
+function drawTreeBase(d){
+  // tronc + ombre au sol (le houppier est dessiné après les personnages)
+  const h=d.s*2.0;
+  ctx.fillStyle='rgba(0,0,0,.26)'; ctx.beginPath(); ctx.ellipse(d.x+h*0.10, d.y+3, d.s*0.95, d.s*0.4, 0, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle='#5a3f22'; ctx.fillRect(d.x-d.s*0.13, d.y-h*0.5, d.s*0.26, h*0.5);
+  ctx.fillStyle='#6e4f2c'; ctx.fillRect(d.x-d.s*0.13, d.y-h*0.5, d.s*0.1, h*0.5);
+}
+function drawTreeCanopy(d){
+  const h=d.s*2.0, cy=d.y-h*0.62, cr=d.s*1.15;
+  ctx.fillStyle='#264f1f';
+  ctx.beginPath();
+  ctx.arc(d.x,cy,cr,0,Math.PI*2);
+  ctx.arc(d.x-cr*0.75,cy+cr*0.25,cr*0.7,0,Math.PI*2);
+  ctx.arc(d.x+cr*0.75,cy+cr*0.2,cr*0.72,0,Math.PI*2);
+  ctx.arc(d.x,cy-cr*0.55,cr*0.7,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#3a7a30'; ctx.beginPath(); ctx.arc(d.x-cr*0.25,cy-cr*0.3,cr*0.7,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,.08)'; ctx.beginPath(); ctx.arc(d.x-cr*0.4,cy-cr*0.45,cr*0.4,0,Math.PI*2); ctx.fill();
+}
+// soldat dessiné comme une silhouette humaine debout, vue 3/4 (de dos quand il monte)
 function drawSoldier(x,y,fx,fy,col,isPlayer){
   const a=Math.atan2(fy,fx);
   ctx.save(); ctx.translate(x,y);
-  // ombre
-  ctx.fillStyle='rgba(0,0,0,.28)'; ctx.beginPath(); ctx.ellipse(0,10,13,5,0,0,Math.PI*2); ctx.fill();
-  // corps
-  ctx.fillStyle=col; ctx.beginPath(); ctx.arc(0,0,10,0,Math.PI*2); ctx.fill();
-  // épaules / harnais
-  ctx.fillStyle='rgba(0,0,0,.18)'; ctx.beginPath(); ctx.arc(0,0,10,0,Math.PI*2); ctx.fill();
-  ctx.fillStyle=col; ctx.beginPath(); ctx.arc(0,0,8.5,0,Math.PI*2); ctx.fill();
-  // casque
-  ctx.fillStyle=isPlayer?'#2e6e2a':'#7a2e22'; ctx.beginPath(); ctx.arc(0,0,6,0,Math.PI*2); ctx.fill();
-  ctx.fillStyle=isPlayer?'#256022':'#6a261c'; ctx.beginPath(); ctx.arc(0,0,2.6,0,Math.PI*2); ctx.fill();
-  // arme dans la direction de visée
-  ctx.rotate(a);
-  ctx.fillStyle='#222'; ctx.fillRect(5,-2,16,4);
-  ctx.fillStyle='#444'; ctx.fillRect(4,-2.6,4,5.2);
+  // ombre portée (donne l'impression de hauteur / vue en plongée)
+  ctx.fillStyle='rgba(0,0,0,.30)'; ctx.beginPath(); ctx.ellipse(1,13,12,4.5,0,0,Math.PI*2); ctx.fill();
+  // jambes + bottes
+  const pants=isPlayer?'#2e6e2a':'#5e2a22';
+  ctx.fillStyle=pants; ctx.fillRect(-5,3,4,9); ctx.fillRect(1,3,4,9);
+  ctx.fillStyle='#161616'; ctx.fillRect(-5.5,11,4.6,3); ctx.fillRect(0.9,11,4.6,3);
+  // sac à dos (derrière, opposé à la visée)
+  ctx.save(); ctx.rotate(a); ctx.fillStyle='rgba(0,0,0,.35)'; ctx.fillRect(-10,-4,5,8); ctx.restore();
+  // torse
+  ctx.fillStyle=col; ctx.beginPath(); ctx.ellipse(0,-1,8,9,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,.10)'; ctx.beginPath(); ctx.ellipse(-2.5,-3,3.5,5,0,0,Math.PI*2); ctx.fill();
+  // bras tendus + fusil dans la direction de visée
+  ctx.save(); ctx.rotate(a);
+  ctx.strokeStyle=col; ctx.lineWidth=4.5; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(0,-2.5); ctx.lineTo(8,-1); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, 2.5); ctx.lineTo(8, 1); ctx.stroke();
+  ctx.fillStyle='#15151a'; ctx.fillRect(6,-1.8,15,3.6);
   ctx.restore();
+  // tête + casque
+  ctx.fillStyle='#caa07a'; ctx.beginPath(); ctx.arc(0,-10,4.6,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle=isPlayer?'#2e6e2a':'#7a2e22';
+  ctx.beginPath(); ctx.arc(0,-11,5,Math.PI,Math.PI*2); ctx.fill(); ctx.fillRect(-5,-11,10,2.2);
+  if(fy>0.25){ ctx.fillStyle='#33231a'; ctx.fillRect(-2.3,-10.4,1.7,1.7); ctx.fillRect(0.7,-10.4,1.7,1.7); } // yeux si de face
+  ctx.restore();
+}
+function drawMoto(e){
+  const d=e.dir||1;
+  ctx.save(); ctx.translate(e.x,e.y); ctx.scale(d,1);
+  ctx.fillStyle='rgba(0,0,0,.32)'; ctx.beginPath(); ctx.ellipse(0,12,19,5,0,0,Math.PI*2); ctx.fill();  // ombre
+  // roues
+  ctx.fillStyle='#111'; ctx.beginPath(); ctx.arc(-12,9,6,0,Math.PI*2); ctx.arc(12,9,6,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#555'; ctx.beginPath(); ctx.arc(-12,9,2.4,0,Math.PI*2); ctx.arc(12,9,2.4,0,Math.PI*2); ctx.fill();
+  // cadre + guidon + phare
+  ctx.fillStyle='#2f2f38'; ctx.fillRect(-13,3,26,5);
+  ctx.fillStyle='#3a3a44'; ctx.fillRect(9,-1,6,5);
+  ctx.fillStyle='#ffd23a'; ctx.fillRect(14,1,2,2);
+  // pilote (profil)
+  ctx.fillStyle=e.color||'#5e2a22'; ctx.fillRect(-7,-8,9,11);            // torse/dos
+  ctx.strokeStyle=e.color||'#5e2a22'; ctx.lineWidth=3; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(0,-3); ctx.lineTo(9,1); ctx.stroke();      // bras au guidon
+  ctx.fillStyle='#caa07a'; ctx.beginPath(); ctx.arc(-1,-11,4,0,Math.PI*2); ctx.fill(); // tête
+  ctx.fillStyle='#2a2a30'; ctx.beginPath(); ctx.arc(-1,-12,4.4,Math.PI,Math.PI*2); ctx.fill(); ctx.fillRect(-5.4,-12,8.8,2); // casque
+  ctx.restore();
+}
+function drawHole(h){
+  // le trou (terrain) reste dessiné, occupé ou non
+  const rw=h.two?19:14;
+  ctx.save(); ctx.translate(h.x,h.y);
+  ctx.fillStyle='#574629'; ctx.beginPath(); ctx.ellipse(0,1,rw,10,0,0,Math.PI*2); ctx.fill();   // bord de terre
+  ctx.fillStyle='#241c10'; ctx.beginPath(); ctx.ellipse(0,1,rw-3,7,0,0,Math.PI*2); ctx.fill();   // creux sombre
+  ctx.restore();
+  for(const s of h.occ){ if(s.alive) drawHoleSoldier(h.x+s.ox, h.y); }
+}
+function drawHoleSoldier(x,y){
+  ctx.save(); ctx.translate(x,y);
+  ctx.fillStyle='#caa07a'; ctx.beginPath(); ctx.arc(0,-1,4,0,Math.PI*2); ctx.fill();              // tête
+  ctx.fillStyle='#7a2e22'; ctx.beginPath(); ctx.arc(0,-2.5,4.6,Math.PI,Math.PI*2); ctx.fill(); ctx.fillRect(-4.6,-2.5,9.2,2.2); // casque
+  ctx.fillStyle='#15151a'; ctx.fillRect(-1.6,2,3.2,10);                                            // fusil vers le bas
+  ctx.restore();
+}
+function drawCrate(c){
+  ctx.fillStyle='rgba(0,0,0,.28)'; ctx.fillRect(c.x-9,c.y+6,18,4);          // ombre
+  ctx.fillStyle='#8a6a34'; ctx.fillRect(c.x-9,c.y-9,18,16);                 // caisse
+  ctx.fillStyle='#a0823f'; ctx.fillRect(c.x-9,c.y-9,18,3);                  // dessus éclairé
+  ctx.strokeStyle='#5a3f1c'; ctx.lineWidth=1.5; ctx.strokeRect(c.x-9,c.y-9,18,16);
+  ctx.beginPath(); ctx.moveTo(c.x-9,c.y-9); ctx.lineTo(c.x+9,c.y+7); ctx.moveTo(c.x+9,c.y-9); ctx.lineTo(c.x-9,c.y+7); ctx.stroke();
+  // symbole grenade
+  ctx.fillStyle='#2c3a22'; ctx.beginPath(); ctx.arc(c.x,c.y,3,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#6e5226'; ctx.fillRect(c.x-1,c.y-5,2,2);
 }
 function drawHUD(){
   ctx.textAlign='left'; ctx.font='bold 16px "Courier New",monospace';
   ctx.fillStyle='#fff'; ctx.fillText('SCORE '+score, 10, 22);
   ctx.textAlign='center'; ctx.fillStyle='#ff5252'; ctx.fillText('♥'.repeat(Math.max(0,lives)), W/2, 22);
   ctx.textAlign='right'; ctx.fillStyle='#ffd23a'; ctx.fillText('GRENADES '+grenadeCount, W-10, 22);
+  if(msgT>0){ ctx.textAlign='center'; ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(0,H-20,W,20);
+    ctx.fillStyle='#ffe28a'; ctx.font='13px "Courier New",monospace'; ctx.fillText(msg, W/2, H-6); }
 }
 
 function loop(now){
   const dt=Math.min(0.05,(now-(last||now))/1000); last=now;
   update(dt); draw();
+  if(window.ArcadeHi)ArcadeHi.submit(score);
   requestAnimationFrame(loop);
 }
-player=makePlayer(); bullets=[]; ebullets=[]; enemies=[]; grenades=[]; blasts=[]; parts=[];
-score=0; lives=3; grenadeCount=6; dist=0; initDecor();
+player=makePlayer(); bullets=[]; ebullets=[]; enemies=[]; grenades=[]; blasts=[]; parts=[]; crates=[]; holes=[];
+score=0; lives=3; grenadeCount=6; dist=0; crateT=5; initDecor();
 requestAnimationFrame(loop);
 </script>
 <script src="../music/playlist.js"></script>

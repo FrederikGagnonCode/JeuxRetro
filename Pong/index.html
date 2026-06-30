@@ -232,6 +232,7 @@ function roundRect(x,y,w,h,r){
 function loop(){
   update();
   draw();
+  if(window.ArcadeHi)ArcadeHi.submit(player.score);
   requestAnimationFrame(loop);
 }
 loop();

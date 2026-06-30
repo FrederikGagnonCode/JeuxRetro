@@ -319,7 +319,7 @@ function drawHUD(){
   ctx.strokeStyle='#333'; ctx.beginPath(); ctx.moveTo(0,HUD-1); ctx.lineTo(W,HUD-1); ctx.stroke();
 }
 
-function loop(){ update(); draw(); requestAnimationFrame(loop); }
+function loop(){ update(); draw(); if(window.ArcadeHi)ArcadeHi.submit(score); requestAnimationFrame(loop); }
 initMushrooms(); segs=[]; parts=[]; player={x:W/2,y:H-CELL,inv:0};
 loop();
 </script>

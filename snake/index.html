@@ -579,7 +579,7 @@
       });
     }
 
-    function updateScore() { scoreEl.textContent = score; }
+    function updateScore() { scoreEl.textContent = score; if(window.ArcadeHi)ArcadeHi.submit(score); }
 
     document.addEventListener('keydown', e => {
       if (!running) {

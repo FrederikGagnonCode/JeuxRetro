@@ -396,7 +396,7 @@ function drawHUD(){
   ctx.fillText('HUMANOÏDES '+alive, VW/2, SCANNER_H+22);
 }
 
-function loop(){ update(); draw(); requestAnimationFrame(loop); }
+function loop(){ update(); draw(); if(window.ArcadeHi)ArcadeHi.submit(score); requestAnimationFrame(loop); }
 loop();
 </script>
 <script src="../music/playlist.js"></script>

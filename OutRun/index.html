@@ -467,6 +467,7 @@ function drawHUD(){
 function loop(now){
   const dt=Math.min(0.05,(now-(last||now))/1000); last=now;
   update(dt); render();
+  if(window.ArcadeHi)ArcadeHi.submit(score);
   requestAnimationFrame(loop);
 }
 buildTrack(); spawnTraffic();
