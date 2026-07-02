@@ -352,12 +352,15 @@
   let prev = best, beaten = false, last = 0, badge = null, toast = null, toastT = null;
 
   function mount() {
+    // pas de badge sur les pages sans zone de jeu (ex. le menu)
+    if (!document.querySelector('canvas')) return;
     const st = document.createElement('style');
     st.textContent = `
       #arcade-hi{position:fixed;top:8px;right:10px;z-index:9998;font-family:'Courier New',monospace;
         font-size:12px;letter-spacing:1px;color:#ffd23a;background:rgba(8,8,20,.72);
         border:1px solid #3a3a52;border-radius:6px;padding:4px 9px;
         text-shadow:0 0 6px rgba(255,210,58,.5);pointer-events:none;}
+      #arcade-hi.on-wrap{position:absolute;top:-27px;right:0;}
       #arcade-hi b{color:#fff;}
       #arcade-hi-toast{position:fixed;top:40px;left:50%;transform:translateX(-50%) scale(.5);
         z-index:9998;font-family:'Courier New',monospace;font-weight:bold;font-size:18px;
@@ -365,7 +368,11 @@
         transition:opacity .25s ease, transform .25s ease;white-space:nowrap;}
       #arcade-hi-toast.show{opacity:1;transform:translateX(-50%) scale(1);}`;
     document.head.appendChild(st);
-    badge = document.createElement('div'); badge.id = 'arcade-hi'; document.body.appendChild(badge);
+    badge = document.createElement('div'); badge.id = 'arcade-hi';
+    // au-dessus de la zone de jeu si possible (le #wrap des jeux est en position:relative)
+    const wrap = document.getElementById('wrap');
+    if (wrap) { badge.classList.add('on-wrap'); wrap.appendChild(badge); }
+    else document.body.appendChild(badge);
     toast = document.createElement('div'); toast.id = 'arcade-hi-toast';
     toast.textContent = '★ NOUVEAU RECORD ! ★'; document.body.appendChild(toast);
     refresh();
@@ -390,4 +397,20 @@
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
   else mount();
+})();
+
+/* ════ Zone de jeu uniformisée : chaque canvas est AFFICHÉ au grand format ════
+   La résolution interne (logique de jeu) ne change pas : on agrandit seulement
+   l'affichage CSS, proportions conservées, jusqu'à ~520 px de haut / 760 de large. */
+(function () {
+  function fit() {
+    const c = document.getElementById('game') || document.querySelector('canvas');
+    if (!c || !c.width || !c.height) return;
+    const k = Math.min(520 / c.height, 760 / c.width);
+    if (k <= 1.02) return;                                  // déjà au grand format
+    c.style.width  = 'min(' + Math.round(c.width * k) + 'px, 94vw)';
+    c.style.height = 'auto';                                 // garde les proportions
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fit);
+  else fit();
 })();

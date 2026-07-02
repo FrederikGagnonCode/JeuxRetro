@@ -107,6 +107,10 @@
     opacity:0;transform:translateY(8px);transition:opacity .18s,transform .18s;
   }
   .play span{border:2px solid #fff;border-radius:30px;padding:8px 20px;backdrop-filter:blur(2px)}
+  .hiscore{position:absolute;top:6px;right:6px;z-index:2;
+    font-size:11px;font-weight:bold;letter-spacing:1px;color:#ffd23a;
+    background:rgba(8,8,20,.78);border:1px solid rgba(255,210,58,.45);border-radius:12px;
+    padding:2px 8px;text-shadow:0 0 6px rgba(255,210,58,.5);pointer-events:none;}
   .meta{padding:14px 16px 16px}
   .title{font-size:18px;letter-spacing:1px;margin:0 0 4px}
   .tag{color:var(--muted);font-size:12px;letter-spacing:1px}
@@ -303,6 +307,46 @@
       <div class="meta">
         <p class="title">Castle Wolfenstein</p>
         <p class="tag">Infiltration · Rétro</p>
+      </div>
+    </a>
+
+    <!-- FROGGER -->
+    <a class="card" href="./Frogger/index.html">
+      <div class="year">1981</div>
+      <div class="thumb">
+        <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
+          <!-- rivière -->
+          <rect width="80" height="26" fill="#0a2a52"/>
+          <!-- berge + départ -->
+          <rect y="26" width="80" height="7" fill="#3a7a2e"/>
+          <rect y="53" width="80" height="7" fill="#3a7a2e"/>
+          <!-- route -->
+          <rect y="33" width="80" height="20" fill="#101018"/>
+          <g stroke="#3a3a48" stroke-width="1" stroke-dasharray="4 4">
+            <line x1="0" y1="40" x2="80" y2="40"/><line x1="0" y1="46" x2="80" y2="46"/>
+          </g>
+          <!-- abris -->
+          <rect width="80" height="6" fill="#0d3a12"/>
+          <g fill="#0a2a52"><rect x="6" y="1" width="9" height="5"/><rect x="35" y="1" width="9" height="5"/><rect x="64" y="1" width="9" height="5"/></g>
+          <!-- tronc + tortues -->
+          <rect x="8" y="9" width="26" height="6" rx="3" fill="#7a4a1e"/>
+          <g fill="#37882e"><circle cx="52" cy="20" r="4"/><circle cx="61" cy="20" r="4"/><circle cx="70" cy="20" r="4"/></g>
+          <!-- voitures -->
+          <rect x="12" y="35" width="12" height="7" rx="1" fill="#ffd23a"/>
+          <rect x="52" y="41" width="14" height="7" rx="1" fill="#e0322e"/>
+          <rect x="30" y="47" width="10" height="6" rx="1" fill="#b06cff"/>
+          <!-- grenouille -->
+          <g transform="translate(40,56)">
+            <ellipse rx="4" ry="3.4" fill="#4ddc5a"/>
+            <circle cx="-2" cy="-3" r="1.4" fill="#4ddc5a"/><circle cx="2" cy="-3" r="1.4" fill="#4ddc5a"/>
+            <circle cx="-2" cy="-3.3" r=".6" fill="#111"/><circle cx="2" cy="-3.3" r=".6" fill="#111"/>
+          </g>
+        </svg>
+        <div class="play"><span>▶ JOUER</span></div>
+      </div>
+      <div class="meta">
+        <p class="title">Frogger</p>
+        <p class="tag">Traversée · Arcade</p>
       </div>
     </a>
 
@@ -626,6 +670,38 @@
       </div>
     </a>
 
+    <!-- MARIO BROS -->
+    <a class="card" href="./MarioBros/index.html">
+      <div class="year">1983</div>
+      <div class="thumb">
+        <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
+          <rect width="80" height="60" fill="#0a0a18"/>
+          <!-- tuyaux -->
+          <g><rect x="2" y="0" width="12" height="16" fill="#1c9a3a"/><rect x="0" y="13" width="16" height="5" fill="#137a2c"/></g>
+          <g><rect x="66" y="0" width="12" height="16" fill="#1c9a3a"/><rect x="64" y="13" width="16" height="5" fill="#137a2c"/></g>
+          <!-- plateformes -->
+          <g fill="#c0641e"><rect x="6" y="18" width="26" height="4"/><rect x="48" y="18" width="26" height="4"/>
+            <rect x="22" y="34" width="36" height="4"/><rect x="0" y="52" width="80" height="4"/></g>
+          <!-- bloc POW -->
+          <rect x="35" y="44" width="10" height="5" fill="#2e8fe0"/>
+          <!-- ennemi tortue -->
+          <g transform="translate(30,30)"><ellipse cx="0" cy="2" rx="5" ry="3" fill="#39a83d"/><rect x="4" y="-1" width="3" height="3" fill="#d8e8b0"/></g>
+          <!-- Mario -->
+          <g transform="translate(14,46)">
+            <rect x="-3" y="-2" width="6" height="3" fill="#e0322e"/>
+            <rect x="-2" y="-5" width="4" height="3" fill="#f0c090"/>
+            <rect x="-3" y="-7" width="6" height="2" fill="#e0322e"/>
+            <rect x="-3" y="1" width="2" height="3" fill="#1565c0"/><rect x="1" y="1" width="2" height="3" fill="#1565c0"/>
+          </g>
+        </svg>
+        <div class="play"><span>▶ JOUER</span></div>
+      </div>
+      <div class="meta">
+        <p class="title">Mario Bros</p>
+        <p class="tag">Plateforme · Arcade</p>
+      </div>
+    </a>
+
     <!-- 1942 -->
     <a class="card" href="./1942/index.html">
       <div class="year">1984</div>
@@ -655,6 +731,35 @@
       <div class="meta">
         <p class="title">1942</p>
         <p class="tag">Shoot'em up · Arcade</p>
+      </div>
+    </a>
+
+    <!-- TETRIS -->
+    <a class="card" href="./Tetris/index.html">
+      <div class="year">1984</div>
+      <div class="thumb">
+        <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
+          <rect width="80" height="60" fill="#0a0a16"/>
+          <!-- puits -->
+          <rect x="26" y="4" width="28" height="52" fill="#05050d" stroke="#39c6e0" stroke-width="1"/>
+          <!-- grille légère -->
+          <g stroke="#1c1c30" stroke-width=".4">
+            <line x1="33" y1="4" x2="33" y2="56"/><line x1="40" y1="4" x2="40" y2="56"/><line x1="47" y1="4" x2="47" y2="56"/>
+          </g>
+          <!-- pièce I qui tombe (cyan) -->
+          <g fill="#39c6e0"><rect x="33.5" y="8" width="6" height="6"/><rect x="33.5" y="14" width="6" height="6"/><rect x="33.5" y="20" width="6" height="6"/><rect x="33.5" y="26" width="6" height="6"/></g>
+          <!-- blocs posés -->
+          <g><rect x="26.5" y="44" width="6" height="6" fill="#b06cff"/><rect x="32.5" y="44" width="6" height="6" fill="#b06cff"/><rect x="38.5" y="44" width="6" height="6" fill="#b06cff"/></g>
+          <g><rect x="26.5" y="50" width="6" height="6" fill="#f0962e"/><rect x="32.5" y="50" width="6" height="6" fill="#4ddc5a"/><rect x="38.5" y="50" width="6" height="6" fill="#ff5252"/><rect x="44.5" y="50" width="6" height="6" fill="#f0d932"/></g>
+          <rect x="44.5" y="44" width="6" height="6" fill="#3a78e0"/>
+          <!-- pièce suivante (O) à droite -->
+          <g fill="#f0d932"><rect x="60" y="10" width="5" height="5"/><rect x="65" y="10" width="5" height="5"/><rect x="60" y="15" width="5" height="5"/><rect x="65" y="15" width="5" height="5"/></g>
+        </svg>
+        <div class="play"><span>▶ JOUER</span></div>
+      </div>
+      <div class="meta">
+        <p class="title">Tetris</p>
+        <p class="tag">Puzzle · Blocs</p>
       </div>
     </a>
 
@@ -898,6 +1003,18 @@
     // compteur de jeux calculé dynamiquement (reste exact si on ajoute des cartes)
     document.getElementById('gameCount').textContent =
       document.querySelectorAll('.grid .card').length;
+    // meilleur score de chaque jeu sur sa vignette (mêmes clés que le module ArcadeHi)
+    document.querySelectorAll('.grid .card').forEach(card => {
+      const m = (card.getAttribute('href') || '').match(/\.\/([^/]+)\//);
+      if (!m) return;
+      const best = parseInt(localStorage.getItem('arcadeHi_' + decodeURIComponent(m[1])) || '0', 10) || 0;
+      if (best > 0) {
+        const chip = document.createElement('div');
+        chip.className = 'hiscore';
+        chip.textContent = '🏆 ' + best;
+        card.querySelector('.thumb').appendChild(chip);
+      }
+    });
   </script>
   <script src="music/playlist.js"></script>
   <script src="music/player.js"></script>
