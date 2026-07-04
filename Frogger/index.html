@@ -60,6 +60,7 @@ const ry=r=>r*CELL;
 let frog, lanes, homes, lives, score, level, timeLeft, timeMax;
 let bonusFrog=null, bfT=6, fly=null, flyT=9, floats=[];
 let running=false, paused=false, over=false, hopT=0;
+const HOP=0.16;                   // durée du saut animé (s)
 function flash(x,y,txt){ floats.push({x,y,txt,life:1}); }
 let last=0;
 const keys={};
@@ -110,7 +111,7 @@ function buildLanes(){
     }
   }
 }
-function makeFrog(){ return { c:6, r:ROW_START, px:6*CELL, py:ry(ROW_START), ride:null, dead:false }; }
+function makeFrog(){ return { c:6, r:ROW_START, px:6*CELL, py:ry(ROW_START), fromX:6*CELL, fromY:ry(ROW_START), ang:0, ride:null, dead:false }; }
 function newGame(){
   level=1; lives=4; score=0;
   homes=[false,false,false,false,false];
@@ -142,9 +143,11 @@ function hop(dc,dr){
   const f=frog; if(f.dead||!running||paused||over) return;
   const nc=Math.round(f.px/CELL)+dc, nr=f.r+dr;
   if(nc<0||nc>COLS-1||nr<0||nr>ROW_START) return;
+  f.fromX=f.px; f.fromY=f.py;                              // départ du saut (pour l'animation)
+  f.ang = dc<0?-Math.PI/2 : dc>0?Math.PI/2 : dr>0?Math.PI : 0;  // orientée dans le sens du saut
   f.px=clamp(nc*CELL,0,(COLS-1)*CELL); f.r=nr; f.py=ry(nr); f.ride=null;
   if(dr<0) score+=10;
-  hopT=0.12; sfxHop();
+  hopT=HOP; sfxHop();
   if(nr===ROW_HOME) checkHome();
 }
 function checkHome(){
@@ -286,7 +289,7 @@ function draw(){
   for(let i=0;i<5;i++){
     const cx=HOMES_C[i]*CELL;
     ctx.fillStyle='#0a2a52'; ctx.fillRect(cx-CELL*0.7,3,CELL*1.4,CELL-6);
-    if(homes[i]) drawFrogSprite(cx-CELL/2, 2, 1, false);
+    if(homes[i]) drawFrogSprite(cx-CELL/2, 2, 0, 0);
   }
   // rivière : reflets
   ctx.fillStyle='rgba(255,255,255,.06)';
@@ -309,8 +312,17 @@ function draw(){
   // mouche dans la zone des abris
   if(fly) drawFly(fly.x, 0);
 
-  // grenouille
-  if(!frog.dead) drawFrogSprite(frog.px, frog.py, 1, hopT>0);
+  // grenouille (position interpolée pendant le saut, pose en vol)
+  if(!frog.dead){
+    let dx=frog.px, dy=frog.py, air=0;
+    if(hopT>0){
+      const t=1-hopT/HOP;                                  // progression 0 → 1
+      dx=frog.fromX+(frog.px-frog.fromX)*t;
+      dy=frog.fromY+(frog.py-frog.fromY)*t;
+      air=Math.sin(Math.PI*t);                             // arc : max à mi-saut
+    }
+    drawFrogSprite(dx, dy, frog.ang, air);
+  }
 
   // textes flottants
   floats.forEach(fl=>{ ctx.globalAlpha=Math.max(0,fl.life); ctx.fillStyle='#ffd23a';
@@ -321,15 +333,30 @@ function draw(){
   if(paused){ ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(0,0,W,H);
     ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.font='28px "Courier New",monospace'; ctx.fillText('PAUSE',W/2,H/2); }
 }
-function drawFrogSprite(x,y,sc,stretch){
-  ctx.save(); ctx.translate(x+CELL/2,y+CELL/2); ctx.scale(sc, stretch?1.15:1);
-  // pattes
+function drawFrogSprite(x,y,ang,air){
+  air=air||0;
+  ctx.save(); ctx.translate(x+CELL/2,y+CELL/2);
+  // ombre au sol pendant le vol (rétrécit quand la grenouille « monte »)
+  if(air>0){ ctx.fillStyle='rgba(0,0,0,.25)';
+    ctx.beginPath(); ctx.ellipse(0,4,9*(1-air*0.4),5*(1-air*0.4),0,0,Math.PI*2); ctx.fill(); }
+  ctx.rotate(ang||0);
+  const s=1+0.30*air;                            // grossit à mi-saut (effet d'altitude)
+  ctx.scale(s,s);
+  // pattes : repliées au repos → détendues en plein saut
   ctx.strokeStyle='#2e9e38'; ctx.lineWidth=3; ctx.lineCap='round';
-  ctx.beginPath(); ctx.moveTo(-8,6); ctx.lineTo(-13,11); ctx.moveTo(8,6); ctx.lineTo(13,11);
-  ctx.moveTo(-8,-4); ctx.lineTo(-13,-9); ctx.moveTo(8,-4); ctx.lineTo(13,-9); ctx.stroke();
-  // corps
+  ctx.beginPath();
+  // arrière (se tendent vers l'arrière)
+  ctx.moveTo(-8,6); ctx.lineTo(-13+air*4, 11+air*7);
+  ctx.moveTo(8,6);  ctx.lineTo(13-air*4, 11+air*7);
+  // avant (se tendent vers l'avant)
+  ctx.moveTo(-8,-4); ctx.lineTo(-13+air*4, -9-air*4);
+  ctx.moveTo(8,-4);  ctx.lineTo(13-air*4, -9-air*4);
+  ctx.stroke();
+  // corps (légèrement étiré en vol)
+  ctx.save(); ctx.scale(1-0.10*air, 1+0.14*air);
   ctx.fillStyle='#4ddc5a'; ctx.beginPath(); ctx.ellipse(0,1,9,11,0,0,Math.PI*2); ctx.fill();
   ctx.fillStyle='#8af07f'; ctx.beginPath(); ctx.ellipse(0,3,5.5,7,0,0,Math.PI*2); ctx.fill();
+  ctx.restore();
   // yeux
   ctx.fillStyle='#4ddc5a'; ctx.beginPath(); ctx.arc(-5,-9,3.4,0,Math.PI*2); ctx.arc(5,-9,3.4,0,Math.PI*2); ctx.fill();
   ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(-5,-9.6,1.9,0,Math.PI*2); ctx.arc(5,-9.6,1.9,0,Math.PI*2); ctx.fill();

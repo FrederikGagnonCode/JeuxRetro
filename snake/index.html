@@ -129,12 +129,12 @@
     <canvas id="c" width="400" height="400"></canvas>
     <div id="overlay">
       <h2 id="overlay-title">Jeu du Serpent</h2>
-      <p id="overlay-msg">Utilisez les flèches ou WASD pour jouer</p>
+      <p id="overlay-msg">Flèches / WASD pour jouer · bonus 🎯 = munitions, Espace pour tirer sur les boules… ou ta queue !</p>
       <button id="btn">Jouer</button>
     </div>
   </div>
   <div id="bottom-bar">
-    <div id="instructions">↑ ↓ ← → ou W A S D &nbsp;|&nbsp; P = Pause</div>
+    <div id="instructions">↑ ↓ ← → ou W A S D &nbsp;|&nbsp; Espace = tirer (bonus 🎯) &nbsp;|&nbsp; P = Pause</div>
     <button id="mute-btn">🎮 Chiptune</button>
   </div>
   <script src="../music/playlist.js"></script>
@@ -365,6 +365,14 @@
       [F.G4, F.B4, F.E5, F.B5].forEach((f, i) => sfxNote(f, 'triangle', 0.3, t + i * 0.06, 0.3));
     }
 
+    // 🎯 Tir — pew court
+    function sfxShoot() {
+      if (muted) return;
+      const t = AC.currentTime;
+      sfxNote(F.B5, 'square', 0.22, t, 0.06);
+      sfxNote(F.E5, 'square', 0.14, t + 0.04, 0.07);
+    }
+
     // 💀 Game over — descente dramatique
     function sfxDead() {
       if (muted) return;
@@ -387,9 +395,12 @@
     const btn = document.getElementById('btn');
 
     let snake, dir, nextDir, food, bonus, bonusTick, score, best = 0, loop, paused, running;
+    let ammo = 0, shots = [];
     const BONUS_SHRINK   = 3;
     const BONUS_LIFETIME = 120;   // ~14 s
     const BONUS_CHANCE   = 0.15;  // 15 % par pomme
+    const AMMO_GAIN      = 3;     // balles par bonus 🎯
+    const SHOT_SPEED     = 3;     // cases par tick
 
     function init() {
       if (AC.state === 'suspended') AC.resume();
@@ -399,6 +410,8 @@
       score    = 0;
       bonus    = null;
       bonusTick = 0;
+      ammo     = 0;
+      shots    = [];
       floatings = [];
       paused   = false;
       running  = true;
@@ -434,7 +447,10 @@
           (pos.x === food.x && pos.y === food.y)
         )
       );
-      if (tries < 200) { bonus = pos; bonusTick = BONUS_LIFETIME; }
+      if (tries < 200) {
+        bonus = { ...pos, type: Math.random() < 0.5 ? 'ammo' : 'shrink' };
+        bonusTick = BONUS_LIFETIME;
+      }
     }
 
     function tick() {
@@ -461,15 +477,70 @@
       // Bonus ramassé ?
       if (bonus && head.x === bonus.x && head.y === bonus.y) {
         sfxBonus();
+        if (bonus.type === 'ammo') {
+          ammo += AMMO_GAIN;
+          showFloating('🎯 +' + AMMO_GAIN, head);
+        } else {
+          showFloating('✂ -' + BONUS_SHRINK, head);
+          const remove = Math.min(BONUS_SHRINK, snake.length - 1);
+          snake.splice(snake.length - remove, remove);
+        }
         bonus = null;
-        showFloating('✂ -' + BONUS_SHRINK, head);
-        const remove = Math.min(BONUS_SHRINK, snake.length - 1);
-        snake.splice(snake.length - remove, remove);
       }
 
       if (bonus) { bonusTick--; if (bonusTick <= 0) bonus = null; }
 
+      updateShots();
       draw();
+    }
+
+    function fire() {
+      if (!running || paused || ammo <= 0) return;
+      ammo--;
+      shots.push({ x: snake[0].x, y: snake[0].y, dx: dir.x, dy: dir.y });
+      sfxShoot();
+    }
+
+    function updateShots() {
+      for (const sh of shots) {
+        for (let step = 0; step < SHOT_SPEED && !sh.dead; step++) {
+          sh.x += sh.dx; sh.y += sh.dy;
+          if (sh.x < 0 || sh.x >= COLS || sh.y < 0 || sh.y >= ROWS) { sh.dead = true; break; }
+          // boule rouge (pomme) touchée à distance
+          if (sh.x === food.x && sh.y === food.y) {
+            score++;
+            if (score > best) { best = score; bestEl.textContent = best; }
+            updateScore(); sfxEat();
+            showFloating('+1', { x: sh.x, y: sh.y });
+            placeFood();
+            if (!bonus && Math.random() < BONUS_CHANCE) placeBonus();
+            sh.dead = true; break;
+          }
+          // boule bonus touchée à distance
+          if (bonus && sh.x === bonus.x && sh.y === bonus.y) {
+            sfxBonus();
+            if (bonus.type === 'ammo') {
+              ammo += AMMO_GAIN;
+              showFloating('🎯 +' + AMMO_GAIN, { x: sh.x, y: sh.y });
+            } else {
+              const remove = Math.min(BONUS_SHRINK, snake.length - 1);
+              snake.splice(snake.length - remove, remove);
+              showFloating('✂ -' + remove, { x: sh.x, y: sh.y });
+            }
+            bonus = null; sh.dead = true; break;
+          }
+          // sa propre queue : coupée à partir de l'impact
+          const idx = snake.findIndex((s, i) => i > 0 && s.x === sh.x && s.y === sh.y);
+          if (idx > 0) {
+            const cut = snake.length - idx;
+            snake.splice(idx);
+            showFloating('✂ -' + cut, { x: sh.x, y: sh.y });
+            sfxBonus();
+            sh.dead = true; break;
+          }
+        }
+      }
+      shots = shots.filter(s => !s.dead);
     }
 
     function draw() {
@@ -523,9 +594,10 @@
           const by = bonus.y * CELL + CELL / 2;
           const pulse = 1 + 0.15 * Math.sin(Date.now() / 150);
 
-          ctx.shadowColor = '#c77dff';
+          const isAmmo = bonus.type === 'ammo';
+          ctx.shadowColor = isAmmo ? '#ffd23a' : '#c77dff';
           ctx.shadowBlur = 18;
-          ctx.fillStyle = '#7b2fff';
+          ctx.fillStyle = isAmmo ? '#e07b1e' : '#7b2fff';
           ctx.beginPath();
           ctx.arc(bx, by, (CELL / 2 - 1) * pulse, 0, Math.PI * 2);
           ctx.fill();
@@ -535,15 +607,38 @@
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillStyle = '#fff';
-          ctx.fillText('✂', bx, by + 1);
+          ctx.fillText(isAmmo ? '🎯' : '✂', bx, by + 1);
 
           ctx.font = 'bold 9px Arial';
           ctx.fillStyle = '#ffdd57';
-          ctx.fillText('-3', bx + CELL * 0.35, by - CELL * 0.3);
+          ctx.fillText(isAmmo ? '+3' : '-3', bx + CELL * 0.35, by - CELL * 0.3);
 
           ctx.fillStyle = `hsl(${270 * urgency + 40}, 90%, 65%)`;
           ctx.fillRect(bonus.x * CELL + 1, bonus.y * CELL + CELL - 3, (CELL - 2) * urgency, 3);
         }
+      }
+
+      // Projectiles (traceurs)
+      shots.forEach(sh => {
+        const px = sh.x * CELL + CELL / 2, py = sh.y * CELL + CELL / 2;
+        ctx.shadowColor = '#ffd23a';
+        ctx.shadowBlur = 10;
+        ctx.fillStyle = '#ffdd57';
+        ctx.beginPath(); ctx.arc(px, py, 3.4, 0, Math.PI * 2); ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = 'rgba(255,221,87,.4)';
+        ctx.beginPath(); ctx.arc(px - sh.dx * CELL * 0.5, py - sh.dy * CELL * 0.5, 2.2, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = 'rgba(255,221,87,.18)';
+        ctx.beginPath(); ctx.arc(px - sh.dx * CELL, py - sh.dy * CELL, 1.4, 0, Math.PI * 2); ctx.fill();
+      });
+
+      // Compteur de munitions
+      if (ammo > 0) {
+        ctx.font = 'bold 13px Segoe UI';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.fillStyle = '#ffdd57';
+        ctx.fillText('🎯 ×' + ammo + '  (Espace)', 6, 5);
       }
 
       // Textes flottants
@@ -593,6 +688,7 @@
         ArrowRight: { x: 1, y: 0 }, d: { x: 1, y: 0 }, D: { x: 1, y: 0 },
       };
       if (e.key === 'p' || e.key === 'P') { paused = !paused; return; }
+      if (e.key === ' ') { e.preventDefault(); if (paused) paused = false; fire(); return; }
       const d = map[e.key];
       if (!d) return;
       if (paused) paused = false;   // une touche de direction relance la partie
