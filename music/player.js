@@ -348,8 +348,13 @@
   const segs = location.pathname.split('/').filter(s => s && !/index\.html?$/i.test(s));
   const name = segs.length ? decodeURIComponent(segs[segs.length - 1]) : (document.title || 'jeu');
   const KEY = 'arcadeHi_' + name;
+  const TKEY = 'arcadeHiTab_' + name;
   let best = parseInt(localStorage.getItem(KEY) || '0', 10) || 0;
   let prev = best, beaten = false, last = 0, badge = null, toast = null, toastT = null;
+  let tab = []; try { tab = JSON.parse(localStorage.getItem(TKEY) || '[]') || []; } catch (e) { tab = []; }
+  let prompting = false, tablePop = null, tableT = null;
+  function saveTab() { tab.sort((a, b) => b.s - a.s); tab = tab.slice(0, 5); localStorage.setItem(TKEY, JSON.stringify(tab)); }
+  function qualifies(s) { return s > 0 && (tab.length < 5 || s > tab[tab.length - 1].s); }
 
   function mount() {
     // pas de badge sur les pages sans zone de jeu (ex. le menu)
@@ -366,16 +371,72 @@
         z-index:9998;font-family:'Courier New',monospace;font-weight:bold;font-size:18px;
         color:#ffd23a;text-shadow:0 0 10px #ff2e88,0 0 22px #ffd23a;opacity:0;pointer-events:none;
         transition:opacity .25s ease, transform .25s ease;white-space:nowrap;}
-      #arcade-hi-toast.show{opacity:1;transform:translateX(-50%) scale(1);}`;
+      #arcade-hi-toast.show{opacity:1;transform:translateX(-50%) scale(1);}
+      #arcade-hi-init{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10000;
+        background:rgba(8,8,22,.96);border:2px solid #ffd23a;border-radius:10px;padding:18px 30px;
+        font-family:'Courier New',monospace;text-align:center;color:#eee;box-shadow:0 0 40px rgba(255,210,58,.35);}
+      #arcade-hi-init .t{color:#ffd23a;font-weight:bold;letter-spacing:2px;font-size:15px;margin-bottom:6px;}
+      #arcade-hi-init .s{color:#9fe;font-size:13px;margin-bottom:12px;}
+      #arcade-hi-init .l{font-size:34px;font-weight:bold;letter-spacing:10px;color:#fff;
+        text-shadow:0 0 12px #ffd23a;margin-bottom:10px;animation:blinkc 1s steps(2,start) infinite;}
+      @keyframes blinkc{50%{opacity:.55}}
+      #arcade-hi-init .h{color:#777;font-size:11px;}
+      #arcade-hi-table{position:absolute;top:0;right:0;z-index:9999;min-width:180px;
+        background:rgba(8,8,22,.95);border:1px solid #ffd23a;border-radius:8px;padding:10px 14px;
+        font-family:'Courier New',monospace;font-size:12px;color:#eee;}
+      #arcade-hi-table .tt{color:#ffd23a;font-weight:bold;letter-spacing:1px;margin-bottom:6px;text-align:center;}
+      #arcade-hi-table .row{display:flex;justify-content:space-between;gap:14px;padding:1px 0;}
+      #arcade-hi-table .row b{color:#9fe;}`;
     document.head.appendChild(st);
     badge = document.createElement('div'); badge.id = 'arcade-hi';
     // au-dessus de la zone de jeu si possible (le #wrap des jeux est en position:relative)
     const wrap = document.getElementById('wrap');
     if (wrap) { badge.classList.add('on-wrap'); wrap.appendChild(badge); }
     else document.body.appendChild(badge);
+    badge.style.pointerEvents = 'auto'; badge.style.cursor = 'pointer';
+    badge.title = 'Voir le tableau des scores';
+    badge.addEventListener('click', () => toggleTable());
     toast = document.createElement('div'); toast.id = 'arcade-hi-toast';
     toast.textContent = '★ NOUVEAU RECORD ! ★'; document.body.appendChild(toast);
     refresh();
+  }
+  function toggleTable(autoMs) {
+    if (tablePop) { tablePop.remove(); tablePop = null; clearTimeout(tableT); if (!autoMs) return; }
+    tablePop = document.createElement('div'); tablePop.id = 'arcade-hi-table';
+    let html = '<div class="tt">★ MEILLEURS SCORES ★</div>';
+    if (!tab.length) html += '<div class="row">Aucun score encore…</div>';
+    tab.forEach((e2, i) => { html += '<div class="row"><span>' + (i + 1) + '. <b>' + e2.n + '</b></span><span>' + e2.s + '</span></div>'; });
+    tablePop.innerHTML = html;
+    const wrap = document.getElementById('wrap');
+    (wrap || document.body).appendChild(tablePop);
+    if (autoMs) { clearTimeout(tableT); tableT = setTimeout(() => { if (tablePop) { tablePop.remove(); tablePop = null; } }, autoMs); }
+  }
+  function openPrompt(s) {
+    if (prompting) return; prompting = true;
+    let letters = '';
+    const div = document.createElement('div'); div.id = 'arcade-hi-init';
+    div.innerHTML = '<div class="t">★ MEILLEUR SCORE ! ★</div><div class="s">' + s +
+      ' pts — entre tes initiales</div><div class="l"></div><div class="h">Lettres A-Z · Retour = effacer · Entrée = valider</div>';
+    document.body.appendChild(div);
+    const lb = div.querySelector('.l');
+    const render = () => { lb.textContent = (letters + '···').slice(0, 3).toUpperCase().split('').join(' '); };
+    render();
+    const h = (e) => {
+      e.stopImmediatePropagation(); e.preventDefault();
+      if (e.type !== 'keydown') return;
+      const k = e.key;
+      if (/^[a-z0-9]$/i.test(k) && letters.length < 3) { letters += k.toUpperCase(); render(); }
+      else if (k === 'Backspace') { letters = letters.slice(0, -1); render(); }
+      else if (k === 'Enter' || (k === ' ' && letters.length === 3)) {
+        tab.push({ n: (letters || 'AAA').padEnd(3, '·'), s }); saveTab();
+        window.removeEventListener('keydown', h, true);
+        window.removeEventListener('keyup', h, true);
+        div.remove(); prompting = false;
+        toggleTable(3500);
+      }
+    };
+    window.addEventListener('keydown', h, true);
+    window.addEventListener('keyup', h, true);
   }
   function refresh() { if (badge) badge.innerHTML = 'RECORD <b>' + best + '</b>'; }
   function showToast() {
@@ -389,7 +450,10 @@
     reset() { prev = best; beaten = false; last = 0; },     // optionnel : forcer un nouveau tour
     submit(score) {
       score = Math.floor(score) || 0;
-      if (score < last - 1) { prev = best; beaten = false; }  // score reparti à la baisse = nouvelle partie
+      if (score < last - 1) {                                  // score reparti à la baisse = nouvelle partie
+        if (qualifies(last) && badge) openPrompt(last);        // la partie finie entre au tableau ?
+        prev = best; beaten = false;
+      }
       last = score;
       if (!beaten && prev > 0 && score > prev) { beaten = true; showToast(); }
       if (score > best) { best = score; localStorage.setItem(KEY, best); refresh(); }
@@ -397,6 +461,69 @@
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
   else mount();
+})();
+
+/* ════ Manette (Gamepad API) → convertie en touches clavier, pour tous les jeux ════
+   Stick / D-pad = flèches · A = Espace · X = x · B = c · Y = s · Start = p */
+(function () {
+  const BTN = { 12:['ArrowUp','ArrowUp'], 13:['ArrowDown','ArrowDown'],
+    14:['ArrowLeft','ArrowLeft'], 15:['ArrowRight','ArrowRight'],
+    0:[' ','Space'], 2:['x','KeyX'], 1:['c','KeyC'], 3:['s','KeyS'],
+    4:['z','KeyZ'], 5:['r','KeyR'], 9:['p','KeyP'], 8:['i','KeyI'] };
+  const state = {};
+  function send(key, code, down) {
+    document.dispatchEvent(new KeyboardEvent(down ? 'keydown' : 'keyup',
+      { key, code, bubbles: true, cancelable: true }));
+  }
+  function step() {
+    const gps = navigator.getGamepads ? navigator.getGamepads() : [];
+    for (const gp of gps) {
+      if (!gp) continue;
+      for (const bi in BTN) {
+        const pressed = gp.buttons[bi] && gp.buttons[bi].pressed;
+        const id = 'b' + bi;
+        if (pressed && !state[id]) { state[id] = 1; send(BTN[bi][0], BTN[bi][1], true); }
+        else if (!pressed && state[id]) { state[id] = 0; send(BTN[bi][0], BTN[bi][1], false); }
+      }
+      const ax = gp.axes[0] || 0, ay = gp.axes[1] || 0;
+      [['al', ax < -0.45, 'ArrowLeft'], ['ar', ax > 0.45, 'ArrowRight'],
+       ['au', ay < -0.45, 'ArrowUp'], ['ad', ay > 0.45, 'ArrowDown']].forEach(([id, on, key]) => {
+        if (on && !state[id]) { state[id] = 1; send(key, key, true); }
+        else if (!on && state[id]) { state[id] = 0; send(key, key, false); }
+      });
+      break;                                   // première manette seulement
+    }
+    requestAnimationFrame(step);
+  }
+  window.addEventListener('gamepadconnected', () => {});
+  step();
+})();
+
+/* ════ Plein écran : touche F (le canvas est mis à l'échelle en gardant ses proportions) ════ */
+(function () {
+  const st = document.createElement('style');
+  st.textContent = '#wrap:fullscreen{display:flex;align-items:center;justify-content:center;background:#000;}';
+  document.head.appendChild(st);
+  function theCanvas(){ return document.getElementById('game') || document.querySelector('canvas'); }
+  document.addEventListener('keydown', e => {
+    if ((e.key === 'f' || e.key === 'F') && !e.repeat) {
+      const c = theCanvas(); if (!c) return;
+      const target = document.getElementById('wrap') || c;
+      if (document.fullscreenElement) document.exitFullscreen();
+      else if (target.requestFullscreen) target.requestFullscreen().catch(() => {});
+    }
+  });
+  document.addEventListener('fullscreenchange', () => {
+    const c = theCanvas(); if (!c) return;
+    if (document.fullscreenElement) {
+      const k = Math.min(innerWidth / c.width, innerHeight / c.height);
+      c.dataset.oldW = c.style.width || ''; c.dataset.oldH = c.style.height || '';
+      c.style.width = Math.floor(c.width * k) + 'px';
+      c.style.height = Math.floor(c.height * k) + 'px';
+    } else {
+      c.style.width = c.dataset.oldW || ''; c.style.height = c.dataset.oldH || '';
+    }
+  });
 })();
 
 /* ════ Zone de jeu uniformisée : chaque canvas est AFFICHÉ au grand format ════

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Asteroids</title>
+<style>
+  html,body{margin:0;padding:0;height:100%;background:#000;color:#fff;
+    font-family:'Courier New',monospace;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;user-select:none;overflow:hidden}
+  h1{letter-spacing:7px;margin:0 0 8px;font-size:22px;text-shadow:0 0 8px #fff,0 0 18px #9fe}
+  #wrap{position:relative}
+  canvas{background:#000;border:2px solid #fff;display:block;
+    box-shadow:0 0 24px rgba(160,230,255,.35);touch-action:none}
+  #hint{color:#777;font-size:12px;margin-top:10px;text-align:center;line-height:1.6}
+  #overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;background:rgba(0,0,0,.82);text-align:center;cursor:pointer}
+  #overlay h2{font-size:24px;letter-spacing:3px;margin:0 0 12px}
+  #overlay p{color:#bbb;font-size:13px;margin:4px 0}
+  .blink{animation:blink 1.1s steps(2,start) infinite}
+  @keyframes blink{50%{opacity:0}}
+  a.back{color:#4ecca3;font-size:12px;margin-top:8px;text-decoration:none;letter-spacing:1px}
+  a.back:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+  <h1>A S T E R O I D S</h1>
+  <div id="wrap">
+    <canvas id="game" width="520" height="400"></canvas>
+    <div id="overlay">
+      <h2 id="ovTitle">ASTEROIDS</h2>
+      <p>Pulvérise les astéroïdes — les gros se brisent en morceaux.</p>
+      <p>← → pivoter · ↑ propulsion (inertie !) · Espace : tirer</p>
+      <p>X : hyperespace (téléportation risquée) · gare à l'OVNI</p>
+      <p class="blink" style="margin-top:12px">▶ Cliquez ou Espace pour décoller</p>
+    </div>
+  </div>
+  <div id="hint">← → pivoter · ↑ propulser · Espace : tir · X : hyperespace · P = pause</div>
+  <a class="back" href="../index.html">← Menu Arcade</a>
+
+<script>
+const cv=document.getElementById('game'), ctx=cv.getContext('2d');
+const W=cv.width, H=cv.height;
+const overlay=document.getElementById('overlay'), ovTitle=document.getElementById('ovTitle');
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const rand=n=>Math.floor(Math.random()*n);
+const TAU=Math.PI*2;
+
+let ship, shots, rocks, ufo, uShots, parts;
+let score, lives, wave;
+let running=false, paused=false, over=false;
+let last=0;
+const keys={};
+
+let _ac=null;
+function ac(){ if(!_ac) _ac=new (window.AudioContext||window.webkitAudioContext)(); if(_ac.state==='suspended') _ac.resume(); return _ac; }
+function sfxShot(){ const a=ac(),t=a.currentTime; const o=a.createOscillator(); o.type='square';
+  o.frequency.setValueAtTime(760,t); o.frequency.exponentialRampToValueAtTime(180,t+0.06);
+  const g=a.createGain(); g.gain.setValueAtTime(0.05,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.07);
+  o.connect(g); g.connect(a.destination); o.start(t); o.stop(t+0.08); }
+function sfxBoom(sz){ const a=ac(),t=a.currentTime;
+  const n=Math.floor(a.sampleRate*0.25), b=a.createBuffer(1,n,a.sampleRate), d=b.getChannelData(0);
+  for(let i=0;i<n;i++) d[i]=Math.random()*2-1;
+  const src=a.createBufferSource(); src.buffer=b;
+  const lp=a.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=sz>26?350:700;
+  const g=a.createGain(); g.gain.setValueAtTime(0.12,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.25);
+  src.connect(lp); lp.connect(g); g.connect(a.destination); src.start(t); }
+
+function makeShip(){ return {x:W/2,y:H/2,a:-Math.PI/2,vx:0,vy:0,cd:0,inv:2.2,dead:false,thr:false}; }
+function makeRock(x,y,r){
+  const pts=[]; const n=9+rand(4);
+  for(let i=0;i<n;i++) pts.push(0.65+Math.random()*0.4);
+  const a=Math.random()*TAU, sp=(52-r)*(0.9+Math.random()*0.7);
+  return {x,y,r,pts,rot:Math.random()*TAU,rv:(Math.random()-0.5)*1.4,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp};
+}
+function startWave(){
+  wave++; rocks=[];
+  for(let i=0;i<3+wave;i++){
+    let x,y; do{ x=Math.random()*W; y=Math.random()*H; }while(Math.hypot(x-ship.x,y-ship.y)<120);
+    rocks.push(makeRock(x,y,34));
+  }
+}
+function newGame(){
+  ship=makeShip(); shots=[]; rocks=[]; ufo=null; uShots=[]; parts=[];
+  score=0; lives=3; wave=0;
+  startWave();
+  over=false; paused=false; running=true;
+  overlay.style.display='none';
+}
+function showOverlay(t,s){ ovTitle.textContent=t; overlay.querySelector('p:nth-of-type(1)').textContent=s; overlay.style.display='flex'; }
+
+document.addEventListener('keydown',e=>{
+  const k=e.key.toLowerCase(); keys[k]=true;
+  if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)) e.preventDefault();
+  if(paused && k!=='p'){ paused=false; return; }
+  if((k===' '||k==='enter') && (!running||over)){ newGame(); return; }
+  if(k==='p' && running && !over){ paused=!paused; return; }
+  if(k==='x' && running && !over && !paused && !ship.dead){       // hyperespace
+    ship.x=20+Math.random()*(W-40); ship.y=20+Math.random()*(H-40);
+    ship.vx=ship.vy=0; ship.inv=0.8;
+    if(Math.random()<0.15){ killShip(); }                          // risque !
+  }
+});
+document.addEventListener('keyup',e=>{ keys[e.key.toLowerCase()]=false; });
+overlay.addEventListener('click',()=>{ if(!running||over) newGame(); });
+cv.addEventListener('touchstart',e=>{ e.preventDefault(); if(!running||over) newGame(); },{passive:false});
+
+function wrapPos(o){ if(o.x<0)o.x+=W; if(o.x>W)o.x-=W; if(o.y<0)o.y+=H; if(o.y>H)o.y-=H; }
+
+function update(dt){
+  if(!running||paused||over) return;
+  const s=ship;
+  if(!s.dead){
+    if(keys['arrowleft']||keys['a']) s.a-=3.6*dt;
+    if(keys['arrowright']||keys['d']) s.a+=3.6*dt;
+    s.thr=!!(keys['arrowup']||keys['w']);
+    if(s.thr){ s.vx+=Math.cos(s.a)*240*dt; s.vy+=Math.sin(s.a)*240*dt; }
+    s.vx*=Math.pow(0.45,dt); s.vy*=Math.pow(0.45,dt);
+    const sp=Math.hypot(s.vx,s.vy); if(sp>300){ s.vx*=300/sp; s.vy*=300/sp; }
+    s.x+=s.vx*dt; s.y+=s.vy*dt; wrapPos(s);
+    if(s.cd>0) s.cd-=dt;
+    if(s.inv>0) s.inv-=dt;
+    if(keys[' '] && s.cd<=0){ s.cd=0.22;
+      shots.push({x:s.x+Math.cos(s.a)*12,y:s.y+Math.sin(s.a)*12,
+        vx:Math.cos(s.a)*420+s.vx,vy:Math.sin(s.a)*420+s.vy,life:1.1});
+      sfxShot(); }
+  }
+  shots.forEach(b=>{ b.x+=b.vx*dt; b.y+=b.vy*dt; b.life-=dt; wrapPos(b); });
+  shots=shots.filter(b=>b.life>0);
+
+  rocks.forEach(r=>{ r.x+=r.vx*dt; r.y+=r.vy*dt; r.rot+=r.rv*dt; wrapPos(r); });
+
+  // OVNI
+  if(!ufo && Math.random()<dt*0.05 && rocks.length>0){
+    const fromLeft=Math.random()<0.5;
+    ufo={x:fromLeft?-20:W+20,y:40+Math.random()*(H-80),vx:(fromLeft?1:-1)*80,cd:1.2,small:Math.random()<0.4};
+  }
+  if(ufo){
+    ufo.x+=ufo.vx*dt; ufo.y+=Math.sin(performance.now()/600)*30*dt;
+    ufo.cd-=dt;
+    if(ufo.cd<=0 && !ship.dead){
+      let a2;
+      if(ufo.small){ a2=Math.atan2(ship.y-ufo.y,ship.x-ufo.x)+(Math.random()-0.5)*0.3; }
+      else a2=Math.random()*TAU;
+      uShots.push({x:ufo.x,y:ufo.y,vx:Math.cos(a2)*200,vy:Math.sin(a2)*200,life:2});
+      ufo.cd=1.1;
+    }
+    if(ufo.x<-30||ufo.x>W+30) ufo=null;
+  }
+  uShots.forEach(b=>{ b.x+=b.vx*dt; b.y+=b.vy*dt; b.life-=dt; wrapPos(b); });
+  uShots=uShots.filter(b=>b.life>0);
+
+  // tirs -> astéroïdes / OVNI
+  shots.forEach(b=>{
+    for(const r of rocks){ if(r.dead) continue;
+      if(Math.hypot(b.x-r.x,b.y-r.y)<r.r){ b.life=0; splitRock(r); break; } }
+    if(ufo && Math.hypot(b.x-ufo.x,b.y-ufo.y)<(ufo.small?10:15)){
+      b.life=0; score+=ufo.small?1000:200; boom(ufo.x,ufo.y,14); sfxBoom(20); ufo=null; }
+  });
+  rocks=rocks.filter(r=>!r.dead);
+  shots=shots.filter(b=>b.life>0);
+
+  // collisions vaisseau
+  if(!ship.dead && ship.inv<=0){
+    for(const r of rocks){ if(Math.hypot(r.x-s.x,r.y-s.y)<r.r+8){ killShip(); break; } }
+    if(!ship.dead) for(const b of uShots){ if(Math.hypot(b.x-s.x,b.y-s.y)<9){ b.life=0; killShip(); break; } }
+    if(!ship.dead && ufo && Math.hypot(ufo.x-s.x,ufo.y-s.y)<20) killShip();
+  }
+
+  if(rocks.length===0 && running){ score+=500; startWave(); }
+  parts.forEach(p=>{ p.x+=p.vx*dt; p.y+=p.vy*dt; p.life-=dt; });
+  parts=parts.filter(p=>p.life>0);
+}
+function splitRock(r){
+  r.dead=true;
+  score += r.r>26?20 : r.r>14?50 : 100;
+  boom(r.x,r.y,r.r>26?12:8); sfxBoom(r.r);
+  if(r.r>26){ rocks.push(makeRock(r.x,r.y,18), makeRock(r.x,r.y,18)); }
+  else if(r.r>14){ rocks.push(makeRock(r.x,r.y,9), makeRock(r.x,r.y,9)); }
+}
+function boom(x,y,n){ for(let i=0;i<n;i++){ const a=Math.random()*TAU,s2=30+Math.random()*110;
+  parts.push({x,y,vx:Math.cos(a)*s2,vy:Math.sin(a)*s2,life:0.4+Math.random()*0.4}); } }
+function killShip(){
+  const s=ship;
+  lives--; s.dead=true; running=false; sfxBoom(40);
+  ArcadeFX.die(cv, s.x, s.y, 'explosion', ()=>{
+    if(lives<=0){ over=true; if(window.ArcadeHi)ArcadeHi.submit(score);
+      showOverlay('GAME OVER','Vague '+wave+' · Score : '+score); }
+    else { ship=makeShip(); running=true; }
+  });
+}
+
+function draw(){
+  ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='#dfe8f0'; ctx.lineWidth=1.4; ctx.lineJoin='round';
+  rocks.forEach(r=>{
+    ctx.save(); ctx.translate(r.x,r.y); ctx.rotate(r.rot);
+    ctx.beginPath();
+    r.pts.forEach((p,i)=>{ const a=i/r.pts.length*TAU;
+      i?ctx.lineTo(Math.cos(a)*r.r*p,Math.sin(a)*r.r*p):ctx.moveTo(Math.cos(a)*r.r*p,Math.sin(a)*r.r*p); });
+    ctx.closePath(); ctx.stroke(); ctx.restore();
+  });
+  if(ufo){
+    ctx.save(); ctx.translate(ufo.x,ufo.y); const sc=ufo.small?0.6:1; ctx.scale(sc,sc);
+    ctx.strokeStyle='#9fe';
+    ctx.beginPath(); ctx.moveTo(-16,0); ctx.lineTo(16,0); ctx.moveTo(-9,-5); ctx.lineTo(9,-5);
+    ctx.moveTo(-9,5); ctx.lineTo(9,5); ctx.moveTo(-16,0); ctx.lineTo(-9,-5); ctx.moveTo(16,0); ctx.lineTo(9,-5);
+    ctx.moveTo(-16,0); ctx.lineTo(-9,5); ctx.moveTo(16,0); ctx.lineTo(9,5);
+    ctx.moveTo(-4,-5); ctx.lineTo(-3,-9); ctx.lineTo(3,-9); ctx.lineTo(4,-5); ctx.stroke();
+    ctx.restore();
+  }
+  ctx.fillStyle='#fff';
+  shots.forEach(b=>ctx.fillRect(b.x-1.4,b.y-1.4,2.8,2.8));
+  ctx.fillStyle='#f88';
+  uShots.forEach(b=>ctx.fillRect(b.x-1.6,b.y-1.6,3.2,3.2));
+  if(ship && !ship.dead && (ship.inv<=0 || Math.floor(ship.inv*10)%2)){
+    const s=ship;
+    ctx.save(); ctx.translate(s.x,s.y); ctx.rotate(s.a);
+    ctx.strokeStyle='#fff'; ctx.beginPath();
+    ctx.moveTo(13,0); ctx.lineTo(-9,-8); ctx.lineTo(-5,0); ctx.lineTo(-9,8); ctx.closePath(); ctx.stroke();
+    if(s.thr && Math.floor(performance.now()/60)%2){
+      ctx.strokeStyle='#ff9d2e'; ctx.beginPath();
+      ctx.moveTo(-7,-4); ctx.lineTo(-15,0); ctx.lineTo(-7,4); ctx.stroke(); }
+    ctx.restore();
+  }
+  ctx.fillStyle='#9fe';
+  parts.forEach(p=>{ ctx.globalAlpha=Math.max(0,p.life*1.6); ctx.fillRect(p.x-1,p.y-1,2,2); });
+  ctx.globalAlpha=1;
+  // HUD
+  ctx.fillStyle='#fff'; ctx.font='bold 15px "Courier New",monospace'; ctx.textAlign='left';
+  ctx.fillText('SCORE '+score, 10, 20);
+  ctx.textAlign='right'; ctx.fillText('VAGUE '+wave, W-10, 20);
+  ctx.textAlign='left';
+  for(let i=0;i<lives;i++){
+    ctx.save(); ctx.translate(16+i*18,38); ctx.rotate(-Math.PI/2);
+    ctx.strokeStyle='#fff'; ctx.lineWidth=1.2; ctx.beginPath();
+    ctx.moveTo(7,0); ctx.lineTo(-5,-4.6); ctx.lineTo(-3,0); ctx.lineTo(-5,4.6); ctx.closePath(); ctx.stroke();
+    ctx.restore();
+  }
+  if(paused){ ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.font='30px "Courier New",monospace'; ctx.fillText('PAUSE',W/2,H/2); }
+}
+
+function loop(now){
+  const dt=Math.min(0.05,(now-(last||now))/1000); last=now;
+  update(dt); draw();
+  if(window.ArcadeHi) ArcadeHi.submit(score);
+  requestAnimationFrame(loop);
+}
+ship=makeShip(); shots=[]; rocks=[]; uShots=[]; parts=[];
+score=0; lives=3; wave=0; startWave(); running=false;
+requestAnimationFrame(loop);
+</script>
+<script src="../music/playlist.js"></script>
+<script src="../music/player.js"></script>
+</body>
+</html>
