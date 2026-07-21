@@ -6,5 +6,15 @@ desktop.ini
 # Config locale Claude Code
 .claude/
 
-# Musique locale (fichiers personnels, non versionnes)
+# Musique personnelle (droits d'auteur) : JAMAIS versionnee.
+# Le dossier music/ du depot contient AUSSI des MP3 personnels : on les exclut,
+# mais on garde le code du lecteur et les pistes libres CC0 (music/libre/).
 /Music/
+!/music/
+/music/*.mp3
+/music/*.m4a
+/music/*.wav
+/music/*.ogg
+/music/*.flac
+!/music/libre/
+!/music/libre/**

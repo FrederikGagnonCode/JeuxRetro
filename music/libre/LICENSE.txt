@@ -1,0 +1,23 @@
+Musique libre incluse dans ce dossier
+=====================================
+
+Les 9 pistes MP3 de ce dossier sont l'oeuvre de :
+
+  Juhani Junkala (SubspaceAudio)
+
+Packs d'origine :
+  - « 5 Chiptunes (Action) »   : action-*.mp3
+    https://opengameart.org/content/5-chiptunes-action
+  - « 4 Chiptunes (Adventure) » : adventure-*.mp3
+    https://opengameart.org/content/4-chiptunes-adventure
+
+Téléchargées depuis les miroirs Internet Archive :
+  https://archive.org/details/JuhaniJunkalafiveactionchiptunes
+  https://archive.org/details/JuhaniJunkala-ChiptuneAdventures
+
+Licence : CC0 1.0 Universal (domaine public)
+  https://creativecommons.org/publicdomain/zero/1.0/
+
+L'attribution n'est pas requise par la licence, mais nous remercions
+chaleureusement l'auteur pour sa générosité. Si vous aimez sa musique :
+soutenez-le !
