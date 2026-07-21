@@ -17,13 +17,15 @@
                time: 'arcadeMusicTime', on: 'arcadeMusicOn', vol: 'arcadeMusicVol' };
   const AUDIO_EXTS = ['.mp3', '.m4a', '.wav', '.ogg', '.flac'];
 
-  // PLAYLIST est un `const` global (déclaré dans playlist.js) : accessible par
-  // référence directe, mais PAS via window.PLAYLIST. D'où le typeof.
-  // En ligne (GitHub Pages), la musique locale n'existe pas : on part d'une
-  // playlist vide (pas d'erreur « fichier introuvable ») et le visiteur peut
-  // charger SON dossier de musique avec le bouton 📁 (tout reste dans son navigateur).
+  // PLAYLIST / LIBRE_PLAYLIST sont des `const` globaux (playlist.js) : accessibles
+  // par référence directe, mais PAS via window.*. D'où les typeof.
+  // Partout : la musique libre (CC0) incluse dans le dépôt.
+  // En local seulement : la bibliothèque OneDrive s'ajoute à la suite
+  // (jamais poussée en ligne — droits d'auteur).
+  // Et le bouton 📁 permet toujours de charger un dossier local de MP3.
   const HOSTED = /\.github\.io$/i.test(location.hostname);
-  let playlist   = (!HOSTED && typeof PLAYLIST !== 'undefined' ? PLAYLIST : []).slice();
+  const libre  = (typeof LIBRE_PLAYLIST !== 'undefined' ? LIBRE_PLAYLIST : []);
+  let playlist = libre.concat(!HOSTED && typeof PLAYLIST !== 'undefined' ? PLAYLIST : []);
   let shuffleMode = localStorage.getItem(LS.shuffle) === '1';
   let current     = -1;                       // index du morceau courant
   // choix auto d'un morceau au 1er geste (désactivable : window.ARCADE_MUSIC_AUTOSTART = false)

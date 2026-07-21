@@ -1,4 +1,19 @@
-﻿const PLAYLIST = [
+﻿// ── Musique libre (CC0, domaine public) — Juhani Junkala / SubspaceAudio ──
+// Incluse dans le dépôt : joue partout, y compris sur le site public.
+const LIBRE_PLAYLIST = [
+  { "name": "🎮 Chiptune — Title Screen (J. Junkala)", "url": "libre/action-title.mp3" },
+  { "name": "🎮 Chiptune — Level 1 (J. Junkala)",      "url": "libre/action-level1.mp3" },
+  { "name": "🎮 Chiptune — Level 2 (J. Junkala)",      "url": "libre/action-level2.mp3" },
+  { "name": "🎮 Chiptune — Level 3 (J. Junkala)",      "url": "libre/action-level3.mp3" },
+  { "name": "🎮 Chiptune — Ending (J. Junkala)",       "url": "libre/action-ending.mp3" },
+  { "name": "🎮 Aventure — Stage 1 (J. Junkala)",      "url": "libre/adventure-stage1.mp3" },
+  { "name": "🎮 Aventure — Stage 2 (J. Junkala)",      "url": "libre/adventure-stage2.mp3" },
+  { "name": "🎮 Aventure — Boss Fight (J. Junkala)",   "url": "libre/adventure-boss.mp3" },
+  { "name": "🎮 Aventure — Stage Select (J. Junkala)", "url": "libre/adventure-select.mp3" }
+];
+
+// ── Bibliothèque locale (OneDrive) — jamais poussée sur GitHub ──
+const PLAYLIST = [
   {
     "name": "0 Africa",
     "url": "../../../Music/0%20Africa.mp3"
