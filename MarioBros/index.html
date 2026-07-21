@@ -121,10 +121,11 @@ overlay.addEventListener('click',()=>{ if(!running||over) newGame(); });
 cv.addEventListener('touchstart',e=>{ e.preventDefault(); if(!running||over) newGame(); },{passive:false});
 
 const G=950;
-function platUnder(e){   // plateforme sur laquelle l'entité atterrit (pieds), sinon null
+function platUnder(e,oldFeet){   // plateforme franchie entre 2 frames (balayé, anti-tunnel)
   const feet=e.y+e.h, cx=e.x+e.w/2;
-  for(const p of plats){ if(cx>=p.x && cx<=p.x+p.w && feet>=p.y && feet<=p.y+18) return p; }
-  if(pow && cx>=pow.x && cx<=pow.x+pow.w && feet>=pow.y && feet<=pow.y+18) return pow;  // on se tient sur le POW
+  if(oldFeet===undefined) oldFeet=feet;
+  for(const p of plats){ if(cx>=p.x && cx<=p.x+p.w && oldFeet<=p.y+2 && feet>=p.y) return p; }
+  if(pow && cx>=pow.x && cx<=pow.x+pow.w && oldFeet<=pow.y+2 && feet>=pow.y) return pow;  // on se tient sur le POW
   return null;
 }
 function onPlat(e){      // plateforme sous les pieds quand on est posé
@@ -137,8 +138,9 @@ function physics(e,dt){
   e.x += e.vx*dt;
   if(e.x+e.w<0) e.x=W; else if(e.x>W) e.x=-e.w;   // wrap horizontal
   // vertical
+  const oldFeet=e.y+e.h;
   e.vy += G*dt; e.y += e.vy*dt;
-  if(e.vy>=0){ const p=platUnder(e); if(p){ e.y=p.y-e.h; e.vy=0; e.grounded=true; e.plat=p; return; } }
+  if(e.vy>=0){ const p=platUnder(e,oldFeet); if(p){ e.y=p.y-e.h; e.vy=0; e.grounded=true; e.plat=p; return; } }
   e.grounded=false; e.plat=null;
 }
 

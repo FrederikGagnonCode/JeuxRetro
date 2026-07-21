@@ -102,12 +102,13 @@ cv.addEventListener('touchstart',e=>{ e.preventDefault(); if(!running||over) new
   else if(!player.dead){ player.vy=-190; player.flapT=0.14; sfxFlap(); } },{passive:false});
 
 function physics(o,dt,accel){
+  const oldFeet=o.y+14;                             // pour l'atterrissage balayé (anti-tunnel)
   o.vy+=340*dt;
   o.x+=o.vx*dt; o.y+=o.vy*dt;
   if(o.x<-14) o.x=W+14; if(o.x>W+14) o.x=-14;      // wrap
   for(const p of plats){
     if(o.x>p.x-8 && o.x<p.x+p.w+8){
-      if(o.vy>0 && o.y+14>=p.y && o.y+14<=p.y+12){ o.y=p.y-14; o.vy=0; o.grounded=true; }
+      if(o.vy>0 && oldFeet<=p.y+1 && o.y+14>=p.y){ o.y=p.y-14; o.vy=0; o.grounded=true; }
       else if(o.vy<0 && o.y-10<=p.y+10 && o.y-10>=p.y-2){ o.y=p.y+22; o.vy=20; }
     }
   }

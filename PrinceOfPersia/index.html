@@ -50,8 +50,8 @@ const LEVELW=2200, FLOOR=H-40;
 const plats=[
   {x:0,w:360,y:FLOOR},{x:420,w:220,y:FLOOR},{x:700,w:170,y:FLOOR},
   {x:930,w:300,y:FLOOR},{x:1290,w:260,y:FLOOR},{x:1610,w:590,y:FLOOR},
-  {x:250,w:120,y:FLOOR-90},{x:520,w:130,y:FLOOR-90},{x:820,w:110,y:FLOOR-100},
-  {x:1120,w:150,y:FLOOR-90},{x:1430,w:120,y:FLOOR-95},{x:1780,w:150,y:FLOOR-90},
+  {x:240,w:110,y:FLOOR-90},{x:510,w:120,y:FLOOR-90},{x:820,w:110,y:FLOOR-100},
+  {x:1090,w:130,y:FLOOR-90},{x:1420,w:120,y:FLOOR-95},{x:1780,w:150,y:FLOOR-90},
 ];
 const spikes=[{x:700+20,w:60,y:FLOOR},{x:990,w:54,y:FLOOR},{x:1330,w:60,y:FLOOR},{x:1680,w:54,y:FLOOR}];
 let potions, guards, exitDoor;
@@ -107,7 +107,7 @@ document.addEventListener('keydown',e=>{
   if((k===' '||k==='enter') && (!running||over)){ newGame(); return; }
   if(k==='p' && running && !over){ paused=!paused; return; }
   if(!running||over||paused||player.dead) return;
-  if((k===' '||k==='arrowup'||k==='w') && player.grounded && player.atkT<=0){ player.vy=-340; player.grounded=false; }
+  if((k===' '||k==='arrowup'||k==='w') && player.grounded && player.atkT<=0){ player.vy=-430; player.grounded=false; }
   if(k==='x' && player.atkT<=0 && player.hitT<=0){ player.atkT=0.32; player.atkHit=false; sfxSlash(); }
   if(k==='s'){ player.parryT=0.3; }
 });
@@ -115,17 +115,20 @@ document.addEventListener('keyup',e=>{ keys[e.key.toLowerCase()]=false; });
 overlay.addEventListener('click',()=>{ if(!running||over) newGame(); });
 cv.addEventListener('touchstart',e=>{ e.preventDefault(); if(!running||over) newGame(); },{passive:false});
 
-function groundAt(x,y){    // plateforme sous (x, y) la plus proche
-  let best=null;
-  for(const p of plats){ if(x>=p.x&&x<=p.x+p.w&&p.y>=y-2){ if(!best||p.y<best.y) best=p; } }
-  return best;
-}
 function physics(o,dt){
+  // collision « balayée » : on détecte le franchissement du dessus d'une dalle
+  // entre l'ancienne et la nouvelle position (aucun tunnel possible, même si
+  // une frame est longue et que la chute avance de beaucoup d'un coup)
+  const oldFeet=o.y+40;
   o.vy+=900*dt;
   o.y+=o.vy*dt;
+  const newFeet=o.y+40;
   if(o.vy>=0){
-    const g=groundAt(o.x,o.y+40);
-    if(g && o.y+40>=g.y && o.y+40<=g.y+16){ o.y=g.y-40; o.vy=0; o.grounded=true; return; }
+    for(const p of plats){
+      if(o.x>=p.x && o.x<=p.x+p.w && oldFeet<=p.y+1 && newFeet>=p.y){
+        o.y=p.y-40; o.vy=0; o.grounded=true; return;
+      }
+    }
   }
   o.grounded=false;
 }
@@ -145,9 +148,18 @@ function update(dt){
     } else p.vx=0;
     p.x=clamp(p.x+p.vx*dt,10,LEVELW-10);
     physics(p,dt);
+    // parois des fosses : sous le niveau du sol, impossible de glisser sous une dalle
+    if(p.y+40 > FLOOR+2){
+      for(const pl of plats){
+        if(pl.y!==FLOOR) continue;
+        if(p.x > pl.x-6 && p.x < pl.x+pl.w+6){
+          p.x = (p.x-(pl.x-6) < (pl.x+pl.w+6)-p.x) ? pl.x-6 : pl.x+pl.w+6;
+        }
+      }
+    }
     if(p.parryT>0) p.parryT-=dt;
     if(p.inv>0) p.inv-=dt;
-    if(p.y>H+30){ killPlayer('Chute mortelle !'); return; }
+    if(p.y+40>=H-6){ killPlayer('Empalé au fond de la fosse !'); return; }
     // pics
     if(p.grounded && p.inv<=0){
       for(const s of spikes){ if(p.x>s.x&&p.x<s.x+s.w&&Math.abs((p.y+40)-s.y)<6){ killPlayer('Empalé sur les pics !'); return; } }
@@ -276,6 +288,14 @@ function draw(){
     ctx.fillStyle='#6e563c'; ctx.fillRect(p.x,p.y,p.w,4);
     ctx.strokeStyle='rgba(0,0,0,.35)'; ctx.lineWidth=1;
     for(let bx=p.x;bx<p.x+p.w;bx+=34){ ctx.beginPath(); ctx.moveTo(bx,p.y); ctx.lineTo(bx,p.y+12); ctx.stroke(); }
+  });
+  // fosses : fond sombre, parois éclairées et pics au fond (danger visible)
+  const gaps=[[360,420],[640,700],[870,930],[1230,1290],[1550,1610]];
+  gaps.forEach(([a,b])=>{
+    ctx.fillStyle='#0b0806'; ctx.fillRect(a,FLOOR,b-a,H-FLOOR);
+    ctx.fillStyle='#6e563c'; ctx.fillRect(a-2,FLOOR,2,H-FLOOR); ctx.fillRect(b,FLOOR,2,H-FLOOR);
+    ctx.fillStyle='#b8bcc8';
+    for(let x=a+4;x<b-4;x+=8){ ctx.beginPath(); ctx.moveTo(x,H); ctx.lineTo(x+4,H-10); ctx.lineTo(x+8,H); ctx.fill(); }
   });
   // pics
   spikes.forEach(s=>{
