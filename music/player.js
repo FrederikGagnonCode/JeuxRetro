@@ -19,7 +19,11 @@
 
   // PLAYLIST est un `const` global (déclaré dans playlist.js) : accessible par
   // référence directe, mais PAS via window.PLAYLIST. D'où le typeof.
-  let playlist   = (typeof PLAYLIST !== 'undefined' ? PLAYLIST : []).slice();
+  // En ligne (GitHub Pages), la musique locale n'existe pas : on part d'une
+  // playlist vide (pas d'erreur « fichier introuvable ») et le visiteur peut
+  // charger SON dossier de musique avec le bouton 📁 (tout reste dans son navigateur).
+  const HOSTED = /\.github\.io$/i.test(location.hostname);
+  let playlist   = (!HOSTED && typeof PLAYLIST !== 'undefined' ? PLAYLIST : []).slice();
   let shuffleMode = localStorage.getItem(LS.shuffle) === '1';
   let current     = -1;                       // index du morceau courant
   // choix auto d'un morceau au 1er geste (désactivable : window.ARCADE_MUSIC_AUTOSTART = false)
@@ -164,6 +168,7 @@
 
     fillSelect();
     elVol.value = audio.volume;
+    if (HOSTED && !playlist.length) elNow.textContent = '🎵 Musique : bouton 📁 pour choisir un dossier';
 
     // déplier / replier
     const toggle = () => {
