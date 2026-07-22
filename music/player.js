@@ -418,8 +418,13 @@
     (wrap || document.body).appendChild(tablePop);
     if (autoMs) { clearTimeout(tableT); tableT = setTimeout(() => { if (tablePop) { tablePop.remove(); tablePop = null; } }, autoMs); }
   }
+  function pauseGame() {
+    // tous les jeux exposent des `let` globaux running/paused : on fige la partie
+    try { if (typeof running !== 'undefined' && running && typeof paused !== 'undefined') paused = true; } catch (e) {}
+  }
   function openPrompt(s) {
     if (prompting) return; prompting = true;
+    pauseGame();                                            // la partie s'arrête pendant la saisie
     let letters = '';
     const div = document.createElement('div'); div.id = 'arcade-hi-init';
     div.innerHTML = '<div class="t">★ MEILLEUR SCORE ! ★</div><div class="s">' + s +
@@ -429,21 +434,21 @@
     const render = () => { lb.textContent = (letters + '···').slice(0, 3).toUpperCase().split('').join(' '); };
     render();
     const h = (e) => {
+      // on n'intercepte que les keydown ; les keyup passent au jeu
+      // (sinon une touche encore enfoncée resterait « collée »)
       e.stopImmediatePropagation(); e.preventDefault();
-      if (e.type !== 'keydown') return;
       const k = e.key;
       if (/^[a-z0-9]$/i.test(k) && letters.length < 3) { letters += k.toUpperCase(); render(); }
       else if (k === 'Backspace') { letters = letters.slice(0, -1); render(); }
       else if (k === 'Enter' || (k === ' ' && letters.length === 3)) {
         tab.push({ n: (letters || 'AAA').padEnd(3, '·'), s }); saveTab();
         window.removeEventListener('keydown', h, true);
-        window.removeEventListener('keyup', h, true);
         div.remove(); prompting = false;
+        pauseGame();                                        // reste en pause : une touche de jeu relancera
         toggleTable(3500);
       }
     };
     window.addEventListener('keydown', h, true);
-    window.addEventListener('keyup', h, true);
   }
   function refresh() { if (badge) badge.innerHTML = 'RECORD <b>' + best + '</b>'; }
   function showToast() {
