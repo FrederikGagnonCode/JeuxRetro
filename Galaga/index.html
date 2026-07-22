@@ -258,34 +258,97 @@ function draw(){
     ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.font='30px "Courier New",monospace'; ctx.fillText('PAUSE',W/2,H/2); }
 }
 
-function drawShip(x,y){
-  ctx.fillStyle='#eef';
-  ctx.beginPath(); ctx.moveTo(x,y-12); ctx.lineTo(x-3,y-2); ctx.lineTo(x+3,y-2); ctx.closePath(); ctx.fill(); // nez
-  ctx.fillStyle='#fff'; ctx.fillRect(x-3,y-4,6,10);                 // fuselage
-  ctx.fillStyle='#36c5f0'; ctx.fillRect(x-10,y+2,20,4);            // ailes
-  ctx.fillRect(x-2,y-10,4,4);
-  ctx.fillStyle='#ff5252'; ctx.fillRect(x-10,y+2,3,4); ctx.fillRect(x+7,y+2,3,4);
+// ── pixel-art fidèle à l'arcade (grilles de caractères → couleurs) ──
+const PAL={ y:'#ffd23a', b:'#3aa0ff', k:'#103a5a', r:'#ff3a3a', w:'#f0f4ff',
+            g:'#54e83a', u:'#3a58e8', c:'#36c5f0', d:'#c81430' };
+const SPR={
+  beeA:[
+    'b..........b',
+    '.b..y..y..b.',
+    '.bb.yyyy.bb.',
+    'bbb.ykky.bbb',
+    'bb.yyyyyy.bb',
+    'b..yyyyyy..b',
+    '...y.yy.y...',
+    '..yyyyyyyy..',
+    '....y..y....',
+    '...b....b...'],
+  beeB:[
+    '............',
+    '....y..y....',
+    '.b..yyyy..b.',
+    '.bb.ykky.bb.',
+    'bbbyyyyyybbb',
+    '.bbyyyyyybb.',
+    '..by.yy.yb..',
+    '..yyyyyyyy..',
+    '...by..yb...',
+    '............'],
+  papA:[
+    'r..........r',
+    'rr...ww...rr',
+    '.rr.wwww.rr.',
+    '.rrwwkkwwrr.',
+    'rrr.wwww.rrr',
+    'rr..wwww..rr',
+    'r...wwww...r',
+    '....w..w....',
+    '...w....w...',
+    '............'],
+  papB:[
+    '............',
+    '.r...ww...r.',
+    '.rr.wwww.rr.',
+    'rrrwwkkwwrrr',
+    '.rr.wwww.rr.',
+    '.r..wwww..r.',
+    '....wwww....',
+    '....w..w....',
+    '...w....w...',
+    '............'],
+  boss:[
+    '..g........g..',
+    '...g......g...',
+    '..uuuuuuuuuu..',
+    '.uuwwuuuuwwuu.',
+    'uuuwwuuuuwwuuu',
+    'uuuuuuuuuuuuuu',
+    '.ggg.gggg.ggg.',
+    'gg..gggggg..gg',
+    'g...gg..gg...g',
+    '....g....g....',
+    '...g......g...'],
+  ship:[
+    '......w......',
+    '......w......',
+    '.....www.....',
+    '.....www.....',
+    '..w..wuw..w..',
+    '..w.wwuww.w..',
+    '.www.wuw.www.',
+    'dwwwwwuwwwwwd',
+    'dwwddwuwddwwd',
+    'wwwwwwwwwwwww',
+    '.d...www...d.',
+    '.....w.w.....']
+};
+function drawPix(rows,cx,cy,s){
+  const w=rows[0].length, h=rows.length;
+  for(let r=0;r<h;r++) for(let c=0;c<w;c++){
+    const ch=rows[r][c]; if(ch==='.') continue;
+    ctx.fillStyle=PAL[ch];
+    ctx.fillRect(cx+(c-w/2)*s, cy+(r-h/2)*s, s+0.05, s+0.05);
+  }
 }
+function drawShip(x,y){ drawPix(SPR.ship, x, y, 1.7); }
 
 function drawEnemy(e){
   const x=e.x, y=e.y, flip = (e.state==='dive');
+  const wing = Math.floor(performance.now()/260)%2;        // battement d'ailes
   ctx.save(); ctx.translate(x,y); if(flip) ctx.rotate(Math.PI); // en piqué, tête en bas
-  if(e.type==='bee'){
-    ctx.fillStyle='#36c5f0'; ctx.fillRect(-7,-2,14,4);            // ailes bleues
-    ctx.fillStyle='#ffd23a'; ctx.fillRect(-3,-5,6,9);             // corps jaune
-    ctx.fillStyle='#103a5a'; ctx.fillRect(-2,-3,1.5,1.5); ctx.fillRect(1,-3,1.5,1.5);
-  } else if(e.type==='butterfly'){
-    ctx.fillStyle='#ff5252'; ctx.beginPath();
-    ctx.moveTo(-9,-4); ctx.lineTo(0,-1); ctx.lineTo(9,-4); ctx.lineTo(9,4); ctx.lineTo(0,1); ctx.lineTo(-9,4); ctx.closePath(); ctx.fill();
-    ctx.fillStyle='#fff'; ctx.fillRect(-3,-5,6,10);
-    ctx.fillStyle='#1a1a2e'; ctx.fillRect(-2,-3,1.6,1.6); ctx.fillRect(1,-3,1.6,1.6);
-  } else { // boss
-    ctx.fillStyle='#7CFC00'; ctx.beginPath(); ctx.arc(0,0,8,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle='#1565c0'; ctx.fillRect(-7,-7,14,5);            // tête bleue
-    ctx.fillStyle='#fff'; ctx.fillRect(-4,-1,3,3); ctx.fillRect(1,-1,3,3);
-    ctx.strokeStyle='#7CFC00'; ctx.lineWidth=1.5;                 // antennes
-    ctx.beginPath(); ctx.moveTo(-4,-7); ctx.lineTo(-7,-12); ctx.moveTo(4,-7); ctx.lineTo(7,-12); ctx.stroke();
-  }
+  if(e.type==='bee') drawPix(wing?SPR.beeA:SPR.beeB, 0, 0, 1.6);
+  else if(e.type==='butterfly') drawPix(wing?SPR.papA:SPR.papB, 0, 0, 1.6);
+  else drawPix(SPR.boss, 0, 0, 1.7);
   ctx.restore();
 }
 
