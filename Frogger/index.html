@@ -31,41 +31,41 @@
     <canvas id="game" width="520" height="520"></canvas>
     <div id="overlay">
       <h2 id="ovTitle">FROGGER</h2>
-      <p>Traverse la route puis la riviÃ¨re, remplis les 5 abris.</p>
-      <p>â† â†‘ â†“ â†’ (ou WASD) : sauter d'une case</p>
-      <p>Sur la riviÃ¨re, reste sur les troncs et les tortues (certaines plongent !)</p>
+      <p>Traverse la route puis la rivière, remplis les 5 abris.</p>
+      <p>← ↑ ↓ → (ou WASD) : sauter d'une case</p>
+      <p>Sur la rivière, reste sur les troncs et les tortues (certaines plongent !)</p>
       <p>Bonus : la grenouille rose sur un billot et la mouche aux abris (+200)</p>
       <p>P : pause</p>
-      <p class="blink" style="margin-top:12px">â–¶ Cliquez ou Espace pour sauter Ã  l'eau</p>
+      <p class="blink" style="margin-top:12px">▶ Cliquez ou Espace pour sauter à l'eau</p>
     </div>
   </div>
-  <div id="hint">â† â†‘ â†“ â†’ / WASD : sauter Â· atteins les 5 abris avant la fin du temps Â· P = pause</div>
-  <a class="back" href="../index.html">â† Menu Arcade</a>
+  <div id="hint">← ↑ ↓ → / WASD : sauter · atteins les 5 abris avant la fin du temps · P = pause</div>
+  <a class="back" href="../index.html">← Menu Arcade</a>
 
 <script>
 const cv = document.getElementById('game');
 const ctx = cv.getContext('2d');
-const SCALE=1.25;                 // canvas 520 = zone logique 416 Ã— 1.25
-const W=416, H=416;               // dimensions logiques (grille 13Ã—13 de 32 px)
+const SCALE=1.25;                 // canvas 520 = zone logique 416 × 1.25
+const W=416, H=416;               // dimensions logiques (grille 13×13 de 32 px)
 const overlay=document.getElementById('overlay');
 const ovTitle=document.getElementById('ovTitle');
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const rand=n=>Math.floor(Math.random()*n);
 
 const CELL=32, COLS=13;
-// rangÃ©es (y en cases) : 0 abris Â· 1..5 riviÃ¨re Â· 6 berge mÃ©diane Â· 7..11 route Â· 12 dÃ©part
+// rangées (y en cases) : 0 abris · 1..5 rivière · 6 berge médiane · 7..11 route · 12 départ
 const ROW_HOME=0, ROW_RIVER0=1, ROW_RIVER1=5, ROW_MEDIAN=6, ROW_ROAD0=7, ROW_ROAD1=11, ROW_START=12;
 const ry=r=>r*CELL;
 
 let frog, lanes, homes, lives, score, level, timeLeft, timeMax;
 let bonusFrog=null, bfT=6, fly=null, flyT=9, floats=[];
 let running=false, paused=false, over=false, hopT=0;
-const HOP=0.16;                   // durÃ©e du saut animÃ© (s)
+const HOP=0.16;                   // durée du saut animé (s)
 function flash(x,y,txt){ floats.push({x,y,txt,life:1}); }
 let last=0;
 const keys={};
 
-// â”€â”€ audio â”€â”€
+// ── audio ──
 let _ac=null;
 function ac(){ if(!_ac) _ac=new (window.AudioContext||window.webkitAudioContext)(); if(_ac.state==='suspended') _ac.resume(); return _ac; }
 function tone(f0,f1,d,type,vol){ const a=ac(),t=a.currentTime; const o=a.createOscillator(); o.type=type||'square';
@@ -82,11 +82,11 @@ function sfxSplash(){ const a=ac(),t=a.currentTime;
   const g=a.createGain(); g.gain.setValueAtTime(0.16,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.3);
   src.connect(lp); lp.connect(g); g.connect(a.destination); src.start(t); }
 
-// â”€â”€ niveaux : voies de circulation & riviÃ¨re â”€â”€
+// ── niveaux : voies de circulation & rivière ──
 function buildLanes(){
-  const sp = 1 + (level-1)*0.15;                 // accÃ©lÃ©ration par niveau
+  const sp = 1 + (level-1)*0.15;                 // accélération par niveau
   lanes=[
-    // riviÃ¨re (row, type, vitesse px/s, longueur en cases, Ã©cart en cases)
+    // rivière (row, type, vitesse px/s, longueur en cases, écart en cases)
     {row:1, type:'log',    v: 62*sp, len:4, gap:4},
     {row:2, type:'turtle', v:-46*sp, len:3, gap:3, diveable:true},
     {row:3, type:'log',    v: 88*sp, len:6, gap:5},
@@ -130,7 +130,7 @@ function nextLevel(){
 }
 function showOverlay(t,s){ ovTitle.textContent=t; overlay.querySelector('p:nth-of-type(1)').textContent=s; overlay.style.display='flex'; }
 
-// positions des 5 abris (colonnes centrÃ©es)
+// positions des 5 abris (colonnes centrées)
 const HOMES_C=[1,3.75,6.5,9.25,12];
 function homeAt(px){
   for(let i=0;i<5;i++){ const hx=HOMES_C[i]*CELL - CELL/2 + CELL/2;   // centre de l'abri i
@@ -138,13 +138,13 @@ function homeAt(px){
   return -1;
 }
 
-// â”€â”€ entrÃ©es â”€â”€
+// ── entrées ──
 function hop(dc,dr){
   const f=frog; if(f.dead||!running||paused||over) return;
   const nc=Math.round(f.px/CELL)+dc, nr=f.r+dr;
   if(nc<0||nc>COLS-1||nr<0||nr>ROW_START) return;
-  f.fromX=f.px; f.fromY=f.py;                              // dÃ©part du saut (pour l'animation)
-  f.ang = dc<0?-Math.PI/2 : dc>0?Math.PI/2 : dr>0?Math.PI : 0;  // orientÃ©e dans le sens du saut
+  f.fromX=f.px; f.fromY=f.py;                              // départ du saut (pour l'animation)
+  f.ang = dc<0?-Math.PI/2 : dc>0?Math.PI/2 : dr>0?Math.PI : 0;  // orientée dans le sens du saut
   f.px=clamp(nc*CELL,0,(COLS-1)*CELL); f.r=nr; f.py=ry(nr); f.ride=null;
   if(dr<0) score+=10;
   hopT=HOP; sfxHop();
@@ -154,15 +154,15 @@ function checkHome(){
   const i=homeAt(frog.px);
   if(i>=0 && !homes[i]){
     homes[i]=true; score+=200+Math.floor(timeLeft)*5; sfxHome();
-    // mouche attrapÃ©e si elle survole cet abri
+    // mouche attrapée si elle survole cet abri
     if(fly && Math.abs((fly.x+CELL/2)-HOMES_C[i]*CELL)<CELL*0.8){
-      score+=200; flash(HOMES_C[i]*CELL, CELL, '+200 ðŸª°');
+      score+=200; flash(HOMES_C[i]*CELL, CELL, '+200 🪰');
       fly=null; flyT=7+rand(8);
     }
     if(homes.every(h=>h)){ nextLevel(); return; }
     frog=makeFrog(); timeLeft=timeMax;
   } else {
-    dieFrog();          // abri dÃ©jÃ  pris ou ratÃ© = chute Ã  l'eau
+    dieFrog();          // abri déjà pris ou raté = chute à l'eau
   }
 }
 document.addEventListener('keydown',e=>{
@@ -181,7 +181,7 @@ document.addEventListener('keyup',e=>{ keys[e.key.toLowerCase()]=false; });
 overlay.addEventListener('click',()=>{ if(!running||over) newGame(); });
 cv.addEventListener('touchstart',e=>{ e.preventDefault(); if(!running||over) newGame(); },{passive:false});
 
-// â”€â”€ mise Ã  jour â”€â”€
+// ── mise à jour ──
 function update(dt){
   if(!running||paused||over) return;
   if(hopT>0) hopT-=dt;
@@ -221,7 +221,7 @@ function update(dt){
   }
 
   const f=frog;
-  // saut sur la grenouille bonus (elle est portÃ©e par son billot)
+  // saut sur la grenouille bonus (elle est portée par son billot)
   if(!f.dead && bonusFrog){
     const bx=bonusFrog.it.x+bonusFrog.off;
     if(f.r===bonusFrog.lane.row && Math.abs((f.px+CELL/2)-(bx+CELL/2))<CELL*0.55){
@@ -230,7 +230,7 @@ function update(dt){
     }
   }
   if(!f.dead){
-    // rangÃ©e riviÃ¨re : il faut Ãªtre portÃ©
+    // rangée rivière : il faut être porté
     if(f.r>=ROW_RIVER0 && f.r<=ROW_RIVER1){
       const L=lanes.find(l=>l.row===f.r);
       let carried=null;
@@ -239,9 +239,9 @@ function update(dt){
       }
       if(carried){ f.px+=L.v*dt; }
       else { dieFrog(); return; }
-      if(f.px<-CELL*0.6||f.px>W-CELL*0.4){ dieFrog(); return; }   // emportÃ© hors Ã©cran
+      if(f.px<-CELL*0.6||f.px>W-CELL*0.4){ dieFrog(); return; }   // emporté hors écran
     }
-    // rangÃ©e route : collision voitures
+    // rangée route : collision voitures
     if(f.r>=ROW_ROAD0 && f.r<=ROW_ROAD1){
       const L=lanes.find(l=>l.row===f.r);
       for(const it of L.items){
@@ -263,20 +263,20 @@ function dieFrog(){
   if(inWater) sfxSplash();
   ArcadeFX.die(cv, (frog.px+CELL/2)*SCALE, (frog.py+CELL/2)*SCALE, inWater?'splat':'explosion', ()=>{
     if(lives<=0){ over=true; if(window.ArcadeHi)ArcadeHi.submit(score);
-      showOverlay('GAME OVER','Niveau '+level+' Â· Score : '+score); }
+      showOverlay('GAME OVER','Niveau '+level+' · Score : '+score); }
     else { frog=makeFrog(); timeLeft=timeMax; running=true; }
   });
 }
 
-// â”€â”€ rendu â”€â”€
+// ── rendu ──
 function draw(){
-  ctx.setTransform(SCALE,0,0,SCALE,0,0);      // tout le rendu est agrandi Ã—1.25
+  ctx.setTransform(SCALE,0,0,SCALE,0,0);      // tout le rendu est agrandi ×1.25
   ctx.clearRect(0,0,W,H);
   // zones
-  ctx.fillStyle='#0a2a52'; ctx.fillRect(0,0,W,ry(ROW_MEDIAN));                   // riviÃ¨re + abris
+  ctx.fillStyle='#0a2a52'; ctx.fillRect(0,0,W,ry(ROW_MEDIAN));                   // rivière + abris
   ctx.fillStyle='#101018'; ctx.fillRect(0,ry(ROW_ROAD0),W,5*CELL);               // route
-  ctx.fillStyle='#3a7a2e'; ctx.fillRect(0,ry(ROW_MEDIAN),W,CELL);               // berge mÃ©diane
-  ctx.fillStyle='#3a7a2e'; ctx.fillRect(0,ry(ROW_START),W,CELL);                // dÃ©part
+  ctx.fillStyle='#3a7a2e'; ctx.fillRect(0,ry(ROW_MEDIAN),W,CELL);               // berge médiane
+  ctx.fillStyle='#3a7a2e'; ctx.fillRect(0,ry(ROW_START),W,CELL);                // départ
   // texture herbe
   ctx.fillStyle='#2e6324';
   for(let x=0;x<W;x+=10){ ctx.fillRect(x,ry(ROW_MEDIAN)+((x/10)%2?4:12),4,3); ctx.fillRect(x,ry(ROW_START)+((x/10)%2?6:14),4,3); }
@@ -291,7 +291,7 @@ function draw(){
     ctx.fillStyle='#0a2a52'; ctx.fillRect(cx-CELL*0.7,3,CELL*1.4,CELL-6);
     if(homes[i]) drawFrogSprite(cx-CELL/2, 2, 0, 0);
   }
-  // riviÃ¨re : reflets
+  // rivière : reflets
   ctx.fillStyle='rgba(255,255,255,.06)';
   for(let r=ROW_RIVER0;r<=ROW_RIVER1;r++) for(let x=((r*37)%60);x<W;x+=60) ctx.fillRect(x,ry(r)+CELL/2,22,2);
 
@@ -312,14 +312,14 @@ function draw(){
   // mouche dans la zone des abris
   if(fly) drawFly(fly.x, 0);
 
-  // grenouille (position interpolÃ©e pendant le saut, pose en vol)
+  // grenouille (position interpolée pendant le saut, pose en vol)
   if(!frog.dead){
     let dx=frog.px, dy=frog.py, air=0;
     if(hopT>0){
-      const t=1-hopT/HOP;                                  // progression 0 â†’ 1
+      const t=1-hopT/HOP;                                  // progression 0 → 1
       dx=frog.fromX+(frog.px-frog.fromX)*t;
       dy=frog.fromY+(frog.py-frog.fromY)*t;
-      air=Math.sin(Math.PI*t);                             // arc : max Ã  mi-saut
+      air=Math.sin(Math.PI*t);                             // arc : max à mi-saut
     }
     drawFrogSprite(dx, dy, frog.ang, air);
   }
@@ -336,23 +336,23 @@ function draw(){
 function drawFrogSprite(x,y,ang,air){
   air=air||0;
   ctx.save(); ctx.translate(x+CELL/2,y+CELL/2);
-  // ombre au sol pendant le vol (rÃ©trÃ©cit quand la grenouille Â« monte Â»)
+  // ombre au sol pendant le vol (rétrécit quand la grenouille « monte »)
   if(air>0){ ctx.fillStyle='rgba(0,0,0,.25)';
     ctx.beginPath(); ctx.ellipse(0,4,9*(1-air*0.4),5*(1-air*0.4),0,0,Math.PI*2); ctx.fill(); }
   ctx.rotate(ang||0);
-  const s=1+0.30*air;                            // grossit Ã  mi-saut (effet d'altitude)
+  const s=1+0.30*air;                            // grossit à mi-saut (effet d'altitude)
   ctx.scale(s,s);
-  // pattes : repliÃ©es au repos â†’ dÃ©tendues en plein saut
+  // pattes : repliées au repos → détendues en plein saut
   ctx.strokeStyle='#2e9e38'; ctx.lineWidth=3; ctx.lineCap='round';
   ctx.beginPath();
-  // arriÃ¨re (se tendent vers l'arriÃ¨re)
+  // arrière (se tendent vers l'arrière)
   ctx.moveTo(-8,6); ctx.lineTo(-13+air*4, 11+air*7);
   ctx.moveTo(8,6);  ctx.lineTo(13-air*4, 11+air*7);
   // avant (se tendent vers l'avant)
   ctx.moveTo(-8,-4); ctx.lineTo(-13+air*4, -9-air*4);
   ctx.moveTo(8,-4);  ctx.lineTo(13-air*4, -9-air*4);
   ctx.stroke();
-  // corps (lÃ©gÃ¨rement Ã©tirÃ© en vol)
+  // corps (légèrement étiré en vol)
   ctx.save(); ctx.scale(1-0.10*air, 1+0.14*air);
   ctx.fillStyle='#4ddc5a'; ctx.beginPath(); ctx.ellipse(0,1,9,11,0,0,Math.PI*2); ctx.fill();
   ctx.fillStyle='#8af07f'; ctx.beginPath(); ctx.ellipse(0,3,5.5,7,0,0,Math.PI*2); ctx.fill();
@@ -410,7 +410,7 @@ function drawTurtles(x,y,len,dive){
     ctx.fillStyle='#37882e'; ctx.beginPath(); ctx.ellipse(cx,cy,8.5,7,0,0,Math.PI*2); ctx.fill();
     ctx.strokeStyle='#245a1e'; ctx.lineWidth=1;
     ctx.beginPath(); ctx.moveTo(cx-6,cy); ctx.lineTo(cx+6,cy); ctx.moveTo(cx-3,cy-5); ctx.lineTo(cx-3,cy+5); ctx.moveTo(cx+3,cy-5); ctx.lineTo(cx+3,cy+5); ctx.stroke();
-    ctx.fillStyle='#7ac25a'; ctx.beginPath(); ctx.arc(cx+(i===len-1?11:-11),cy,3,0,Math.PI*2); ctx.fill(); // tÃªte
+    ctx.fillStyle='#7ac25a'; ctx.beginPath(); ctx.arc(cx+(i===len-1?11:-11),cy,3,0,Math.PI*2); ctx.fill(); // tête
   }
 }
 function drawCar(x,y,col,flip){
@@ -435,7 +435,7 @@ function drawHUD(){
   ctx.fillStyle='rgba(0,0,0,.45)'; ctx.fillRect(0,H-14,W,14);
   ctx.textAlign='left'; ctx.font='bold 11px "Courier New",monospace';
   ctx.fillStyle='#fff'; ctx.fillText('SCORE '+score, 6, H-4);
-  ctx.fillStyle='#4ddc5a'; ctx.fillText('ðŸ¸'.repeat(Math.max(0,lives-1))||'â€”', 110, H-4);
+  ctx.fillStyle='#4ddc5a'; ctx.fillText('🐸'.repeat(Math.max(0,lives-1))||'—', 110, H-4);
   ctx.fillStyle='#9cf'; ctx.fillText('NIV '+level, 210, H-4);
   // barre de temps
   const tw=140, f=timeLeft/timeMax;

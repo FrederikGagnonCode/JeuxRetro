@@ -32,13 +32,13 @@
     <div id="overlay">
       <h2 id="ovTitle">MORTAL KOMBAT</h2>
       <p>Bats tes adversaires en 2 rounds gagnants.</p>
-      <p>â† â†’ se dÃ©placer Â· â†‘ sauter Â· â†“ s'accroupir</p>
-      <p>X : coup de poing Â· C : coup de pied Â· S : garde</p>
-      <p class="blink" style="margin-top:12px">â–¶ Cliquez ou Espace pour combattre</p>
+      <p>← → se déplacer · ↑ sauter · ↓ s'accroupir</p>
+      <p>X : coup de poing · C : coup de pied · S : garde</p>
+      <p class="blink" style="margin-top:12px">▶ Cliquez ou Espace pour combattre</p>
     </div>
   </div>
-  <div id="hint">â† â†’ bouger Â· â†‘ saut Â· â†“ accroupi Â· X poing Â· C pied Â· S garde Â· P = pause</div>
-  <a class="back" href="../index.html">â† Menu Arcade</a>
+  <div id="hint">← → bouger · ↑ saut · ↓ accroupi · X poing · C pied · S garde · P = pause</div>
+  <a class="back" href="../index.html">← Menu Arcade</a>
 
 <script>
 const cv = document.getElementById('game');
@@ -64,7 +64,7 @@ let running=false, paused=false, over=false;
 let last=0;
 const keys={};
 
-// â”€â”€ audio â”€â”€
+// ── audio ──
 let _ac=null;
 function ac(){ if(!_ac) _ac=new (window.AudioContext||window.webkitAudioContext)(); if(_ac.state==='suspended') _ac.resume(); return _ac; }
 function sfxHit(hard){ const a=ac(),t=a.currentTime;
@@ -102,7 +102,7 @@ function startRound(){
   p1=makeFighter(W*0.3, 1, true, opp);
   p2=makeFighter(W*0.7,-1, false, opp);
   timer=60; roundN++;
-  phase='intro'; phaseT=1.6; banner='ROUND '+roundN+' â€” COMBATTEZ !';
+  phase='intro'; phaseT=1.6; banner='ROUND '+roundN+' — COMBATTEZ !';
   sfxGong();
 }
 function newGame(){
@@ -113,7 +113,7 @@ function newGame(){
 }
 function showOverlay(t,s){ ovTitle.textContent=t; overlay.querySelector('p:nth-of-type(1)').textContent=s; overlay.style.display='flex'; }
 
-// â”€â”€ entrÃ©es â”€â”€
+// ── entrées ──
 document.addEventListener('keydown',e=>{
   const k=e.key.toLowerCase(); keys[k]=true;
   if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)) e.preventDefault();
@@ -133,7 +133,7 @@ function attack(f,type){
   f.atkType=type; f.atkT=type==='punch'?0.3:0.46; f.atkHit=false;
 }
 
-// â”€â”€ mise Ã  jour â”€â”€
+// ── mise à jour ──
 function update(dt){
   if(!running||paused||over) return;
 
@@ -145,7 +145,7 @@ function update(dt){
   timer-=dt;
   if(timer<=0){ timer=0; endRound(p1.hp>=p2.hp ? p1 : p2); return; }
 
-  // â”€â”€ joueur â”€â”€
+  // ── joueur ──
   const f=p1;
   f.blocking = !!keys['s'] && f.atkT<=0 && f.y===0;
   f.crouch = !!(keys['arrowdown']) && f.y===0;
@@ -155,7 +155,7 @@ function update(dt){
     else if(keys['arrowright']){ f.x+=170*dt; f.walk+=dt*9; }
     if(keys['arrowup']){ f.vy=-440; f.y=-1; }
   }
-  // â”€â”€ IA â”€â”€
+  // ── IA ──
   const c=p2, opp=OPPONENTS[Math.min(matchN,OPPONENTS.length-1)];
   const dx=p1.x-c.x, adx=Math.abs(dx);
   if(c.hitT>0) c.hitT-=dt;
@@ -197,7 +197,7 @@ function updAttack(f,o,dt){
   const type=f.atkType;
   const total=type==='punch'?0.3:0.46;
   const t=1-f.atkT/total;
-  // fenÃªtre active au milieu du geste
+  // fenêtre active au milieu du geste
   if(!f.atkHit && t>0.3 && t<0.65){
     const reach=type==='punch'?46:56;
     const fy=f.y, oy=o.y;
@@ -230,7 +230,7 @@ function updBlood(dt){
 function endRound(winner){
   if(phase!=='fight') return;
   const loser=winner===p1?p2:p1;
-  if(loser.hp<=0){ phase='finish'; banner='ACHÃˆVE-LE !'; phaseT=1.4; }
+  if(loser.hp<=0){ phase='finish'; banner='ACHÈVE-LE !'; phaseT=1.4; }
   else { phase='roundend'; banner='K.O. !'; phaseT=1.6; }
   if(winner===p1){ wins1++; if(loser.hp<=0) score+=500; score+=Math.floor(timer)*10; }
   else wins2++;
@@ -244,7 +244,7 @@ function nextPhase(){
     if(matchN>=OPPONENTS.length){
       running=false; over=true;
       if(window.ArcadeHi)ArcadeHi.submit(score);
-      showOverlay('â˜… CHAMPION DU TOURNOI â˜…','Tous les adversaires vaincus ! Score : '+score);
+      showOverlay('★ CHAMPION DU TOURNOI ★','Tous les adversaires vaincus ! Score : '+score);
       return;
     }
     roundN=0; banner='';
@@ -253,13 +253,13 @@ function nextPhase(){
   if(wins2>=2){
     running=false; over=true;
     if(window.ArcadeHi)ArcadeHi.submit(score);
-    showOverlay('DÃ‰FAITE','Adversaire '+(matchN+1)+' Â· Score : '+score);
+    showOverlay('DÉFAITE','Adversaire '+(matchN+1)+' · Score : '+score);
     return;
   }
   startRound();
 }
 
-// â”€â”€ rendu â”€â”€
+// ── rendu ──
 function draw(){
   drawArena();
   if(running||over){
@@ -270,7 +270,7 @@ function draw(){
     ctx.globalAlpha=1;
     drawHUD();
     if(banner){ ctx.textAlign='center';
-      ctx.fillStyle= banner.startsWith('ACHÃˆVE')?'#ff3030':'#ffd23a';
+      ctx.fillStyle= banner.startsWith('ACHÈVE')?'#ff3030':'#ffd23a';
       ctx.strokeStyle='#000'; ctx.lineWidth=5;
       ctx.font='bold 30px "Courier New",monospace';
       ctx.strokeText(banner,W/2,H*0.42); ctx.fillText(banner,W/2,H*0.42); }
@@ -296,21 +296,21 @@ function drawArena(){
     ctx.fillStyle='#ff9d2e'; ctx.beginPath(); ctx.ellipse(tx,GROUND-76,5,9+fl,0,0,Math.PI*2); ctx.fill();
     ctx.fillStyle='#ffd23a'; ctx.beginPath(); ctx.ellipse(tx,GROUND-73,2.6,5,0,0,Math.PI*2); ctx.fill();
   }
-  // sol dallÃ©
+  // sol dallé
   ctx.fillStyle='#3a3444'; ctx.fillRect(0,GROUND,W,H-GROUND);
   ctx.strokeStyle='rgba(0,0,0,.4)'; ctx.lineWidth=1.6;
   for(let x=0;x<W;x+=46){ ctx.beginPath(); ctx.moveTo(x,GROUND); ctx.lineTo(x-14,H); ctx.stroke(); }
   ctx.fillStyle='rgba(255,255,255,.05)'; ctx.fillRect(0,GROUND,W,4);
 }
 function drawFighter(f){
-  const x=f.x, gy=GROUND+f.y*1;                 // f.y nÃ©gatif en saut
+  const x=f.x, gy=GROUND+f.y*1;                 // f.y négatif en saut
   const y=GROUND+(f.y||0);
   ctx.save(); ctx.translate(x, y); ctx.scale(f.face,1);
   // ombre au sol
   ctx.save(); ctx.translate(0, -(f.y||0)); ctx.fillStyle='rgba(0,0,0,.4)';
   ctx.beginPath(); ctx.ellipse(0,2,17,4.4,0,0,Math.PI*2); ctx.fill(); ctx.restore();
   const crouch=f.crouch && f.y===0;
-  const hh=crouch?-38:-58;                       // hauteur de tÃªte
+  const hh=crouch?-38:-58;                       // hauteur de tête
   const hitFlash = f.hitT>0 && Math.floor(f.hitT*20)%2;
   const body = hitFlash?'#fff':f.col, dark=hitFlash?'#ddd':f.dk;
   const t=f.atkT>0 ? 1-(f.atkT/(f.atkType==='punch'?0.3:0.46)) : 0;
@@ -346,10 +346,10 @@ function drawFighter(f){
     ctx.beginPath(); ctx.moveTo(4,hh+14); ctx.lineTo(11,hh+24); ctx.moveTo(-4,hh+14); ctx.lineTo(-10,hh+24); ctx.stroke();
     ctx.fillStyle='#caa07a'; ctx.beginPath(); ctx.arc(12,hh+26,3,0,Math.PI*2); ctx.arc(-11,hh+26,3,0,Math.PI*2); ctx.fill();
   }
-  // tÃªte masquÃ©e de ninja
+  // tête masquée de ninja
   ctx.fillStyle=body; ctx.beginPath(); ctx.arc(0,hh,8.4,0,Math.PI*2); ctx.fill();
   ctx.fillStyle='#caa07a'; ctx.fillRect(-6,hh-3,12,4.6);                  // bande des yeux
-  ctx.fillStyle='#111'; ctx.fillRect(1,hh-2,3,2.4);                        // Å“il
+  ctx.fillStyle='#111'; ctx.fillRect(1,hh-2,3,2.4);                        // œil
   ctx.fillStyle=dark; ctx.beginPath(); ctx.arc(0,hh-4,8.4,Math.PI,Math.PI*2); ctx.fill(); // capuche
   ctx.restore();
 }
@@ -365,7 +365,7 @@ function drawHUD(){
     ctx.textAlign=alignRight?'right':'left';
     ctx.fillText(name, alignRight? x+bw : x, 38);
     ctx.fillStyle='#ffd23a';
-    ctx.fillText('â—'.repeat(wins)||'', alignRight? x+bw : x, 49);
+    ctx.fillText('●'.repeat(wins)||'', alignRight? x+bw : x, 49);
   };
   const opp=OPPONENTS[Math.min(matchN,OPPONENTS.length-1)];
   bar(14, p1.hp, false, 'KOMBATTANT', wins1);

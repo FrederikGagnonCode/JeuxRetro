@@ -31,15 +31,15 @@
     <canvas id="game" width="440" height="500"></canvas>
     <div id="overlay">
       <h2 id="ovTitle">PAPERBOY</h2>
-      <p>Livre le journal aux abonnÃ©s (maisons claires) sans t'Ã©craser !</p>
-      <p>â† â†’ se dÃ©placer Â· â†‘ accÃ©lÃ©rer Â· â†“ freiner Â· Espace : lancer Ã  gauche</p>
-      <p>BoÃ®te aux lettres = +250 Â· perron = +100 Â· vitre d'un non-abonnÃ© = +150</p>
-      <p>Casse la vitre d'un abonnÃ© et tu le perds ! Ramasse les paquets ðŸ“°</p>
-      <p class="blink" style="margin-top:12px">â–¶ Cliquez ou Espace pour pÃ©daler</p>
+      <p>Livre le journal aux abonnés (maisons claires) sans t'écraser !</p>
+      <p>← → se déplacer · ↑ accélérer · ↓ freiner · Espace : lancer à gauche</p>
+      <p>Boîte aux lettres = +250 · perron = +100 · vitre d'un non-abonné = +150</p>
+      <p>Casse la vitre d'un abonné et tu le perds ! Ramasse les paquets 📰</p>
+      <p class="blink" style="margin-top:12px">▶ Cliquez ou Espace pour pédaler</p>
     </div>
   </div>
-  <div id="hint">â† â†’ bouger Â· â†‘ â†“ vitesse Â· Espace : lancer un journal vers les maisons Â· P = pause</div>
-  <a class="back" href="../index.html">â† Menu Arcade</a>
+  <div id="hint">← → bouger · ↑ ↓ vitesse · Espace : lancer un journal vers les maisons · P = pause</div>
+  <a class="back" href="../index.html">← Menu Arcade</a>
 
 <script>
 const cv = document.getElementById('game');
@@ -50,7 +50,7 @@ const ovTitle=document.getElementById('ovTitle');
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const rand=n=>Math.floor(Math.random()*n);
 
-const SIDEWALK=118;                 // bord droit du trottoir (maisons Ã  gauche)
+const SIDEWALK=118;                 // bord droit du trottoir (maisons à gauche)
 const HOUSE_H=96;
 let player, houses, papers, obstacles, bundles, parts, floats;
 let score, lives, papersLeft, dist, speed, nextHouseY, obsT;
@@ -60,7 +60,7 @@ let last=0;
 const keys={};
 function flash(m){ msg=m; msgT=2.4; }
 
-// â”€â”€ audio â”€â”€
+// ── audio ──
 let _ac=null;
 function ac(){ if(!_ac) _ac=new (window.AudioContext||window.webkitAudioContext)(); if(_ac.state==='suspended') _ac.resume(); return _ac; }
 function sfxThrow(){ const a=ac(),t=a.currentTime; const o=a.createOscillator(); o.type='square';
@@ -109,7 +109,7 @@ function throwPaper(){
   sfxThrow();
 }
 
-// â”€â”€ entrÃ©es â”€â”€
+// ── entrées ──
 document.addEventListener('keydown',e=>{
   const k=e.key.toLowerCase(); keys[k]=true;
   if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)) e.preventDefault();
@@ -122,18 +122,18 @@ document.addEventListener('keyup',e=>{ keys[e.key.toLowerCase()]=false; });
 overlay.addEventListener('click',()=>{ if(!running||over) newGame(); });
 cv.addEventListener('touchstart',e=>{ e.preventDefault(); if(!running||over) newGame(); },{passive:false});
 
-// â”€â”€ mise Ã  jour â”€â”€
+// ── mise à jour ──
 function update(dt){
   if(!running||paused||over) return;
   if(msgT>0) msgT-=dt;
 
   const p=player;
-  // vitesse contrÃ´lÃ©e
+  // vitesse contrôlée
   if(keys['arrowup']||keys['w']) speed=clamp(speed+120*dt,40,170);
   else if(keys['arrowdown']||keys['s']) speed=clamp(speed-160*dt,40,170);
   dist+=speed*dt;
 
-  // dÃ©filement du monde
+  // défilement du monde
   const sc=speed*dt;
   houses.forEach(h=>h.y+=sc);
   // recycle les maisons
@@ -163,7 +163,7 @@ function update(dt){
     p.x=clamp(p.x,SIDEWALK+16,W-18);
     if(p.inv>0) p.inv-=dt;
     // ramasser un paquet
-    for(const b of bundles){ if(Math.hypot(b.x-p.x,b.y-p.y)<18){ b.got=true; papersLeft+=5; sfxBox(); floatTxt(p.x,p.y-16,'ðŸ“° +5'); } }
+    for(const b of bundles){ if(Math.hypot(b.x-p.x,b.y-p.y)<18){ b.got=true; papersLeft+=5; sfxBox(); floatTxt(p.x,p.y-16,'📰 +5'); } }
     // collision obstacles
     if(p.inv<=0){
       for(const o of obstacles){
@@ -173,21 +173,21 @@ function update(dt){
     }
   }
 
-  // journaux lancÃ©s
+  // journaux lancés
   papers.forEach(pa=>{
     pa.x+=pa.vx*dt; pa.y+=pa.vy*dt+sc; pa.spin+=dt*12;
     if(pa.x<SIDEWALK){                          // zone des maisons
       const h=houses.find(hh=>pa.y>=hh.y && pa.y<hh.y+HOUSE_H);
       if(h){
-        const boxY=h.y+HOUSE_H-22;              // boÃ®te aux lettres prÃ¨s du trottoir
+        const boxY=h.y+HOUSE_H-22;              // boîte aux lettres près du trottoir
         if(pa.x>SIDEWALK-26 && Math.abs(pa.y-boxY)<12 && h.sub && !h.delivered){
           h.delivered=true; score+=250; sfxBox(); floatTxt(SIDEWALK-14,boxY,'+250','#4ecca3');
         } else if(pa.x>34){                     // perron / pelouse
           if(h.sub && !h.delivered){ h.delivered=true; score+=100; sfxBox(); floatTxt(pa.x,pa.y,'+100','#4ecca3'); }
-        } else {                                // faÃ§ade -> vitre
+        } else {                                // façade -> vitre
           if(!h.broken){
             h.broken=true; sfxGlass(); burst(pa.x,pa.y,'#cfe8f5',8);
-            if(h.sub){ h.sub=false; score=Math.max(0,score-100); floatTxt(pa.x,pa.y,'ABONNÃ‰ PERDU !','#ff5252'); }
+            if(h.sub){ h.sub=false; score=Math.max(0,score-100); floatTxt(pa.x,pa.y,'ABONNÉ PERDU !','#ff5252'); }
             else { score+=150; floatTxt(pa.x,pa.y,'+150','#ffd23a'); }
           }
         }
@@ -203,7 +203,7 @@ function update(dt){
   floats=floats.filter(f=>f.life>0);
 
   if(papersLeft<=0 && papers.length===0 && !bundles.length){
-    flash('Plus de journaux ! Ramasse un paquet ðŸ“°');
+    flash('Plus de journaux ! Ramasse un paquet 📰');
   }
 }
 function burst(x,y,col,n){ for(let i=0;i<n;i++){ const a=Math.random()*Math.PI*2,s=40+Math.random()*110;
@@ -213,12 +213,12 @@ function crash(){
   lives--; p.dead=true; running=false;
   ArcadeFX.die(cv, p.x, p.y, 'thud', ()=>{
     if(lives<=0){ over=true; if(window.ArcadeHi)ArcadeHi.submit(score);
-      showOverlay('FIN DE TOURNÃ‰E','Distance '+Math.floor(dist/10)+' m Â· Score : '+score); }
+      showOverlay('FIN DE TOURNÉE','Distance '+Math.floor(dist/10)+' m · Score : '+score); }
     else { player=makePlayer(); speed=70; running=true; }
   });
 }
 
-// â”€â”€ rendu â”€â”€
+// ── rendu ──
 function draw(){
   // rue
   ctx.fillStyle='#4a4a52'; ctx.fillRect(SIDEWALK,0,W-SIDEWALK,H);
@@ -256,14 +256,14 @@ function drawHouse(h){
   const y=h.y, hw=SIDEWALK-16;
   // pelouse
   ctx.fillStyle=h.sub?'#4a9a3e':'#3a6e34'; ctx.fillRect(0,y,hw,HOUSE_H);
-  // allÃ©e
+  // allée
   ctx.fillStyle='#8a8a90'; ctx.fillRect(hw-34,y+HOUSE_H-30,34,14);
-  // maison (les abonnÃ©s ont une faÃ§ade claire)
+  // maison (les abonnés ont une façade claire)
   const fx=4, fy=y+8, fw=hw-42, fh=HOUSE_H-34;
   ctx.fillStyle='rgba(0,0,0,.2)'; ctx.fillRect(fx+4,fy+4,fw,fh);
   ctx.fillStyle=h.sub?'#e8e0c8':h.col; ctx.fillRect(fx,fy,fw,fh);
   ctx.fillStyle=h.sub?'#c05a3a':'#3a3a44'; ctx.fillRect(fx-3,fy-9,fw+6,12);   // toit
-  // porte + fenÃªtre
+  // porte + fenêtre
   ctx.fillStyle='#5a3a22'; ctx.fillRect(fx+fw-16,fy+fh-22,12,22);
   if(h.broken){ ctx.fillStyle='#101018'; ctx.fillRect(fx+8,fy+10,18,14);
     ctx.strokeStyle='#cfe8f5'; ctx.lineWidth=1;
@@ -271,13 +271,13 @@ function drawHouse(h){
   else { ctx.fillStyle='#8fd0e8'; ctx.fillRect(fx+8,fy+10,18,14);
     ctx.strokeStyle='rgba(255,255,255,.6)'; ctx.lineWidth=1; ctx.strokeRect(fx+8,fy+10,18,14);
     ctx.beginPath(); ctx.moveTo(fx+17,fy+10); ctx.lineTo(fx+17,fy+24); ctx.stroke(); }
-  // boÃ®te aux lettres des abonnÃ©s
+  // boîte aux lettres des abonnés
   if(h.sub){
     const boxY=y+HOUSE_H-22;
     ctx.fillStyle='#5a5a66'; ctx.fillRect(SIDEWALK-24,boxY-2,3,12);
     ctx.fillStyle=h.delivered?'#4ecca3':'#c0392b'; ctx.fillRect(SIDEWALK-28,boxY-9,11,8);
     ctx.fillStyle='rgba(255,255,255,.4)'; ctx.fillRect(SIDEWALK-28,boxY-9,11,2.4);
-    if(h.delivered){ ctx.fillStyle='#fff'; ctx.font='bold 8px Arial'; ctx.textAlign='center'; ctx.fillText('âœ“',SIDEWALK-22.5,boxY-2.4); }
+    if(h.delivered){ ctx.fillStyle='#fff'; ctx.font='bold 8px Arial'; ctx.textAlign='center'; ctx.fillText('✓',SIDEWALK-22.5,boxY-2.4); }
   }
 }
 function drawObstacle(o){
@@ -337,8 +337,8 @@ function drawHUD(){
   ctx.fillStyle='rgba(0,0,0,.45)'; ctx.fillRect(0,0,W,17);
   ctx.textAlign='left'; ctx.font='bold 13px "Courier New",monospace';
   ctx.fillStyle='#fff'; ctx.fillText('SCORE '+score, 8, 13);
-  ctx.fillStyle='#ff5252'; ctx.fillText('â™¥'.repeat(Math.max(0,lives)), 150, 13);
-  ctx.fillStyle='#e8e0c8'; ctx.fillText('ðŸ“° '+papersLeft, 220, 13);
+  ctx.fillStyle='#ff5252'; ctx.fillText('♥'.repeat(Math.max(0,lives)), 150, 13);
+  ctx.fillStyle='#e8e0c8'; ctx.fillText('📰 '+papersLeft, 220, 13);
   ctx.textAlign='right'; ctx.fillStyle='#9cf'; ctx.fillText(Math.round(speed)+' km/h', W-8, 13);
   if(msgT>0){ ctx.textAlign='center'; ctx.fillStyle='rgba(0,0,0,.5)'; ctx.fillRect(0,H-18,W,18);
     ctx.fillStyle='#ffe28a'; ctx.font='12px "Courier New",monospace'; ctx.fillText(msg,W/2,H-5); }

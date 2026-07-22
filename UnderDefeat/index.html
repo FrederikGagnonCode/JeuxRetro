@@ -31,15 +31,15 @@
     <canvas id="game" width="420" height="520"></canvas>
     <div id="overlay">
       <h2 id="ovTitle">UNDER DEFEAT</h2>
-      <p>Pilote ton hÃ©licoptÃ¨re derriÃ¨re les lignes ennemies.</p>
-      <p>â† â†‘ â†“ â†’ : voler Â· Espace : mitrailler</p>
-      <p>Bouger de cÃ´tÃ© SANS tirer incline ton cap â€” tirer le verrouille !</p>
+      <p>Pilote ton hélicoptère derrière les lignes ennemies.</p>
+      <p>← ↑ ↓ → : voler · Espace : mitrailler</p>
+      <p>Bouger de côté SANS tirer incline ton cap — tirer le verrouille !</p>
       <p>X : obus de canon (zone, recharge lente)</p>
-      <p class="blink" style="margin-top:12px">â–¶ Cliquez ou Espace pour dÃ©coller</p>
+      <p class="blink" style="margin-top:12px">▶ Cliquez ou Espace pour décoller</p>
     </div>
   </div>
-  <div id="hint">FlÃ¨ches : voler (incline le cap sans tirer) Â· Espace : tir Â· X : canon Â· P = pause</div>
-  <a class="back" href="../index.html">â† Menu Arcade</a>
+  <div id="hint">Flèches : voler (incline le cap sans tirer) · Espace : tir · X : canon · P = pause</div>
+  <a class="back" href="../index.html">← Menu Arcade</a>
 
 <script>
 const cv = document.getElementById('game');
@@ -58,7 +58,7 @@ let last=0;
 const keys={};
 function flash(m){ msg=m; msgT=2.4; }
 
-// â”€â”€ audio â”€â”€
+// ── audio ──
 let _ac=null;
 function ac(){ if(!_ac) _ac=new (window.AudioContext||window.webkitAudioContext)(); if(_ac.state==='suspended') _ac.resume(); return _ac; }
 let rotor=null;
@@ -112,7 +112,7 @@ function spawnEnemy(){
   } else if(r<0.72){   // canon AA fixe
     enemies.push({ type:'aa', x:24+Math.random()*(W-48), y:-20, hp:3,
       shootCd:0.8+Math.random(), ground:true });
-  } else {             // hÃ©lico ennemi
+  } else {             // hélico ennemi
     const fromLeft=Math.random()<0.5;
     enemies.push({ type:'heli', x:fromLeft?-26:W+26, y:40+Math.random()*(H*0.4),
       vx:(fromLeft?1:-1)*(70+Math.random()*40), ph:Math.random()*6.28, hp:2,
@@ -139,7 +139,7 @@ function cannon(){
   bullets.push({ x:p.x, y:p.y-12, vx:Math.cos(a)*250, vy:Math.sin(a)*250, life:0.8, shell:true });
 }
 
-// â”€â”€ entrÃ©es â”€â”€
+// ── entrées ──
 document.addEventListener('keydown',e=>{
   const k=e.key.toLowerCase(); keys[k]=true;
   if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)) e.preventDefault();
@@ -152,7 +152,7 @@ document.addEventListener('keyup',e=>{ keys[e.key.toLowerCase()]=false; });
 overlay.addEventListener('click',()=>{ if(!running||over) newGame(); });
 cv.addEventListener('touchstart',e=>{ e.preventDefault(); if(!running||over) newGame(); },{passive:false});
 
-// â”€â”€ mise Ã  jour â”€â”€
+// ── mise à jour ──
 function update(dt){
   if(!running||paused||over) return;
   if(msgT>0) msgT-=dt;
@@ -261,7 +261,7 @@ function hitPlayer(){
   });
 }
 
-// â”€â”€ rendu â”€â”€
+// ── rendu ──
 function draw(){
   ctx.fillStyle='#5a6a48'; ctx.fillRect(0,0,W,H);
   decor.forEach(d=>drawDecor(d));
@@ -314,12 +314,12 @@ function rotorBlades(x,y,r){
 function drawHeli(p){
   ctx.save(); ctx.translate(p.x,p.y);
   ctx.save(); ctx.translate(10,14); ctx.globalAlpha=0.25; ctx.fillStyle='#000';
-  ctx.beginPath(); ctx.ellipse(0,0,13,6,p.ang*0.4,0,Math.PI*2); ctx.fill(); ctx.restore();  // ombre dÃ©calÃ©e
+  ctx.beginPath(); ctx.ellipse(0,0,13,6,p.ang*0.4,0,Math.PI*2); ctx.fill(); ctx.restore();  // ombre décalée
   ctx.rotate(p.ang);
   ctx.fillStyle='#4e6a3e'; ctx.beginPath(); ctx.ellipse(0,2,8,15,0,0,Math.PI*2); ctx.fill();  // fuselage
   ctx.fillStyle='#3a5230'; ctx.fillRect(-2.4,10,4.8,14);                                       // queue
   ctx.fillStyle='#5f7f4c'; ctx.beginPath(); ctx.ellipse(0,-4,5.6,7,0,0,Math.PI*2); ctx.fill();
-  ctx.fillStyle='#1c2a3a'; ctx.beginPath(); ctx.ellipse(0,-7,3.8,5,0,0,Math.PI*2); ctx.fill(); // verriÃ¨re
+  ctx.fillStyle='#1c2a3a'; ctx.beginPath(); ctx.ellipse(0,-7,3.8,5,0,0,Math.PI*2); ctx.fill(); // verrière
   ctx.fillStyle='#8fb0d0'; ctx.beginPath(); ctx.ellipse(-1,-8,1.6,2.6,0,0,Math.PI*2); ctx.fill();
   ctx.fillStyle='#2c3a22'; ctx.fillRect(-11,-2,22,3.4);                                        // moignons d'ailes
   rotorBlades(0,0,20);
@@ -361,7 +361,7 @@ function drawHUD(){
   ctx.fillStyle='rgba(0,0,0,.42)'; ctx.fillRect(0,0,W,17);
   ctx.textAlign='left'; ctx.font='bold 13px "Courier New",monospace';
   ctx.fillStyle='#fff'; ctx.fillText('SCORE '+score, 8, 13);
-  ctx.textAlign='center'; ctx.fillStyle='#ff5252'; ctx.fillText('â™¥'.repeat(Math.max(0,lives)), W/2, 13);
+  ctx.textAlign='center'; ctx.fillStyle='#ff5252'; ctx.fillText('♥'.repeat(Math.max(0,lives)), W/2, 13);
   // recharge du canon
   const cd=player?clamp(1-player.cannonCd/2.4,0,1):1;
   ctx.textAlign='right'; ctx.fillStyle=cd>=1?'#ffd23a':'#8a8aa0'; ctx.fillText('CANON', W-46, 13);

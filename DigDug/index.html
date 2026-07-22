@@ -31,14 +31,14 @@
     <canvas id="game" width="420" height="484"></canvas>
     <div id="overlay">
       <h2 id="ovTitle">DIG DUG</h2>
-      <p>Creusez et Ã©liminez tous les monstres</p>
-      <p>FlÃ¨ches : creuser Â· Espace : pompe</p>
-      <p>Gonflez-les jusqu'Ã  Ã©clater, ou Ã©crasez-les sous un rocher</p>
-      <p class="blink" style="margin-top:14px">â–¶ Cliquez ou Espace pour jouer</p>
+      <p>Creusez et éliminez tous les monstres</p>
+      <p>Flèches : creuser · Espace : pompe</p>
+      <p>Gonflez-les jusqu'à éclater, ou écrasez-les sous un rocher</p>
+      <p class="blink" style="margin-top:14px">▶ Cliquez ou Espace pour jouer</p>
     </div>
   </div>
-  <div id="hint">FlÃ¨ches : se dÃ©placer / creuser Â· Espace (maintenir) : pomper Â· P = pause</div>
-  <a class="back" href="../index.html">â† Menu Arcade</a>
+  <div id="hint">Flèches : se déplacer / creuser · Espace (maintenir) : pomper · P = pause</div>
+  <a class="back" href="../index.html">← Menu Arcade</a>
 
 <script>
 const cv = document.getElementById('game');
@@ -69,13 +69,13 @@ function setupLevel(){
   grid = [];
   for (let r=0;r<ROWS;r++){ grid.push(new Array(COLS).fill(1)); }
 
-  // puits de dÃ©part vertical
+  // puits de départ vertical
   for (let r=0;r<4;r++) grid[r][6] = 0;
 
   player = { col:6, row:0, px:cx(6), py:cy(0), facing:'down',
              moving:false, from:null, to:null, prog:0 };
 
-  // ennemis avec poche creusÃ©e
+  // ennemis avec poche creusée
   const defs = [
     {c:2, r:6, type:'pooka'}, {c:11,r:6, type:'fygar'},
     {c:3, r:11,type:'pooka'}, {c:10,r:11,type:'fygar'},
@@ -89,7 +89,7 @@ function setupLevel(){
       thinkT:0 };
   });
 
-  // rochers (cases de terre, terre en dessous au dÃ©part)
+  // rochers (cases de terre, terre en dessous au départ)
   const rdefs = [{c:4,r:4},{c:9,r:5},{c:8,r:9},{c:5,r:8},{c:11,r:10}];
   rocks = rdefs.filter(d=>grid[d.r][d.c]===1).map(d=>({
     col:d.c, row:d.r, py:cy(d.r), state:'idle', wob:0, prog:0, fromY:cy(d.r)
@@ -116,7 +116,7 @@ function showOverlay(title, sub){
 }
 function hideOverlay(){ overlay.style.display='none'; }
 
-// ---- entrÃ©es ----
+// ---- entrées ----
 document.addEventListener('keydown', e=>{
   const k = e.key.toLowerCase();
   keys[k]=true;
@@ -139,13 +139,13 @@ function updatePump(){
   const space = keys[' '];
 
   if (space && !player.moving){
-    // viser : une flÃ¨che maintenue rÃ©oriente le harpon
+    // viser : une flèche maintenue réoriente le harpon
     if (keys['arrowleft']) player.facing='left';
     else if (keys['arrowright']) player.facing='right';
     else if (keys['arrowup']) player.facing='up';
     else if (keys['arrowdown']) player.facing='down';
 
-    // (re)calculer la portÃ©e Ã  chaque frame, Ã  travers les galeries
+    // (re)calculer la portée à chaque frame, à travers les galeries
     const [dx,dy] = DIRS[player.facing];
     const cells=[];
     let c=player.col, r=player.row;
@@ -157,7 +157,7 @@ function updatePump(){
     if (!harpoon){ harpoon = { dir:player.facing, cells, hooked:null }; inflTimer=0; }
     else { harpoon.dir=player.facing; harpoon.cells=cells; }
 
-    // accrocher un monstre devant si pas dÃ©jÃ  accrochÃ©
+    // accrocher un monstre devant si pas déjà accroché
     if (!harpoon.hooked){
       for (const cell of cells){
         const en = enemies.find(e=>e.col===cell.c && e.row===cell.r);
@@ -165,7 +165,7 @@ function updatePump(){
       }
     }
 
-    // gonfler le monstre accrochÃ©
+    // gonfler le monstre accroché
     if (harpoon.hooked){
       const en = harpoon.hooked;
       en.pumped=true; en.deflateT=0;
@@ -184,14 +184,14 @@ function updatePump(){
     harpoon=null;
   }
 
-  // dÃ©gonflage progressif des monstres relÃ¢chÃ©s
+  // dégonflage progressif des monstres relâchés
   enemies.forEach(en=>{
     const beingPumped = harpoon && harpoon.hooked===en;
     if (en.inflate>0 && !beingPumped){
       en.deflateT++;
       if (en.deflateT % 18 === 0){ en.inflate--; if (en.inflate<=0){ en.pumped=false; } }
     } else if (en.pumped && !beingPumped && en.inflate<=0){
-      en.pumped=false; // relÃ¢chÃ© avant tout gonflage : ne pas le figer
+      en.pumped=false; // relâché avant tout gonflage : ne pas le figer
     }
   });
 }
@@ -232,7 +232,7 @@ function enemyDist(en){ return Math.abs(en.col-player.col)+Math.abs(en.row-playe
 
 function updateEnemies(){
   enemies.forEach(en=>{
-    if (en.inflate>0 || en.pumped) return; // gonflÃ© / accrochÃ© = bloquÃ©
+    if (en.inflate>0 || en.pumped) return; // gonflé / accroché = bloqué
 
     // souffle du Fygar
     if (en.type==='fygar'){
@@ -285,10 +285,10 @@ function updateEnemies(){
       choice = opts[0];
     } else if (tunnelOpts.length){
       tunnelOpts.sort((a,b)=>a.dist-b.dist);
-      // 70% vers le meilleur, sinon au hasard ; Ã©viter de faire demi-tour si possible
+      // 70% vers le meilleur, sinon au hasard ; éviter de faire demi-tour si possible
       choice = (Math.random()<0.7) ? tunnelOpts[0]
                : tunnelOpts[Math.floor(Math.random()*tunnelOpts.length)];
-      // passage fantÃ´me occasionnel si coincÃ© loin
+      // passage fantôme occasionnel si coincé loin
       if (tunnelOpts[0].dist >= enemyDist(en) && Math.random()<0.005){
         en.ghost=true; en.ghostCells=2+Math.floor(Math.random()*3);
         opts.sort((a,b)=>a.dist-b.dist); choice=opts[0];
@@ -319,7 +319,7 @@ function updateRocks(){
       }
       rk.prog += 0.2;
       rk.py = lerp(cy(rk.from), cy(rk.to), Math.min(rk.prog,1));
-      crushFalling(rk);   // Ã©crase TOUT ce qui se trouve sur son passage
+      crushFalling(rk);   // écrase TOUT ce qui se trouve sur son passage
       if (rk.prog>=1){
         rk.row=rk.to;
         if (rk.row+1>=ROWS || grid[rk.row+1][rk.col]===1){ rk.state='gone'; }
@@ -329,7 +329,7 @@ function updateRocks(){
   });
   rocks = rocks.filter(r=>r.state!=='gone');
 }
-// dÃ©tection continue, en pixels : tous les monstres traversÃ©s meurent
+// détection continue, en pixels : tous les monstres traversés meurent
 function crushFalling(rk){
   const rx = cx(rk.col), ry = rk.py;
   enemies = enemies.filter(en=>{
@@ -373,12 +373,12 @@ function loseLife(){
 
 // particules
 let parts=[];
-const FIRE_T = 34;                          // durÃ©e du souffle (frames)
+const FIRE_T = 34;                          // durée du souffle (frames)
 function burst(x,y,color,n){ n=n||14;
   for(let i=0;i<n;i++){ const a=Math.random()*Math.PI*2,s=Math.random()*3.5+1;
     parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:18+Math.random()*14,color}); } }
 
-// braises projetÃ©es le long du souffle, qui s'envolent
+// braises projetées le long du souffle, qui s'envolent
 function spawnEmbers(en){
   const f = en.fire; if (!f) return;
   const dir = DIRS[f.dir][0];
@@ -475,7 +475,7 @@ function drawSprite(cx, cy, rows, pal, px, flip){
   }
 }
 
-// Dig Dug : combinaison blanche, visiÃ¨re cyan, bottes rouges
+// Dig Dug : combinaison blanche, visière cyan, bottes rouges
 const SPR_DIGDUG = [
   "..WWWWW..",
   ".WWWWWWW.",
@@ -504,7 +504,7 @@ const SPR_POOKA = [
 ];
 const PAL_POOKA = { R:'#e23b2e', O:'#ff9a3c', W:'#ffffff', K:'#101418' };
 
-// Fygar : dragon vert, yeux blancs, dents, crÃªte jaune, pattes rouges
+// Fygar : dragon vert, yeux blancs, dents, crête jaune, pattes rouges
 const SPR_FYGAR = [
   "...YgY...",
   "..gGGGg..",
@@ -522,7 +522,7 @@ const PAL_FYGAR = { G:'#3fae45', g:'#1c5e22', W:'#ffffff', K:'#101418', T:'#eaff
 function drawEnemy(en){
   const x=en.px, y=en.py;
   if (en.ghost){
-    // yeux fantÃ´mes (traverse la terre)
+    // yeux fantômes (traverse la terre)
     ctx.fillStyle='#fff';
     ctx.beginPath(); ctx.arc(x-5,y,4,0,Math.PI*2); ctx.arc(x+5,y,4,0,Math.PI*2); ctx.fill();
     ctx.fillStyle='#1565c0';
@@ -532,7 +532,7 @@ function drawEnemy(en){
   const px = 3 + en.inflate;                    // gonfle = pixels plus gros
   if (en.type==='pooka') drawSprite(x,y,SPR_POOKA,PAL_POOKA,px,false);
   else                   drawSprite(x,y,SPR_FYGAR,PAL_FYGAR,px,false);
-  // halo blanc quand prÃªt Ã  Ã©clater
+  // halo blanc quand prêt à éclater
   if (en.inflate>=3){
     ctx.globalAlpha=0.25; ctx.fillStyle='#fff';
     ctx.beginPath(); ctx.arc(x,y,px*5,0,Math.PI*2); ctx.fill();
@@ -545,16 +545,16 @@ function drawFire(en){
   const dir = DIRS[f.dir][0];              // -1 (gauche) ou 1 (droite)
   const y = en.py;
   const x0 = en.px + dir*CELL*0.45;        // gueule du Fygar
-  const age = FIRE_T - f.t;                // 0 au dÃ©part â†’ FIRE_T Ã  la fin
-  const grow = Math.min(1, age/5);         // s'Ã©tend en ~5 frames
-  const fade = Math.min(1, f.t/9);         // se rÃ©tracte sur les derniÃ¨res frames
+  const age = FIRE_T - f.t;                // 0 au départ → FIRE_T à la fin
+  const grow = Math.min(1, age/5);         // s'étend en ~5 frames
+  const fade = Math.min(1, f.t/9);         // se rétracte sur les dernières frames
   const x1 = x0 + dir*(f.len*CELL)*grow;   // pointe de la flamme
   const t = performance.now()*0.018;
 
   ctx.save();
   ctx.globalCompositeOperation = 'lighter';   // lueur additive
 
-  // 3 couches : rouge large â†’ orange â†’ cÅ“ur jaune/blanc
+  // 3 couches : rouge large → orange → cœur jaune/blanc
   const layers = [
     {col:'rgba(213,40,30,0.5)',   h:CELL*0.5 },
     {col:'rgba(255,140,0,0.6)',   h:CELL*0.36},
@@ -564,7 +564,7 @@ function drawFire(en){
     const L = layers[li];
     const steps = 14;
     ctx.beginPath();
-    // bord supÃ©rieur (langues de feu ondulantes)
+    // bord supérieur (langues de feu ondulantes)
     for (let i=0;i<=steps;i++){
       const u = i/steps;
       const px = x0 + (x1-x0)*u;
@@ -574,7 +574,7 @@ function drawFire(en){
       const hh = L.h*fade*(0.28+env)*wob;
       if (i===0) ctx.moveTo(px, y-hh); else ctx.lineTo(px, y-hh);
     }
-    // bord infÃ©rieur (retour)
+    // bord inférieur (retour)
     for (let i=steps;i>=0;i--){
       const u = i/steps;
       const px = x0 + (x1-x0)*u;
@@ -593,7 +593,7 @@ function drawFire(en){
     ctx.fill();
   }
 
-  // halo Ã  la gueule
+  // halo à la gueule
   const glow = ctx.createRadialGradient(x0,y,0, x0,y, CELL*0.7*fade);
   glow.addColorStop(0,'rgba(255,230,150,0.7)');
   glow.addColorStop(1,'rgba(255,120,0,0)');
@@ -604,7 +604,7 @@ function drawFire(en){
 }
 
 function drawPlayer(){
-  const flip = (player.facing==='left');        // sprite orientÃ© Ã  droite par dÃ©faut
+  const flip = (player.facing==='left');        // sprite orienté à droite par défaut
   drawSprite(player.px, player.py, SPR_DIGDUG, PAL_DIGDUG, 3, flip);
 }
 
@@ -618,7 +618,7 @@ function drawHUD(){
 }
 
 function loop(){ update(); draw(); if(window.ArcadeHi)ArcadeHi.submit(score); requestAnimationFrame(loop); }
-setupLevel();   // prÃ©pare le plateau pour le rendu derriÃ¨re l'Ã©cran d'accueil
+setupLevel();   // prépare le plateau pour le rendu derrière l'écran d'accueil
 loop();
 </script>
 <script src="../music/playlist.js?v=2"></script>

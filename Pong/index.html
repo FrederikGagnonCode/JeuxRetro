@@ -31,13 +31,13 @@
     <canvas id="game" width="700" height="440"></canvas>
     <div id="overlay">
       <h2 id="ovTitle">PONG</h2>
-      <p>Premier Ã  <b>7</b> points gagne</p>
-      <p>Souris ou â†‘ / â†“ (ou W / S)</p>
-      <p class="blink" style="margin-top:14px">â–¶ Cliquez ou Espace pour jouer</p>
+      <p>Premier à <b>7</b> points gagne</p>
+      <p>Souris ou ↑ / ↓ (ou W / S)</p>
+      <p class="blink" style="margin-top:14px">▶ Cliquez ou Espace pour jouer</p>
     </div>
   </div>
-  <div id="hint">Joueur (gauche) vs Ordinateur (droite) Â· P = pause</div>
-  <a class="back" href="../index.html">â† Menu Arcade</a>
+  <div id="hint">Joueur (gauche) vs Ordinateur (droite) · P = pause</div>
+  <a class="back" href="../index.html">← Menu Arcade</a>
 
 <script>
 const cv = document.getElementById('game');
@@ -60,7 +60,7 @@ const keys = {};
 function resetBall(dir){
   ball.x = W/2; ball.y = H/2;
   ball.speed = 6;
-  const angle = (Math.random()*0.5 - 0.25) * Math.PI; // -45Â°..45Â°
+  const angle = (Math.random()*0.5 - 0.25) * Math.PI; // -45°..45°
   ball.vx = dir * ball.speed * Math.cos(angle);
   ball.vy = ball.speed * Math.sin(angle);
 }
@@ -77,11 +77,11 @@ function newGame(){
 function showOverlay(title, sub){
   ovTitle.textContent = title;
   overlay.style.display = 'flex';
-  overlay.querySelector('p:nth-of-type(1)').innerHTML = sub || 'Premier Ã  <b>7</b> points gagne';
+  overlay.querySelector('p:nth-of-type(1)').innerHTML = sub || 'Premier à <b>7</b> points gagne';
 }
 function hideOverlay(){ overlay.style.display = 'none'; }
 
-// ---- entrÃ©es ----
+// ---- entrées ----
 document.addEventListener('keydown', e => {
   keys[e.key.toLowerCase()] = true;
   if (paused && ['arrowup','arrowdown','w','s'].includes(e.key.toLowerCase())){ paused = false; }
@@ -122,7 +122,7 @@ function update(){
   if (keys['arrowdown'] || keys['s']) player.y += PADDLE_SPEED;
   player.y = clamp(player.y, 0, H - PADDLE_H);
 
-  // IA : suit la balle avec une vitesse limitÃ©e (imparfaite)
+  // IA : suit la balle avec une vitesse limitée (imparfaite)
   const target = ball.y - PADDLE_H/2;
   const diff = target - cpu.y;
   const cpuSpeed = 5.4;
@@ -164,7 +164,7 @@ function bounce(p){
   const dir = (p === player) ? 1 : -1;
   ball.vx = dir * ball.speed * Math.cos(angle);
   ball.vy = ball.speed * Math.sin(angle);
-  // Ã©vite que la balle reste collÃ©e
+  // évite que la balle reste collée
   ball.x = (p === player) ? p.x + PADDLE_W + ball.r : p.x - ball.r;
 }
 
@@ -172,7 +172,7 @@ function point(dir){
   if (player.score >= WIN || cpu.score >= WIN){
     over = true; running = false;
     const win = player.score > cpu.score;
-    showOverlay(win ? 'GAGNÃ‰ ! ðŸ†' : 'PERDUâ€¦',
+    showOverlay(win ? 'GAGNÉ ! 🏆' : 'PERDU…',
       win ? 'Vous avez battu l\'ordinateur !' : 'L\'ordinateur l\'emporte.');
     return;
   }
@@ -183,7 +183,7 @@ function point(dir){
 function draw(){
   ctx.clearRect(0,0,W,H);
 
-  // filet pointillÃ©
+  // filet pointillé
   ctx.strokeStyle = '#333';
   ctx.lineWidth = 3;
   ctx.setLineDash([10, 14]);

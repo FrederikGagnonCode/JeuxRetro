@@ -20,14 +20,14 @@ const W = 800, H = 560;
 const GY = 340;          // niveau du sol (pieds)
 const GB = 404;          // bas de la bande de sol / plafond du souterrain
 const UF = 520;          // plancher du souterrain (pieds)
-const NUM = 32;          // nombre d'Ã©crans
+const NUM = 32;          // nombre d'écrans
 const SPEED = 220, G = 2000, JUMP = 500;
 const TOTAL_TIME = 20 * 60; // 20 minutes
 
-// ---------- Ã‰crans ----------
+// ---------- Écrans ----------
 // t: plain | logs | hole | vine | croc | quick | snake | fire | treasure
 const SCREENS = [
-  {t:'plain'},                        //0 dÃ©part
+  {t:'plain'},                        //0 départ
   {t:'logs', n:1},                    //1
   {t:'hole'},                         //2
   {t:'vine'},                         //3
@@ -64,7 +64,7 @@ const TOTAL_TREASURES = SCREENS.filter(s => s.t === 'treasure').length;
 const SCR = i => SCREENS[((i % NUM) + NUM) % NUM];
 const SI  = i => ((i % NUM) + NUM) % NUM;
 
-// ---------- EntrÃ©es ----------
+// ---------- Entrées ----------
 const keys = {}, jp = new Set();
 addEventListener('keydown', e => {
   if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space'].includes(e.code)) e.preventDefault();
@@ -80,7 +80,7 @@ addEventListener('keyup', e => { keys[e.code] = false; });
 addEventListener('blur', () => {
   for (const k in keys) keys[k] = false;
   jp.clear();
-  if (st && st.started && !st.over) st.paused = true; // pause auto en quittant la fenÃªtre
+  if (st && st.started && !st.over) st.paused = true; // pause auto en quittant la fenêtre
 });
 const kLeft  = () => keys.ArrowLeft  || keys.KeyA;
 const kRight = () => keys.ArrowRight || keys.KeyD;
@@ -110,12 +110,12 @@ const sHit   = () => beep(110, 0.12, 'sawtooth', 0.07);
 const sDeath = () => beep(500, 0.6, 'sawtooth', 0.09, 60);
 function sTreasure(){ [523,659,784,1046].forEach((f,i)=>setTimeout(()=>beep(f,0.14,'square',0.07), i*110)); }
 
-// ---------- Ã‰tat ----------
+// ---------- État ----------
 let hiscore = 0;
 try { hiscore = +localStorage.getItem('pitfallHiscore') || 0; } catch(e){}
 function saveHiscore(){
   const sc = Math.floor(st.score);
-  if(window.ArcadeHi) ArcadeHi.submit(sc);       // record partagÃ© (score final, plus haut = mieux)
+  if(window.ArcadeHi) ArcadeHi.submit(sc);       // record partagé (score final, plus haut = mieux)
   if (sc > hiscore){
     hiscore = sc; st.newHi = true;
     try { localStorage.setItem('pitfallHiscore', hiscore); } catch(e){}
@@ -123,7 +123,7 @@ function saveHiscore(){
 }
 let st;
 function reset(){
-  if(window.ArcadeHi) ArcadeHi.reset();          // nouvelle partie : rÃ©arme le record
+  if(window.ArcadeHi) ArcadeHi.reset();          // nouvelle partie : réarme le record
 
   st = {
     started:false, over:false, win:false, paused:false, newHi:false,
@@ -136,8 +136,8 @@ function reset(){
 }
 reset();
 
-// ---------- MÃ©caniques dynamiques (sans Ã©tat : tout dÃ©rive du temps) ----------
-// gueules dÃ©calÃ©es : elles s'ouvrent en vague, jamais toutes en mÃªme temps
+// ---------- Mécaniques dynamiques (sans état : tout dérive du temps) ----------
+// gueules décalées : elles s'ouvrent en vague, jamais toutes en même temps
 const crocOpen  = (t, i) => (((t + i * 1.3) % 4) < 1.0);
 function quickOpen(t){ const o = (Math.sin(t * 0.8) + 1) / 2; return 100 * Math.max(0, (o - 0.3) / 0.7); }
 function vineState(t){
@@ -162,7 +162,7 @@ function logsFor(si, t){
 }
 const scorpOn = si => SCR(si).t !== 'hole';
 function scorpX(si, t){
-  // amplitude rÃ©duite sur les Ã©crans Ã  mur pour que le scorpion ne le traverse pas
+  // amplitude réduite sur les écrans à mur pour que le scorpion ne le traverse pas
   const amp = wallOn(si) ? 215 : 250;
   return 400 + amp * Math.sin(t * 0.45 + si * 2.1);
 }
@@ -179,7 +179,7 @@ function surfaceAt(x, si, t){
     case 'quick': { const oh = quickOpen(t); return (oh > 6 && Math.abs(x - 400) < oh) ? 'deadly' : 'solid'; }
     case 'croc':
       if (x > 250 && x < 560){
-        // 28 = demi-tÃªte (18) + demi-personnage (10) : il suffit qu'un pied touche la tÃªte
+        // 28 = demi-tête (18) + demi-personnage (10) : il suffit qu'un pied touche la tête
         for (let i = 0; i < CROC_HEADS.length; i++){
           const hc = CROC_HEADS[i];
           if (Math.abs(x - hc) <= 28) return crocOpen(t, i) ? 'deadly' : 'solid';
@@ -197,11 +197,11 @@ function overlap(ax, ay, aw, ah, bx, by, bw, bh){
 
 function die(){
   if (st.deadT > 0) return;
-  st.deadT = 3; st.vine = false; st.climbing = false;     // sÃ©quence de mort de 3 s
+  st.deadT = 3; st.vine = false; st.climbing = false;     // séquence de mort de 3 s
   ArcadeFX.die(cv, st.x, st.y-20, 'fall');                 // animation + son
 }
 
-// ---------- Mise Ã  jour ----------
+// ---------- Mise à jour ----------
 function update(dt){
   if (!st.started || st.over || st.paused) { jp.clear(); return; }
   st.t += dt;
@@ -209,7 +209,7 @@ function update(dt){
   if (st.time <= 0){ st.time = 0; st.over = true; saveHiscore(); jp.clear(); return; }
   st.vineCD = Math.max(0, st.vineCD - dt);
 
-  // sÃ©quence de mort
+  // séquence de mort
   if (st.deadT > 0){
     st.deadT -= dt;
     if (st.deadT <= 0){
@@ -236,14 +236,14 @@ function update(dt){
     jp.clear(); return;
   }
 
-  // ----- Ã©chelle -----
+  // ----- échelle -----
   if (st.climbing){
     st.vx = 0; st.vy = 0;
     if (kUp())   st.y -= 130 * dt;
     if (kDown()) st.y += 130 * dt;
     if (jp.has('Space')){ st.climbing = false; st.vy = -350; }
     if (st.y <= GY){
-      // au sommet : on reste accrochÃ©, on sort d'un pas de cÃ´tÃ©
+      // au sommet : on reste accroché, on sort d'un pas de côté
       st.y = GY;
       if (kLeft())  { st.climbing = false; st.x = 352; st.grounded = true; }
       if (kRight()) { st.climbing = false; st.x = 448; st.grounded = true; }
@@ -252,7 +252,7 @@ function update(dt){
     jp.clear(); return;
   }
 
-  // ----- dÃ©placement horizontal -----
+  // ----- déplacement horizontal -----
   if (st.grounded) st.vx = dirIn * SPEED;
   else if (dirIn !== 0) st.vx += (dirIn * SPEED - st.vx) * Math.min(1, 5 * dt);
   st.x += st.vx * dt;
@@ -276,7 +276,7 @@ function update(dt){
     st.grounded = false;
   }
 
-  // pÃ©nalitÃ© de chute dans un trou
+  // pénalité de chute dans un trou
   if (!st.climbing && st.vy > 0 && prevY <= GB && st.y > GB){
     st.score = Math.max(0, st.score - 100);
     sFall();
@@ -289,7 +289,7 @@ function update(dt){
   // plancher du souterrain
   if (st.y >= UF){ st.y = UF; st.vy = 0; st.grounded = true; }
 
-  // re-vÃ©rifie la surface quand on est posÃ© au sol (croco qui ouvre, sables qui s'ouvrent...)
+  // re-vérifie la surface quand on est posé au sol (croco qui ouvre, sables qui s'ouvrent...)
   if (st.grounded && st.y === GY){
     const s = surfaceAt(st.x, st.screen, st.t);
     if (s === 'none') st.grounded = false;
@@ -304,22 +304,22 @@ function update(dt){
     }
   }
 
-  // changement d'Ã©cran
+  // changement d'écran
   if (st.x > W - 8){ st.screen++; st.x = 10; }
   if (st.x < 8)    { st.screen--; st.x = W - 10; }
 
   const si = SI(st.screen);
   const s2 = SCR(st.screen);
 
-  // ----- Ã©chelle : monter / descendre -----
+  // ----- échelle : monter / descendre -----
   if (s2.t === 'hole'){
     // depuis le souterrain
     if (st.y > GB && Math.abs(st.x - 400) < 22 && kUp()){ st.climbing = true; st.x = 400; }
-    // depuis la surface : zone Ã©largie autour du trou
+    // depuis la surface : zone élargie autour du trou
     if (st.grounded && st.y === GY && Math.abs(st.x - 400) < 60 && kDown()){
       st.climbing = true; st.x = 400; st.y = GY + 4;
     }
-    // rattraper l'Ã©chelle en tombant dans le puits si â†‘ ou â†“ est enfoncÃ©
+    // rattraper l'échelle en tombant dans le puits si ↑ ou ↓ est enfoncé
     if (!st.grounded && st.y > GY + 6 && st.y < UF - 4 && Math.abs(st.x - 400) < 26 && (kUp() || kDown())){
       st.climbing = true; st.x = 400; st.vx = 0; st.vy = 0;
     }
@@ -349,7 +349,7 @@ function update(dt){
       if (overlap(st.x - 10, st.y - 44, 20, 44, sx - 17, GY - 24, 34, 24)) die();
     }
     if (s2.t === 'fire'){
-      // boÃ®te rÃ©duite (22Ã—24) : seul le cÅ“ur de la flamme est mortel, pas la pointe vacillante
+      // boîte réduite (22×24) : seul le cœur de la flamme est mortel, pas la pointe vacillante
       if (overlap(st.x - 10, st.y - 44, 20, 44, 470 - 11, GY - 24, 22, 24)) die();
     }
   }
@@ -360,7 +360,7 @@ function update(dt){
     if (overlap(st.x - 10, st.y - 44, 20, 44, sx - 15, UF - 18, 30, 18)) die();
   }
 
-  // ----- trÃ©sor -----
+  // ----- trésor -----
   if (s2.t === 'treasure' && !st.collected.has(si)){
     if (overlap(st.x - 10, st.y - 44, 20, 44, 620 - 14, GY - 30, 28, 30)){
       st.collected.add(si);
@@ -405,18 +405,18 @@ function drawHarry(px, py, dir, mode, phase){
 
   // ---- torse (chemise) ----
   rect(-7, -38, 14, 22, shirt);
-  rect(3, -38, 4, 22, shirtSh);   // ombre latÃ©rale
-  rect(-7, -38, 14, 3, shirtHi);  // Ã©paules Ã©clairÃ©es
+  rect(3, -38, 4, 22, shirtSh);   // ombre latérale
+  rect(-7, -38, 14, 3, shirtHi);  // épaules éclairées
   // ceinture + boucle
   rect(-7, -19, 14, 3, belt);
   rect(-2, -19, 4, 3, buckle);
 
   // ---- bras ----
   if (mode === 'swing' || mode === 'climb'){
-    rect(-3, -54, 5, 17, shirt);  // bras levÃ©s (manche)
+    rect(-3, -54, 5, 17, shirt);  // bras levés (manche)
     rect(-3, -59, 5, 6, skin);    // mains
   } else if (mode === 'run'){
-    rect(-10, -35, 6, 5, shirtSh); // bras arriÃ¨re
+    rect(-10, -35, 6, 5, shirtSh); // bras arrière
     rect(3, -36, 10, 5, shirt);    // bras avant (manche)
     rect(12, -36, 4, 5, skin);     // main
   } else {
@@ -424,11 +424,11 @@ function drawHarry(px, py, dir, mode, phase){
     rect(5, -23, 4, 4, skin);      // main
   }
 
-  // ---- tÃªte + visage ----
+  // ---- tête + visage ----
   rect(-5, -48, 11, 12, skin);
   rect(3, -48, 3, 12, skinSh);     // ombre du visage
-  rect(-6, -47, 2, 9, hair);       // cheveux Ã  l'arriÃ¨re
-  rect(1, -45, 2, 2, '#1a1a1a');   // Å“il
+  rect(-6, -47, 2, 9, hair);       // cheveux à l'arrière
+  rect(1, -45, 2, 2, '#1a1a1a');   // œil
   rect(5, -43, 1, 3, skinSh);      // nez
 
   // ---- chapeau d'aventurier ----
@@ -446,11 +446,11 @@ function drawMini(idx, bx, by, bw, bh, current){
   const s = SCR(idx);
   const gy = by + bh - 11;            // ligne de sol dans la vignette
   const cx = bx + bw / 2;
-  // ciel + canopÃ©e + sol
+  // ciel + canopée + sol
   rect(bx, by, bw, bh, '#3a7a1a');
   rect(bx, by, bw, 3, '#0d4a0d');
   rect(bx, gy, bw, by + bh - gy, '#c2a541');
-  // Ã©lÃ©ments selon le type
+  // éléments selon le type
   if (s.t === 'hole'){
     rect(cx - 5, gy, 10, by + bh - gy, '#000');
   } else if (s.t === 'vine'){
@@ -476,7 +476,7 @@ function drawMini(idx, bx, by, bw, bh, current){
     rect(cx - 4, gy - 9, 8, 8, got ? '#4a4a3a' : col);
     if (!got) rect(cx - 1, gy - 7, 2, 2, '#fff');
   }
-  // danger additionnel (serpent sur un Ã©cran trÃ©sor)
+  // danger additionnel (serpent sur un écran trésor)
   if (s.snake && s.t !== 'snake') rect(cx - 15, gy - 4, 8, 4, '#0e0e0e');
   // bordure
   ctx.strokeStyle = current ? '#f8e060' : 'rgba(0,0,0,0.55)';
@@ -491,7 +491,7 @@ function drawScene(){
 
   // ciel / fond jungle
   rect(0, 0, W, H, '#4a9e22');
-  // canopÃ©e
+  // canopée
   rect(0, 0, W, 58, '#0d4a0d');
   ctx.fillStyle = '#0d4a0d';
   for (let x = 0; x < W; x += 40){
@@ -521,10 +521,10 @@ function drawScene(){
     }
   }
 
-  // Ã©lÃ©ments selon le type d'Ã©cran
+  // éléments selon le type d'écran
   if (s.t === 'hole'){
     rect(370, GY, 60, GB - GY, '#000');
-    // Ã©chelle
+    // échelle
     ctx.strokeStyle = '#c8a040'; ctx.lineWidth = 4;
     ctx.beginPath();
     ctx.moveTo(390, GY + 6); ctx.lineTo(390, UF);
@@ -563,12 +563,12 @@ function drawScene(){
     for (let i = 0; i < CROC_HEADS.length; i++){
       const hc = CROC_HEADS[i];
       const open = crocOpen(t, i);
-      // tÃªte de croco
+      // tête de croco
       rect(hc - 18, GY, 36, 16, '#176617');
-      rect(hc - 18, GY - 4, 8, 4, '#176617'); // bosse de l'Å“il
+      rect(hc - 18, GY - 4, 8, 4, '#176617'); // bosse de l'œil
       rect(hc - 16, GY - 3, 3, 3, '#fff');
       if (open){
-        // mÃ¢choire ouverte
+        // mâchoire ouverte
         ctx.fillStyle = '#176617';
         ctx.beginPath(); ctx.moveTo(hc + 18, GY); ctx.lineTo(hc - 14, GY); ctx.lineTo(hc + 14, GY - 16); ctx.closePath(); ctx.fill();
         ctx.fillStyle = '#fff';
@@ -588,7 +588,7 @@ function drawScene(){
   }
 
   if (s.t === 'fire'){
-    // bÃ»ches
+    // bûches
     rect(452, GY - 6, 36, 6, '#5a3a1a');
     rect(452, GY - 3, 36, 3, '#3a2410');
     rect(456, GY - 5, 28, 2, '#7a4a22');
@@ -596,10 +596,10 @@ function drawScene(){
     // flamme externe
     ctx.fillStyle = '#e84810';
     ctx.beginPath(); ctx.moveTo(454, GY - 6); ctx.lineTo(470, GY - 30 - fl); ctx.lineTo(486, GY - 6); ctx.closePath(); ctx.fill();
-    // flamme intermÃ©diaire
+    // flamme intermédiaire
     ctx.fillStyle = '#f8a020';
     ctx.beginPath(); ctx.moveTo(460, GY - 6); ctx.lineTo(470, GY - 22 - fl2); ctx.lineTo(480, GY - 6); ctx.closePath(); ctx.fill();
-    // cÅ“ur jaune
+    // cœur jaune
     ctx.fillStyle = '#f8e060';
     ctx.beginPath(); ctx.moveTo(465, GY - 6); ctx.lineTo(470, GY - 13 + fl); ctx.lineTo(475, GY - 6); ctx.closePath(); ctx.fill();
   }
@@ -646,38 +646,38 @@ function drawScene(){
     ctx.save();
     ctx.translate(sx, UF);
     ctx.scale(dir, 1);
-    // pattes animÃ©es
+    // pattes animées
     ctx.strokeStyle = bodySh; ctx.lineWidth = 2;
     for (let i = 0; i < 4; i++){
       const lx = -9 + i * 5;
       const wig = (i % 2 === lf) ? 2 : -2;
       ctx.beginPath(); ctx.moveTo(lx, -5); ctx.lineTo(lx + wig, 0); ctx.stroke();
     }
-    // queue recourbÃ©e
+    // queue recourbée
     ctx.strokeStyle = body; ctx.lineWidth = 4; ctx.lineCap = 'round';
     ctx.beginPath();
     ctx.moveTo(-10, -7);
     ctx.quadraticCurveTo(-21, -11, -17, -21);   // segment montant
-    ctx.quadraticCurveTo(-14, -28, -7, -23);    // recourbÃ©e vers l'avant
+    ctx.quadraticCurveTo(-14, -28, -7, -23);    // recourbée vers l'avant
     ctx.stroke();
     ctx.lineCap = 'butt';
     rect(-9, -26, 5, 5, sting);                 // dard
-    // corps segmentÃ©
+    // corps segmenté
     rect(-12, -9, 18, 7, body);
     rect(-12, -9, 18, 2, bodyHi);               // reflet
     rect(-12, -3, 18, 1, bodySh);               // ombre
     ctx.strokeStyle = bodySh; ctx.lineWidth = 1;
     for (let x = -8; x < 6; x += 4){ ctx.beginPath(); ctx.moveTo(x, -9); ctx.lineTo(x, -2); ctx.stroke(); }
-    // tÃªte
+    // tête
     rect(5, -9, 8, 7, body);
     rect(5, -9, 8, 2, bodyHi);
-    rect(9, -7, 2, 2, sting);                   // Å“il
+    rect(9, -7, 2, 2, sting);                   // œil
     // pinces
     ctx.strokeStyle = claw; ctx.lineWidth = 3;
     ctx.beginPath(); ctx.moveTo(12, -7); ctx.lineTo(19, -10); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(12, -4); ctx.lineTo(19, -2); ctx.stroke();
-    rect(17, -13, 6, 4, claw);                  // mÃ¢choire haute
-    rect(17, -4, 6, 4, claw);                   // mÃ¢choire basse
+    rect(17, -13, 6, 4, claw);                  // mâchoire haute
+    rect(17, -4, 6, 4, claw);                   // mâchoire basse
     ctx.restore();
   }
 
@@ -700,15 +700,15 @@ function drawScene(){
   ctx.fillText(mm + ':' + String(ss).padStart(2, '0'), 16, 52);
   // vies
   for (let i = 0; i <= st.lives; i++) rect(150 + i * 10, 38, 5, 14, '#fff');
-  // trÃ©sors
+  // trésors
   ctx.font = 'bold 16px "Courier New", monospace';
   ctx.fillStyle = '#f8e060';
-  ctx.fillText('TRÃ‰SORS ' + st.collected.size + '/' + TOTAL_TREASURES, W - 160, 26);
+  ctx.fillText('TRÉSORS ' + st.collected.size + '/' + TOTAL_TREASURES, W - 160, 26);
   // meilleur score
   ctx.fillStyle = '#9fdf6f';
   ctx.fillText('RECORD ' + String(hiscore).padStart(6, '0'), W - 160, 48);
 
-  // ---------- mini-carte (2 tableaux avant, l'actuel, 2 aprÃ¨s) ----------
+  // ---------- mini-carte (2 tableaux avant, l'actuel, 2 après) ----------
   if (st.started && !st.over){
     const mw = 58, mh = 34, gap = 5, n = 5;
     const total = n * mw + (n - 1) * gap;
@@ -718,7 +718,7 @@ function drawScene(){
     for (let k = -2; k <= 2; k++){
       drawMini(st.screen + k, mx + (k + 2) * (mw + gap), my, mw, mh, k === 0);
     }
-    // repÃ¨re sous le tableau courant
+    // repère sous le tableau courant
     const ccx = mx + 2 * (mw + gap) + mw / 2;
     ctx.fillStyle = '#f8e060';
     ctx.beginPath();
@@ -726,10 +726,10 @@ function drawScene(){
     ctx.closePath(); ctx.fill();
   }
 
-  // flash rouge Ã  la mort
+  // flash rouge à la mort
   if (st.deadT > 0.9){ ctx.fillStyle = 'rgba(216,40,16,0.35)'; ctx.fillRect(0, 0, W, H); }
 
-  // ---------- Ã©crans de jeu ----------
+  // ---------- écrans de jeu ----------
   if (!st.started || st.over){
     ctx.fillStyle = 'rgba(0,0,0,0.78)'; ctx.fillRect(0, 0, W, H);
     ctx.textAlign = 'center';
@@ -738,40 +738,40 @@ function drawScene(){
     if (!st.started){
       ctx.fillText('PITFALL JUNGLE', W / 2, 160);
       ctx.fillStyle = '#fff'; ctx.font = 'bold 20px "Courier New", monospace';
-      ctx.fillText('Trouve les ' + TOTAL_TREASURES + ' trÃ©sors de la jungle en 20 minutes !', W / 2, 230);
+      ctx.fillText('Trouve les ' + TOTAL_TREASURES + ' trésors de la jungle en 20 minutes !', W / 2, 230);
       ctx.fillStyle = '#9fdf6f'; ctx.font = '17px "Courier New", monospace';
-      ctx.fillText('â† â†’  bouger        ESPACE / â†‘  sauter', W / 2, 285);
-      ctx.fillText('â†“  descendre lâ€™Ã©chelle ou lÃ¢cher la liane', W / 2, 315);
-      ctx.fillText('Saute vers la liane pour tâ€™y accrocher !', W / 2, 345);
-      ctx.fillText('Ã‰vite crocos, sables mouvants, serpents et scorpions.', W / 2, 375);
-      ctx.fillText('Tomber dans un trou : -100 points (remonte par lâ€™Ã©chelle).', W / 2, 405);
-      ctx.fillText('P ou Ã‰CHAP : pause', W / 2, 435);
+      ctx.fillText('← →  bouger        ESPACE / ↑  sauter', W / 2, 285);
+      ctx.fillText('↓  descendre l’échelle ou lâcher la liane', W / 2, 315);
+      ctx.fillText('Saute vers la liane pour t’y accrocher !', W / 2, 345);
+      ctx.fillText('Évite crocos, sables mouvants, serpents et scorpions.', W / 2, 375);
+      ctx.fillText('Tomber dans un trou : -100 points (remonte par l’échelle).', W / 2, 405);
+      ctx.fillText('P ou ÉCHAP : pause', W / 2, 435);
       if (Math.floor(performance.now() / 500) % 2 === 0){
         ctx.fillStyle = '#fff'; ctx.font = 'bold 24px "Courier New", monospace';
-        ctx.fillText('APPUIE SUR ENTRÃ‰E', W / 2, 470);
+        ctx.fillText('APPUIE SUR ENTRÉE', W / 2, 470);
       }
     } else {
-      ctx.fillText(st.win ? 'VICTOIRE !' : 'PARTIE TERMINÃ‰E', W / 2, 190);
+      ctx.fillText(st.win ? 'VICTOIRE !' : 'PARTIE TERMINÉE', W / 2, 190);
       ctx.fillStyle = '#fff'; ctx.font = 'bold 26px "Courier New", monospace';
       ctx.fillText('SCORE FINAL : ' + Math.floor(st.score), W / 2, 255);
-      if (st.win) ctx.fillText('Tous les trÃ©sors sont Ã  toi !', W / 2, 295);
+      if (st.win) ctx.fillText('Tous les trésors sont à toi !', W / 2, 295);
       ctx.font = 'bold 22px "Courier New", monospace';
       if (st.newHi){
         ctx.fillStyle = '#f8e060';
-        ctx.fillText('â˜… NOUVEAU RECORD ! â˜…', W / 2, 335);
+        ctx.fillText('★ NOUVEAU RECORD ! ★', W / 2, 335);
       } else {
         ctx.fillStyle = '#9fdf6f';
         ctx.fillText('RECORD : ' + hiscore, W / 2, 335);
       }
       if (Math.floor(performance.now() / 500) % 2 === 0){
         ctx.fillStyle = '#fff'; ctx.font = 'bold 22px "Courier New", monospace';
-        ctx.fillText('ENTRÃ‰E POUR REJOUER', W / 2, 400);
+        ctx.fillText('ENTRÉE POUR REJOUER', W / 2, 400);
       }
     }
     ctx.textAlign = 'left';
   }
 
-  // ---------- Ã©cran de pause ----------
+  // ---------- écran de pause ----------
   if (st.started && !st.over && st.paused){
     ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0, 0, W, H);
     ctx.textAlign = 'center';
@@ -779,7 +779,7 @@ function drawScene(){
     ctx.font = 'bold 48px "Courier New", monospace';
     ctx.fillText('PAUSE', W / 2, H / 2 - 10);
     ctx.fillStyle = '#fff'; ctx.font = '18px "Courier New", monospace';
-    ctx.fillText('P ou Ã‰CHAP pour reprendre', W / 2, H / 2 + 30);
+    ctx.fillText('P ou ÉCHAP pour reprendre', W / 2, H / 2 + 30);
     ctx.textAlign = 'left';
   }
 }

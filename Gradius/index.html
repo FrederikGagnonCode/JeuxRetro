@@ -31,15 +31,15 @@
     <canvas id="game" width="560" height="380"></canvas>
     <div id="overlay">
       <h2 id="ovTitle">GRADIUS</h2>
-      <p>Pilote le Vic Viper et amÃ©liore-le avec les capsules oranges.</p>
-      <p>â† â†‘ â†“ â†’ : voler Â· Espace : tirer</p>
-      <p>Capsule = la barre avance Â· X : activer l'amÃ©lioration sÃ©lectionnÃ©e</p>
-      <p>VITESSE â†’ MISSILE â†’ DOUBLE â†’ LASER â†’ OPTION â†’ BOUCLIER</p>
-      <p class="blink" style="margin-top:12px">â–¶ Cliquez ou Espace pour dÃ©coller</p>
+      <p>Pilote le Vic Viper et améliore-le avec les capsules oranges.</p>
+      <p>← ↑ ↓ → : voler · Espace : tirer</p>
+      <p>Capsule = la barre avance · X : activer l'amélioration sélectionnée</p>
+      <p>VITESSE → MISSILE → DOUBLE → LASER → OPTION → BOUCLIER</p>
+      <p class="blink" style="margin-top:12px">▶ Cliquez ou Espace pour décoller</p>
     </div>
   </div>
-  <div id="hint">FlÃ¨ches : voler Â· Espace : tir Â· X : activer le power-up Â· P = pause</div>
-  <a class="back" href="../index.html">â† Menu Arcade</a>
+  <div id="hint">Flèches : voler · Espace : tir · X : activer le power-up · P = pause</div>
+  <a class="back" href="../index.html">← Menu Arcade</a>
 
 <script>
 const cv = document.getElementById('game');
@@ -59,7 +59,7 @@ let last=0;
 const keys={};
 function flash(m){ msg=m; msgT=2.2; }
 
-// â”€â”€ audio â”€â”€
+// ── audio ──
 let _ac=null;
 function ac(){ if(!_ac) _ac=new (window.AudioContext||window.webkitAudioContext)(); if(_ac.state==='suspended') _ac.resume(); return _ac; }
 function sfxShot(){ const a=ac(),t=a.currentTime; const o=a.createOscillator(); o.type='square';
@@ -92,7 +92,7 @@ function newGame(){
 function showOverlay(t,s){ ovTitle.textContent=t; overlay.querySelector('p:nth-of-type(1)').textContent=s; overlay.style.display='flex'; }
 function initStars(){ stars=[]; for(let i=0;i<70;i++) stars.push({x:Math.random()*W, y:HUDH+Math.random()*(H-HUDH), s:0.4+Math.random()*1.4, v:14+Math.random()*46}); }
 
-// â”€â”€ vagues ennemies â”€â”€
+// ── vagues ennemies ──
 function spawnWave(){
   wave++;
   const kind=rand(3);
@@ -101,7 +101,7 @@ function spawnWave(){
     const red = i===n-1;               // le dernier de la vague porte la capsule
     if(kind===0){       // sinus
       enemies.push({type:'fan', x:W+30+i*34, y:baseY, ph:i*0.7, amp:46, vx:-(95+wave*3), hp:1, red});
-    } else if(kind===1){ // fonceurs alignÃ©s
+    } else if(kind===1){ // fonceurs alignés
       enemies.push({type:'rush', x:W+30+i*40, y:baseY+(i%2?36:0), vx:-(130+wave*4), hp:1, red});
     } else {            // boucleurs (viennent puis remontent/descendent)
       enemies.push({type:'loop', x:W+30+i*34, y:baseY, ph:i*0.5, vx:-(85+wave*3), hp:1, red});
@@ -151,7 +151,7 @@ function powerUp(){
   if(ok){ meter=0; sfxPower(); }
 }
 
-// â”€â”€ entrÃ©es â”€â”€
+// ── entrées ──
 document.addEventListener('keydown',e=>{
   const k=e.key.toLowerCase(); keys[k]=true;
   if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)) e.preventDefault();
@@ -164,7 +164,7 @@ document.addEventListener('keyup',e=>{ keys[e.key.toLowerCase()]=false; });
 overlay.addEventListener('click',()=>{ if(!running||over) newGame(); });
 cv.addEventListener('touchstart',e=>{ e.preventDefault(); if(!running||over) newGame(); },{passive:false});
 
-// â”€â”€ mise Ã  jour â”€â”€
+// ── mise à jour ──
 function update(dt){
   stars.forEach(s=>{ s.x-=s.v*dt; if(s.x<0){ s.x=W; s.y=HUDH+Math.random()*(H-HUDH); } });
   if(!running||paused||over) return;
@@ -267,16 +267,16 @@ function hitPlayer(){
   lives--; p.dead=true; running=false;
   ArcadeFX.die(cv, p.x, p.y, 'explosion', ()=>{
     if(lives<=0){ over=true; if(window.ArcadeHi)ArcadeHi.submit(score);
-      showOverlay('GAME OVER','Vague '+wave+' Â· Score : '+score); }
+      showOverlay('GAME OVER','Vague '+wave+' · Score : '+score); }
     else {
-      player=makePlayer(); hist=[]; meter=0;   // on repart nu, Ã  la Gradius
-      flash('Ã‰quipement perduâ€¦');
+      player=makePlayer(); hist=[]; meter=0;   // on repart nu, à la Gradius
+      flash('Équipement perdu…');
       running=true;
     }
   });
 }
 
-// â”€â”€ rendu â”€â”€
+// ── rendu ──
 function draw(){
   ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H);
   stars.forEach(s=>{ ctx.fillStyle='rgba(160,190,255,'+(0.25+s.s*0.3)+')'; ctx.fillRect(s.x,s.y,s.s+0.6,s.s+0.6); });
@@ -317,7 +317,7 @@ function draw(){
 }
 function drawShip(p){
   ctx.save(); ctx.translate(p.x,p.y);
-  // rÃ©acteur
+  // réacteur
   const fl=(Math.floor(performance.now()/60)%2)?1:0;
   ctx.fillStyle='#ff9d2e'; ctx.beginPath(); ctx.moveTo(-12,0); ctx.lineTo(-19-fl*4,-2.6); ctx.lineTo(-19-fl*4,2.6); ctx.closePath(); ctx.fill();
   // fuselage Vic Viper
@@ -350,7 +350,7 @@ function drawHUD(){
   ctx.fillStyle='#0a0a18'; ctx.fillRect(0,0,W,HUDH);
   ctx.textAlign='left'; ctx.font='bold 12px "Courier New",monospace';
   ctx.fillStyle='#fff'; ctx.fillText('SCORE '+score, 8, 12);
-  ctx.fillStyle='#ff5252'; ctx.fillText('â™¥'.repeat(Math.max(0,lives)), 8, 23);
+  ctx.fillStyle='#ff5252'; ctx.fillText('♥'.repeat(Math.max(0,lives)), 8, 23);
   ctx.fillStyle='#9cf'; ctx.fillText('VAGUE '+wave, 110, 23);
   // barre de power-up
   const bw=58, x0=W-6*(bw+4)-8;

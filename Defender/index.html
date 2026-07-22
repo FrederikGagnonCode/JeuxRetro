@@ -31,32 +31,32 @@
     <canvas id="game" width="760" height="460"></canvas>
     <div id="overlay">
       <h2 id="ovTitle">DEFENDER</h2>
-      <p>DÃ©fendez les humanoÃ¯des contre les aliens</p>
-      <p>â† â†’ avancer Â· â†‘ â†“ altitude Â· Espace : tirer</p>
+      <p>Défendez les humanoïdes contre les aliens</p>
+      <p>← → avancer · ↑ ↓ altitude · Espace : tirer</p>
       <p>Le radar en haut montre tout le secteur</p>
-      <p class="blink" style="margin-top:14px">â–¶ Cliquez ou Espace pour jouer</p>
+      <p class="blink" style="margin-top:14px">▶ Cliquez ou Espace pour jouer</p>
     </div>
   </div>
-  <div id="hint">â† â†’ propulsion Â· â†‘ â†“ monter/descendre Â· Espace : tir Â· P = pause</div>
-  <a class="back" href="../index.html">â† Menu Arcade</a>
+  <div id="hint">← → propulsion · ↑ ↓ monter/descendre · Espace : tir · P = pause</div>
+  <a class="back" href="../index.html">← Menu Arcade</a>
 
 <script>
 const cv = document.getElementById('game');
 const ctx = cv.getContext('2d');
 const VW = cv.width, VH = cv.height;       // vue
-const WORLD = VW * 4;                       // monde qui dÃ©file (s'enroule)
+const WORLD = VW * 4;                       // monde qui défile (s'enroule)
 const GROUND = VH - 40;
 const SCANNER_H = 56;
 
 const overlay = document.getElementById('overlay');
 const ovTitle = document.getElementById('ovTitle');
 
-let camX = 0;          // position camÃ©ra dans le monde
+let camX = 0;          // position caméra dans le monde
 let running = false, paused = false, over = false;
 let score = 0, lives = 3, wave = 1;
 const keys = {};
 
-// terrain (silhouette de montagnes) gÃ©nÃ©rÃ© une fois
+// terrain (silhouette de montagnes) généré une fois
 const terrain = [];
 for (let x = 0; x <= WORLD; x += 40){
   terrain.push(GROUND - (Math.sin(x*0.01)*14 + Math.sin(x*0.023)*10 + Math.random()*8));
@@ -80,7 +80,7 @@ for (let i=0;i<90;i++) stars.push({x:Math.random()*WORLD, y:Math.random()*(GROUN
 
 function mod(n,m){ return ((n%m)+m)%m; }
 function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
-// plus court Ã©cart signÃ© sur le monde enroulÃ©
+// plus court écart signé sur le monde enroulé
 function wrapDelta(a,b){ let d = mod(b-a, WORLD); if (d > WORLD/2) d -= WORLD; return d; }
 
 function spawnWave(){
@@ -118,7 +118,7 @@ function showOverlay(title, sub){
 }
 function hideOverlay(){ overlay.style.display = 'none'; }
 
-// ---- entrÃ©es ----
+// ---- entrées ----
 document.addEventListener('keydown', e=>{
   const k = e.key.toLowerCase();
   keys[k] = true;
@@ -145,7 +145,7 @@ function update(){
   if (!running || paused || over) return;
   if (fireCooldown>0) fireCooldown--;
 
-  // contrÃ´le vaisseau
+  // contrôle vaisseau
   const accel = 0.55, maxv = 7;
   if (keys['arrowleft']){ player.vx = clamp(player.vx-accel,-maxv,maxv); player.dir = -1; }
   else if (keys['arrowright']){ player.vx = clamp(player.vx+accel,-maxv,maxv); player.dir = 1; }
@@ -157,10 +157,10 @@ function update(){
   player.x = mod(player.x + player.vx, WORLD);
   player.y = clamp(player.y + player.vy, SCANNER_H+10, GROUND-8);
 
-  // camÃ©ra suit le vaisseau (vaisseau ~1/3 de l'Ã©cran selon direction)
+  // caméra suit le vaisseau (vaisseau ~1/3 de l'écran selon direction)
   const desiredScreenX = player.dir>0 ? VW*0.35 : VW*0.65;
   let targetCam = mod(player.x - desiredScreenX, WORLD);
-  // interpolation douce sur monde enroulÃ©
+  // interpolation douce sur monde enroulé
   let dc = wrapDelta(camX, targetCam);
   camX = mod(camX + dc*0.1, WORLD);
 
@@ -183,7 +183,7 @@ function update(){
   enemies.forEach(en=>{
     en.t++;
     if (en.state==='hunt'){
-      // dÃ©rive et cherche un humain Ã  enlever
+      // dérive et cherche un humain à enlever
       en.x = mod(en.x + en.vx, WORLD);
       en.y += en.vy;
       if (en.y < SCANNER_H+20 || en.y > GROUND-60) en.vy *= -1;
@@ -207,7 +207,7 @@ function update(){
         }
       }
     } else if (en.state==='abduct'){
-      // remonte avec l'humain ; arrivÃ© en haut = humain perdu
+      // remonte avec l'humain ; arrivé en haut = humain perdu
       en.y -= 0.9; en.x = mod(en.x + en.vx*0.4, WORLD);
       if (en.y <= SCANNER_H+14){
         if (en.target){ en.target.state='gone'; }
@@ -248,7 +248,7 @@ function update(){
   if (enemies.length===0){
     wave++; score += 500;
     if (humans.some(h=>h.state!=='gone')) spawnWave();
-    else { gameOver('Tous les humanoÃ¯des ont Ã©tÃ© enlevÃ©sâ€¦'); }
+    else { gameOver('Tous les humanoïdes ont été enlevés…'); }
   }
 }
 
@@ -256,7 +256,7 @@ function loseLife(){
   if (!running) return;
   lives--; running=false;
   ArcadeFX.die(cv, sx(player.x), player.y, 'explosion', ()=>{
-    if (lives<=0){ gameOver('Vaisseau dÃ©truit. Score : '+score); }
+    if (lives<=0){ gameOver('Vaisseau détruit. Score : '+score); }
     else { player.x = mod(camX+VW/2,WORLD); player.y = VH/2; player.vx=player.vy=0; running=true; }
   });
 }
@@ -277,17 +277,17 @@ function explode(x,y,color,n){
 // ---- rendu ----
 function screenX(worldX){
   let d = wrapDelta(camX, worldX); // -W/2..W/2
-  return d; // 0 = bord gauche camÃ©ra ; on ajoute rien car camX est bord gauche
+  return d; // 0 = bord gauche caméra ; on ajoute rien car camX est bord gauche
 }
 function sx(worldX){
-  // position Ã©cran : diffÃ©rence enroulÃ©e par rapport Ã  camX (bord gauche)
+  // position écran : différence enroulée par rapport à camX (bord gauche)
   return mod(worldX - camX, WORLD);
 }
 
 function draw(){
   ctx.clearRect(0,0,VW,VH);
 
-  // Ã©toiles
+  // étoiles
   ctx.fillStyle = '#445';
   stars.forEach(st=>{
     let x = sx(st.x);
@@ -312,7 +312,7 @@ function draw(){
     if (x>VW) return;
     ctx.fillStyle = h.state==='carried' ? '#ffd54f' : '#4ecca3';
     ctx.fillRect(x-2, h.y, 4, 8);
-    ctx.fillRect(x-3, h.y-3, 6, 3); // tÃªte
+    ctx.fillRect(x-3, h.y-3, 6, 3); // tête
   });
 
   // ennemis (landers)
@@ -357,7 +357,7 @@ function drawShip(x,y,dir){
   ctx.lineTo(-10,0); ctx.lineTo(-16,7); ctx.lineTo(2,7);
   ctx.closePath(); ctx.fill();
   ctx.fillStyle = '#fff'; ctx.fillRect(4,-2,6,4);
-  // rÃ©acteur
+  // réacteur
   if (keys['arrowleft']||keys['arrowright']){
     ctx.fillStyle='#ffd54f'; ctx.fillRect(-22,-3,6,6);
   }
@@ -378,7 +378,7 @@ function drawScanner(){
   enemies.forEach(en=>{ ctx.fillRect(ox+mod(en.x,WORLD)*scaleX, oy+en.y*scaleY, 2,2); });
   // joueur
   ctx.fillStyle='#fff'; ctx.fillRect(ox+mod(player.x,WORLD)*scaleX-1, oy+player.y*scaleY-1, 3,3);
-  // fenÃªtre visible
+  // fenêtre visible
   ctx.strokeStyle='#888';
   ctx.strokeRect(ox+mod(camX,WORLD)*scaleX, oy, VW*scaleX, sh);
 }
@@ -393,7 +393,7 @@ function drawHUD(){
   const alive = humans.filter(h=>h.state!=='gone').length;
   ctx.textAlign='center';
   ctx.fillStyle='#4ecca3';
-  ctx.fillText('HUMANOÃDES '+alive, VW/2, SCANNER_H+22);
+  ctx.fillText('HUMANOÏDES '+alive, VW/2, SCANNER_H+22);
 }
 
 function loop(){ update(); draw(); if(window.ArcadeHi)ArcadeHi.submit(score); requestAnimationFrame(loop); }

@@ -31,15 +31,15 @@
     <canvas id="game" width="448" height="320"></canvas>
     <div id="overlay">
       <h2 id="ovTitle">CASTLE WOLFENSTEIN</h2>
-      <p>Infiltre le chÃ¢teau, trouve les plans secrets, rejoins la sortie.</p>
-      <p>â† â†‘ â†“ â†’ (ou WASD) : se dÃ©placer Â· tu vises lÃ  oÃ¹ tu vas</p>
-      <p>Espace : tirer Â· ouvre les coffres en les touchant Â· P : pause</p>
-      <p>Ã‰vite ou abats les gardes Â· un uniforme te dÃ©guise un moment</p>
-      <p class="blink" style="margin-top:12px">â–¶ Cliquez ou Espace pour commencer la mission</p>
+      <p>Infiltre le château, trouve les plans secrets, rejoins la sortie.</p>
+      <p>← ↑ ↓ → (ou WASD) : se déplacer · tu vises là où tu vas</p>
+      <p>Espace : tirer · ouvre les coffres en les touchant · P : pause</p>
+      <p>Évite ou abats les gardes · un uniforme te déguise un moment</p>
+      <p class="blink" style="margin-top:12px">▶ Cliquez ou Espace pour commencer la mission</p>
     </div>
   </div>
-  <div id="hint">FlÃ¨ches / WASD : bouger & viser Â· Espace : tirer Â· coffres : touche-les Â· P = pause</div>
-  <a class="back" href="../index.html">â† Menu Arcade</a>
+  <div id="hint">Flèches / WASD : bouger & viser · Espace : tirer · coffres : touche-les · P = pause</div>
+  <a class="back" href="../index.html">← Menu Arcade</a>
 
 <script>
 const cv = document.getElementById('game');
@@ -56,7 +56,7 @@ let running=false, paused=false, over=false, won=false;
 let last=0;
 const keys={};
 
-// â”€â”€ audio â”€â”€
+// ── audio ──
 let _ac=null;
 function ac(){ if(!_ac) _ac=new (window.AudioContext||window.webkitAudioContext)(); if(_ac.state==='suspended') _ac.resume(); return _ac; }
 function sfxShot(){ const a=ac(),t=a.currentTime; const o=a.createOscillator(); o.type='square';
@@ -72,7 +72,7 @@ function sfxPick(){ const a=ac(),t=a.currentTime; const o=a.createOscillator(); 
   const g=a.createGain(); g.gain.setValueAtTime(0.07,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.16);
   o.connect(g); g.connect(a.destination); o.start(t); o.stop(t+0.17); }
 
-// â”€â”€ gÃ©nÃ©ration du chÃ¢teau â”€â”€
+// ── génération du château ──
 const XL=[0,7,14,21,27], YL=[0,7,13,19];     // lignes de murs (4 x 3 salles)
 function genCastle(){
   map=[]; for(let y=0;y<ROWS;y++) map.push(new Array(COLS).fill('.'));
@@ -101,10 +101,10 @@ function genCastle(){
   chests=[];
   const start=roomAt(2,0);
   const others=rooms.filter(rm=>rm!==start);
-  // plans dans la salle la plus Ã©loignÃ©e (en haut)
+  // plans dans la salle la plus éloignée (en haut)
   const plansRoom=rooms.reduce((best,rm)=> (rm.r<best.r? rm:best), others[0]);
   placeChest(plansRoom,'plans');
-  // uniforme + munitions rÃ©partis
+  // uniforme + munitions répartis
   placeChest(pickRoom(others,[plansRoom]),'uniform');
   for(let i=0;i<3;i++) placeChest(pickRoom(others,[]), 'ammo');
   // gardes
@@ -130,7 +130,7 @@ function newGame(){
 function flash(m){ msg=m; msgT=3.5; }
 function showOverlay(t,s){ ovTitle.textContent=t; overlay.querySelector('p:nth-of-type(1)').textContent=s; overlay.style.display='flex'; }
 
-// â”€â”€ entrÃ©es â”€â”€
+// ── entrées ──
 document.addEventListener('keydown',e=>{
   const k=e.key.toLowerCase(); keys[k]=true;
   if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)) e.preventDefault();
@@ -142,7 +142,7 @@ document.addEventListener('keyup',e=>{ keys[e.key.toLowerCase()]=false; });
 overlay.addEventListener('click',()=>{ if(!running||over) newGame(); });
 cv.addEventListener('touchstart',e=>{ e.preventDefault(); if(!running||over) newGame(); },{passive:false});
 
-// â”€â”€ collisions tuiles â”€â”€
+// ── collisions tuiles ──
 function wallAt(px,py){ const tx=Math.floor(px/TS), ty=Math.floor(py/TS);
   if(tx<0||ty<0||tx>=COLS||ty>=ROWS) return true; return map[ty][tx]==='#'; }
 function boxBlocked(px,py,hs){ return wallAt(px-hs,py-hs)||wallAt(px+hs,py-hs)||wallAt(px-hs,py+hs)||wallAt(px+hs,py+hs); }
@@ -160,7 +160,7 @@ function fire(){
   sfxShot();
 }
 
-// â”€â”€ mise Ã  jour â”€â”€
+// ── mise à jour ──
 function update(dt){
   if(!running||paused||over) return;
   if(msgT>0) msgT-=dt;
@@ -188,8 +188,8 @@ function update(dt){
   // sortie
   if(Math.abs(p.x-(exit.tx+0.5)*TS)<12 && p.y<TS*1.2){
     if(hasPlans){ won=true; over=true; running=false; score+=1000;
-      showOverlay('â˜… Ã‰VASION RÃ‰USSIE â˜…','Tu t\'enfuis avec les plans ! Score : '+(score+player.hp*100)); }
-    else flash('La sortie est verrouillÃ©e â€” trouve les plans !');
+      showOverlay('★ ÉVASION RÉUSSIE ★','Tu t\'enfuis avec les plans ! Score : '+(score+player.hp*100)); }
+    else flash('La sortie est verrouillée — trouve les plans !');
   }
 
   // balles joueur
@@ -221,7 +221,7 @@ function update(dt){
 
   // balles joueur -> gardes
   bullets.forEach(b=>{ guards.forEach(g=>{ if(!g.alive) return;
-    if(Math.abs(b.x-g.x)<10 && Math.abs(b.y-g.y)<11){ g.alive=false; b.life=0; burst(g.x,g.y,'#3a3a44',9); score+=150; flash('Garde neutralisÃ©.'); } }); });
+    if(Math.abs(b.x-g.x)<10 && Math.abs(b.y-g.y)<11){ g.alive=false; b.life=0; burst(g.x,g.y,'#3a3a44',9); score+=150; flash('Garde neutralisé.'); } }); });
   bullets=bullets.filter(b=>b.life>0);
 
   // balles ennemies
@@ -239,8 +239,8 @@ function update(dt){
 }
 function openChest(c){
   c.opened=true; sfxPick();
-  if(c.content==='plans'){ hasPlans=true; flash('PLANS SECRETS rÃ©cupÃ©rÃ©s ! Rejoins la sortie en haut.'); score+=500; }
-  else if(c.content==='uniform'){ disguise=18; flash('Uniforme ennemi : dÃ©guisÃ© 18 s !'); }
+  if(c.content==='plans'){ hasPlans=true; flash('PLANS SECRETS récupérés ! Rejoins la sortie en haut.'); score+=500; }
+  else if(c.content==='uniform'){ disguise=18; flash('Uniforme ennemi : déguisé 18 s !'); }
   else { player.ammo+=12; flash('Munitions +12.'); }
 }
 function burst(x,y,col,n){ for(let i=0;i<n;i++){ const a=Math.random()*Math.PI*2,s=40+Math.random()*120;
@@ -249,10 +249,10 @@ function hitPlayer(){
   if(player.inv>0||over) return;
   player.hp--; player.inv=1.4; burst(player.x,player.y,'#fff',8);
   if(player.hp<=0){ running=false;
-    ArcadeFX.die(cv, player.x, player.y, 'explosion', ()=>{ over=true; showOverlay('CAPTURÃ‰ !','Score : '+score); }); }
+    ArcadeFX.die(cv, player.x, player.y, 'explosion', ()=>{ over=true; showOverlay('CAPTURÉ !','Score : '+score); }); }
 }
 
-// â”€â”€ rendu â”€â”€
+// ── rendu ──
 function draw(){
   ctx.fillStyle='#16161e'; ctx.fillRect(0,0,COLS*TS,ROWS*TS);
   // tuiles
@@ -304,10 +304,10 @@ function drawSoldier(x,y,fx,fy,col,isPlayer){
 function drawHUD(){
   ctx.fillStyle='rgba(0,0,0,.45)'; ctx.fillRect(0,0,COLS*TS,16);
   ctx.textAlign='left'; ctx.font='bold 12px "Courier New",monospace';
-  ctx.fillStyle='#ff5a5a'; ctx.fillText('â™¥'.repeat(Math.max(0,player.hp)), 8, 12);
+  ctx.fillStyle='#ff5a5a'; ctx.fillText('♥'.repeat(Math.max(0,player.hp)), 8, 12);
   ctx.fillStyle='#ffd23a'; ctx.fillText('MUN '+player.ammo, 92, 12);
-  ctx.fillStyle=hasPlans?'#2bd06a':'#888'; ctx.fillText(hasPlans?'PLANS âœ“':'PLANS âœ—', 170, 12);
-  if(disguise>0){ ctx.fillStyle='#caa84a'; ctx.fillText('DÃ‰GUISÃ‰ '+Math.ceil(disguise), 262, 12); }
+  ctx.fillStyle=hasPlans?'#2bd06a':'#888'; ctx.fillText(hasPlans?'PLANS ✓':'PLANS ✗', 170, 12);
+  if(disguise>0){ ctx.fillStyle='#caa84a'; ctx.fillText('DÉGUISÉ '+Math.ceil(disguise), 262, 12); }
   ctx.textAlign='right'; ctx.fillStyle='#fff'; ctx.fillText('SCORE '+score, COLS*TS-8, 12);
   // message
   if(msgT>0){ ctx.textAlign='center'; ctx.fillStyle='rgba(0,0,0,.6)'; ctx.fillRect(0,ROWS*TS-18,COLS*TS,18);

@@ -30,13 +30,13 @@
     <div id="overlay">
       <h2 id="ovTitle">DOUBLE DRAGON</h2>
       <p>Traverse la ville et venge-toi du gang des Black Warriors.</p>
-      <p>â† â†‘ â†“ â†’ : marcher Â· X : poing Â· C : pied Â· Espace : saut</p>
-      <p>Ramasse la batte ðŸ des ennemis pour frapper plus fort</p>
-      <p class="blink" style="margin-top:12px">â–¶ Cliquez ou Espace pour te battre</p>
+      <p>← ↑ ↓ → : marcher · X : poing · C : pied · Espace : saut</p>
+      <p>Ramasse la batte 🏏 des ennemis pour frapper plus fort</p>
+      <p class="blink" style="margin-top:12px">▶ Cliquez ou Espace pour te battre</p>
     </div>
   </div>
-  <div id="hint">FlÃ¨ches : marcher Â· X poing Â· C pied Â· Espace saut Â· ramasse les armes Â· P = pause</div>
-  <a class="back" href="../index.html">â† Menu Arcade</a>
+  <div id="hint">Flèches : marcher · X poing · C pied · Espace saut · ramasse les armes · P = pause</div>
+  <a class="back" href="../index.html">← Menu Arcade</a>
 
 <script>
 const cv=document.getElementById('game'), ctx=cv.getContext('2d');
@@ -76,7 +76,7 @@ function newGame(){
   overlay.style.display='none';
 }
 function startWave(){ wave++; toSpawn=(wave%5===0)?0:2+Math.min(wave,5); spawnT=0.5;
-  if(wave%5===0){ spawnBoss(); flash('â˜… ABOBO ARRIVE â˜…'); } else flash('VAGUE '+wave); }
+  if(wave%5===0){ spawnBoss(); flash('★ ABOBO ARRIVE ★'); } else flash('VAGUE '+wave); }
 function spawnEnemy(){
   const right=Math.random()<0.7;
   const type=Math.random()<0.3&&wave>=2?'batteur':'punk';
@@ -146,7 +146,7 @@ function update(dt){
     }
     // ramasser une arme
     for(const w of weapons){ if(!p.weapon && Math.abs(w.x-p.x)<18 && Math.abs(w.y-p.y)<16){
-      w.got=true; p.weapon='bat'; flash('Batte ramassÃ©e ! DÃ©gÃ¢ts +'); } }
+      w.got=true; p.weapon='bat'; flash('Batte ramassée ! Dégâts +'); } }
     weapons=weapons.filter(w=>!w.got);
     // avancer le monde
     if(p.x>cam+W*0.6 && cam<WORLD-W) cam=Math.min(WORLD-W, cam+(p.x-(cam+W*0.6)));
@@ -203,7 +203,7 @@ function killPlayer(){
   p.dead=true; running=false;
   ArcadeFX.die(cv, p.x-cam, p.y-30, 'explosion', ()=>{
     over=true; if(window.ArcadeHi)ArcadeHi.submit(score);
-    showOverlay('K.O. !','Vague '+wave+' Â· Score : '+score);
+    showOverlay('K.O. !','Vague '+wave+' · Score : '+score);
   });
 }
 
@@ -241,14 +241,14 @@ function drawFighter(x,y,jz,face,col,dk,walk,atkT,atkType,hitT,weapon,big){
     if(weapon){ ctx.strokeStyle='#a8763a'; ctx.lineWidth=4;
       ctx.beginPath(); ctx.moveTo(9,-30); ctx.lineTo(17,-42); ctx.stroke(); }
   }
-  // tÃªte
+  // tête
   ctx.fillStyle='#caa07a'; ctx.beginPath(); ctx.arc(0,-51,6.4,0,Math.PI*2); ctx.fill();
   ctx.fillStyle=dark; ctx.beginPath(); ctx.arc(0,-53,6.6,Math.PI,Math.PI*2); ctx.fill();
   ctx.fillStyle='#111'; ctx.fillRect(2,-52,2.4,1.8);
   ctx.restore();
 }
 function draw(){
-  // fond : rue + mur de briques + nÃ©ons
+  // fond : rue + mur de briques + néons
   ctx.fillStyle='#1c1c26'; ctx.fillRect(0,0,W,DY0-40);
   ctx.fillStyle='#4a3038';
   ctx.fillRect(0,40,W,DY0-80);
@@ -256,7 +256,7 @@ function draw(){
   for(let y=44;y<DY0-40;y+=12){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
   for(let x=-((cam*0.5)%30);x<W;x+=30){ for(let y=44;y<DY0-40;y+=24){
     ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x,y+12); ctx.stroke(); } }
-  // fenÃªtres/nÃ©ons
+  // fenêtres/néons
   for(let i=0;i<5;i++){ const nx=((i*260-cam*0.5)%(W+200)+W+200)%(W+200)-100;
     ctx.fillStyle=i%2?'#ffd23a':'#39c6e0'; ctx.globalAlpha=0.75;
     ctx.fillRect(nx,60+(i%3)*30,26,16); ctx.globalAlpha=1;
@@ -294,7 +294,7 @@ function draw(){
   ctx.fillStyle='#fff'; ctx.fillText('SCORE '+score, 6, 14);
   ctx.fillStyle='#5a1a1a'; ctx.fillRect(130,5,110,10);
   ctx.fillStyle=player.hp>30?'#3adc5a':'#ffd23a'; ctx.fillRect(130,5,110*Math.max(0,player.hp)/100,10);
-  ctx.fillStyle=player.weapon?'#ffd23a':'#666'; ctx.fillText(player.weapon?'ðŸ':'â€”', 250, 14);
+  ctx.fillStyle=player.weapon?'#ffd23a':'#666'; ctx.fillText(player.weapon?'🏏':'—', 250, 14);
   ctx.textAlign='right'; ctx.fillStyle='#e05a2a'; ctx.fillText('VAGUE '+wave, W-6, 14);
   const bossE=enemies.find(e=>e.boss);
   if(bossE){ ctx.fillStyle='#000'; ctx.fillRect(W/2-81,H-14,162,9);

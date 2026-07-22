@@ -31,14 +31,14 @@
     <canvas id="game" width="480" height="360"></canvas>
     <div id="overlay">
       <h2 id="ovTitle">STAR WARS</h2>
-      <p>DÃ©truisez les TIE fighters et les boules de feu</p>
-      <p>Souris : viser Â· clic / Espace : tirer</p>
+      <p>Détruisez les TIE fighters et les boules de feu</p>
+      <p>Souris : viser · clic / Espace : tirer</p>
       <p>Ne laissez pas les tirs atteindre votre vaisseau (bouclier)</p>
-      <p class="blink" style="margin-top:14px">â–¶ Cliquez ou Espace pour dÃ©coller</p>
+      <p class="blink" style="margin-top:14px">▶ Cliquez ou Espace pour décoller</p>
     </div>
   </div>
-  <div id="hint">Souris (ou flÃ¨ches) : viser Â· clic / Espace : tirer Â· P = pause</div>
-  <a class="back" href="../index.html">â† Menu Arcade</a>
+  <div id="hint">Souris (ou flèches) : viser · clic / Espace : tirer · P = pause</div>
+  <a class="back" href="../index.html">← Menu Arcade</a>
 
 <script>
 const cv = document.getElementById('game');
@@ -56,7 +56,7 @@ let score=0, shield=6, wave=1, toSpawn=0, spawnT=0, fireCd=0, flashT=0, msgT=0;
 let running=false, paused=false, over=false;
 const keys={};
 
-// â”€â”€ sons laser â”€â”€
+// ── sons laser ──
 let _ac=null;
 function actx(){ try{ if(!_ac) _ac=new (window.AudioContext||window.webkitAudioContext)(); if(_ac.state==='suspended') _ac.resume(); }catch(e){} return _ac; }
 function laserSfx(freq, dur, vol, type){
@@ -83,7 +83,7 @@ function rndStar(z){ return { x:(Math.random()*2-1)*600, y:(Math.random()*2-1)*4
 function showOverlay(t,s){ ovTitle.textContent=t; overlay.querySelector('p:nth-of-type(1)').textContent=s; overlay.style.display='flex'; }
 function hideOverlay(){ overlay.style.display='none'; }
 
-// â”€â”€ entrÃ©es â”€â”€
+// ── entrées ──
 document.addEventListener('keydown',e=>{
   const k=e.key.toLowerCase(); keys[k]=true;
   if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)) e.preventDefault();
@@ -105,7 +105,7 @@ function fire(){
   fireCd=9;
   lasers.push({x:aim.x, y:aim.y, t:6});
   sfxPlayerFire();
-  // tir au rÃ©ticule : on touche la cible la plus proche dans le rayon
+  // tir au réticule : on touche la cible la plus proche dans le rayon
   let best=null, bestZ=1e9;
   for(const t of ties){ if(!t.alive) continue; const p=projTie(t);
     if(p && Math.hypot(p.x-aim.x,p.y-aim.y)<28+p.k*8 && t.z<bestZ){ best={kind:'tie',o:t}; bestZ=t.z; } }
@@ -120,7 +120,7 @@ function fire(){
 function projTie(t){ if(t.z<=1) return null; const k=FOV/t.z; return { x:CX+t.x*k/ (FOV/300), y:CY+t.y*k/(FOV/300), k:FOV/t.z*1 , sc:clamp(FOV/t.z,0.25,6) }; }
 function fireR(f){ return clamp(lerp(28,3, f.z/f.z0), 3, 30); }
 
-// â”€â”€ mise Ã  jour â”€â”€
+// ── mise à jour ──
 function update(){
   if(!running||paused||over) return;
   if(fireCd>0) fireCd--; if(flashT>0) flashT--; if(msgT>0) msgT--;
@@ -131,9 +131,9 @@ function update(){
   if(keys['arrowup']) aim.y-=ks; if(keys['arrowdown']) aim.y+=ks;
   aim.x=clamp(aim.x,0,W); aim.y=clamp(aim.y,0,H);
 
-  // Ã©toiles
+  // étoiles
   stars.forEach(s=>{ s.z-=8; if(s.z<10){ const n=rndStar(900); s.x=n.x; s.y=n.y; s.z=n.z; } });
-  // tours (surface Ã©toile noire) qui dÃ©filent
+  // tours (surface étoile noire) qui défilent
   towers.forEach(t=>{ t.z-=6; if(t.z<10){ t.z=900; t.side=Math.random()<.5?-1:1; } });
 
   // apparition des TIE
@@ -152,7 +152,7 @@ function update(){
     if(t.shootCd<=0 && t.z>150 && t.z<800){ spawnFire(t); t.shootCd=70+Math.random()*70 - wave*4; }
     if(t.z<=45){ t.alive=false; damage(); boom(CX,CY,'#46d846',10); }   // collision
   });
-  ties = ties.filter(t=>t.alive);   // les TIE dÃ©truits/passÃ©s sont retirÃ©s
+  ties = ties.filter(t=>t.alive);   // les TIE détruits/passés sont retirés
 
   // boules de feu : grossissent en place puis touchent
   fires.forEach(f=>{ f.z -= 4.5 + wave*0.3; if(f.z<=20 && !f.dead){ f.dead=true; damage(); } });
@@ -173,22 +173,22 @@ function spawnFire(t){
 function damage(){
   if(over) return;
   shield--; flashT=10;
-  if(shield<=0){ shield=0; over=true; running=false; ArcadeFX.die(cv, CX, CY, 'explosion', ()=>{ showOverlay('VAISSEAU DÃ‰TRUIT','Score : '+score); }); }
+  if(shield<=0){ shield=0; over=true; running=false; ArcadeFX.die(cv, CX, CY, 'explosion', ()=>{ showOverlay('VAISSEAU DÉTRUIT','Score : '+score); }); }
 }
 function boom(x,y,color,n){ for(let i=0;i<n;i++){ const a=Math.random()*Math.PI*2,s=Math.random()*4+1;
   parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:18+Math.random()*12,color}); } }
 
-// â”€â”€ rendu â”€â”€
+// ── rendu ──
 function draw(){
   ctx.clearRect(0,0,W,H);
   ctx.lineCap='round';
 
-  // Ã©toiles
+  // étoiles
   stars.forEach(s=>{ const k=FOV/s.z; const x=CX+s.x*k/ (FOV/300), y=CY+s.y*k/(FOV/300);
     if(x>=0&&x<W&&y>=0&&y<H){ const b=clamp(1-s.z/900,0.1,1); ctx.fillStyle='rgba(255,255,255,'+b+')'; ctx.fillRect(x,y,b>0.6?2:1,b>0.6?2:1); } });
 
   ctx.save(); ctx.shadowBlur=6;
-  // tours de la surface (rouge/bleu) sur les cÃ´tÃ©s
+  // tours de la surface (rouge/bleu) sur les côtés
   towers.forEach(t=>drawTower(t));
   // TIE fighters
   ties.forEach(t=>{ if(t.alive){ const p=projTie(t); if(p) drawTie(p.x,p.y,p.sc); } });
@@ -208,10 +208,10 @@ function draw(){
   parts.forEach(p=>{ ctx.globalAlpha=Math.min(1,p.life/18); ctx.fillStyle=p.color; ctx.fillRect(p.x-1,p.y-1,3,3); });
   ctx.globalAlpha=1;
 
-  // rÃ©ticule
+  // réticule
   drawReticle(aim.x, aim.y);
 
-  // flash de dÃ©gÃ¢t
+  // flash de dégât
   if(flashT>0){ ctx.fillStyle='rgba(255,40,40,'+(flashT/10*0.35)+')'; ctx.fillRect(0,0,W,H); }
 
   drawHUD();
@@ -223,7 +223,7 @@ function draw(){
 function drawTie(x,y,sc){
   const wing=18*sc, ball=6*sc, gap=14*sc;
   ctx.strokeStyle='#46d846'; ctx.lineWidth=Math.max(1,1.4*Math.min(sc,2));
-  // pylÃ´nes
+  // pylônes
   ctx.beginPath(); ctx.moveTo(x-gap,y); ctx.lineTo(x-ball,y); ctx.moveTo(x+ball,y); ctx.lineTo(x+gap,y); ctx.stroke();
   // ailes hexagonales
   for(const s of [-1,1]){

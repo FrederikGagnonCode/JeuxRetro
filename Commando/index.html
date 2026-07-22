@@ -32,14 +32,14 @@
     <div id="overlay">
       <h2 id="ovTitle">COMMANDO</h2>
       <p>Avance vers le haut, abats les soldats ennemis.</p>
-      <p>â† â†‘ â†“ â†’ (ou WASD) : se dÃ©placer Â· tu tires dans la direction oÃ¹ tu vas</p>
-      <p>Espace : tirer Â· X : lancer une grenade Â· P : pause</p>
-      <p>Caisses de grenades Ã  ramasser Â· gare aux motos et aux embusquÃ©s dans les crevasses !</p>
-      <p class="blink" style="margin-top:14px">â–¶ Cliquez ou Espace pour partir au combat</p>
+      <p>← ↑ ↓ → (ou WASD) : se déplacer · tu tires dans la direction où tu vas</p>
+      <p>Espace : tirer · X : lancer une grenade · P : pause</p>
+      <p>Caisses de grenades à ramasser · gare aux motos et aux embusqués dans les crevasses !</p>
+      <p class="blink" style="margin-top:14px">▶ Cliquez ou Espace pour partir au combat</p>
     </div>
   </div>
-  <div id="hint">FlÃ¨ches / WASD : bouger & viser Â· Espace : tir Â· X : grenade Â· P = pause</div>
-  <a class="back" href="../index.html">â† Menu Arcade</a>
+  <div id="hint">Flèches / WASD : bouger & viser · Espace : tir · X : grenade · P = pause</div>
+  <a class="back" href="../index.html">← Menu Arcade</a>
 
 <script>
 const cv = document.getElementById('game');
@@ -57,7 +57,7 @@ let last=0;
 const keys={};
 function flash(m){ msg=m; msgT=2.5; }
 
-// â”€â”€ audio â”€â”€
+// ── audio ──
 let _ac=null;
 function ac(){ if(!_ac) _ac=new (window.AudioContext||window.webkitAudioContext)(); if(_ac.state==='suspended') _ac.resume(); return _ac; }
 function sfxShot(){ const a=ac(),t=a.currentTime; const o=a.createOscillator(); o.type='square';
@@ -85,7 +85,7 @@ function makeDecor(y){
   return { x:14+Math.random()*(W-28), y, type, s:10+Math.random()*16,
            tone:Math.random(), seed:Math.random()*6.28 };
 }
-// les sacs de sable (murets) bloquent le dÃ©placement et les balles
+// les sacs de sable (murets) bloquent le déplacement et les balles
 function blockedPoint(x,y,pad){
   for(const d of decor){ if(d.type!=='sandbag') continue;
     if(x>d.x-d.s*0.7-pad && x<d.x+d.s*0.7+pad && y>d.y-5-pad && y<d.y+5+pad) return true; }
@@ -100,7 +100,7 @@ function newGame(){
 }
 function showOverlay(t,s){ ovTitle.textContent=t; overlay.querySelector('p:nth-of-type(1)').textContent=s; overlay.style.display='flex'; }
 
-// â”€â”€ entrÃ©es â”€â”€
+// ── entrées ──
 document.addEventListener('keydown',e=>{
   const k=e.key.toLowerCase(); keys[k]=true;
   if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)) e.preventDefault();
@@ -113,13 +113,13 @@ document.addEventListener('keyup',e=>{ keys[e.key.toLowerCase()]=false; });
 overlay.addEventListener('click',()=>{ if(!running||over) newGame(); });
 cv.addEventListener('touchstart',e=>{ e.preventDefault(); if(!running||over) newGame(); },{passive:false});
 
-const ADV_Y=H*0.55;       // ligne d'avancÃ©e : au-delÃ , monter fait dÃ©filer le niveau
+const ADV_Y=H*0.55;       // ligne d'avancée : au-delà, monter fait défiler le niveau
 const PSPEED=148, BSPEED=440, GSPEED=210, ESPEED=46, EBSPEED=150;
 
 function fire(){
   if(player.shootCd>0||player.dead) return;
   player.shootCd=0.07;                         // cadence mitraillette
-  // lÃ©ger dÃ©calage latÃ©ral alternÃ© pour l'effet de rafale
+  // léger décalage latéral alterné pour l'effet de rafale
   const px=-player.fy, py=player.fx, side=(player.shotTick=(player.shotTick||0)+1)%2?1.5:-1.5;
   bullets.push({x:player.x+player.fx*12+px*side, y:player.y+player.fy*12+py*side,
     vx:player.fx*BSPEED, vy:player.fy*BSPEED, life:1.1});
@@ -137,7 +137,7 @@ function spawnEnemy(){
   if(side<0.6){                         // du haut, trajectoire descendante / diagonale
     x=20+Math.random()*(W-40); y=-20;
     vx=(Math.random()*2-1)*sp; vy=sp*(0.5+Math.random()*0.6);
-  } else if(side<0.8){                  // de la gauche, traversÃ©e linÃ©aire
+  } else if(side<0.8){                  // de la gauche, traversée linéaire
     x=-18; y=10+Math.random()*(H*0.55);
     vx=sp*(0.8+Math.random()*0.6); vy=sp*(Math.random()*0.5-0.1);
   } else {                              // de la droite
@@ -148,7 +148,7 @@ function spawnEnemy(){
     color: runner?'#c87a2a':'#b0432f' });
 }
 function spawnMoto(){
-  // ennemi Ã  moto : traverse vite en ligne droite et tire sur le joueur
+  // ennemi à moto : traverse vite en ligne droite et tire sur le joueur
   const fromLeft=Math.random()<0.5;
   const sp=ESPEED*2.6;
   const x=fromLeft?-26:W+26, y=30+Math.random()*(H*0.45);
@@ -160,21 +160,21 @@ function spawnCrate(){
   crates.push({ x:24+Math.random()*(W-48), y:-18 });
 }
 function spawnFoxhole(){
-  // crevasse (terrain persistant) abritant 1 ou 2 soldats embusquÃ©s
+  // crevasse (terrain persistant) abritant 1 ou 2 soldats embusqués
   const two=Math.random()<0.4, n=two?2:1, occ=[];
   for(let i=0;i<n;i++) occ.push({ hp:2, alive:true, shootCd:0.8+Math.random()*1.4,
     ox:(n===1?0:(i===0?-7:7)) });
   holes.push({ x:30+Math.random()*(W-60), y:-20, two, occ });
 }
 
-// â”€â”€ mise Ã  jour â”€â”€
+// ── mise à jour ──
 function update(dt){
   if(!running||paused||over) return;
   if(msgT>0) msgT-=dt;
 
   // joueur
   const p=player;
-  let scroll=0;                           // dÃ©filement du niveau ce frame (= avancÃ©e du joueur)
+  let scroll=0;                           // défilement du niveau ce frame (= avancée du joueur)
   if(p.grenCd>0) p.grenCd-=dt;
   if(!p.dead){
     let mvx=0,mvy=0;
@@ -184,11 +184,11 @@ function update(dt){
     if(keys['arrowdown']||keys['s']) mvy+=1;
     if(mvx||mvy){ const m=Math.hypot(mvx,mvy); p.fx=mvx/m; p.fy=mvy/m;
       const nx=p.x+p.fx*PSPEED*dt, ny=p.y+p.fy*PSPEED*dt;
-      if(!blockedPoint(nx,p.y,11)) p.x=nx;    // dÃ©placement par axe -> on longe le muret
+      if(!blockedPoint(nx,p.y,11)) p.x=nx;    // déplacement par axe -> on longe le muret
       if(!blockedPoint(p.x,ny,11)) p.y=ny;
     }
     p.x=clamp(p.x,16,W-16);
-    // au-delÃ  de la ligne d'avancÃ©e, monter ne dÃ©place plus le joueur mais fait DÃ‰FILER le niveau
+    // au-delà de la ligne d'avancée, monter ne déplace plus le joueur mais fait DÉFILER le niveau
     if(p.y<ADV_Y){ scroll=ADV_Y-p.y; p.y=ADV_Y; }
     p.y=clamp(p.y,ADV_Y,H-24);
     if(p.shootCd>0) p.shootCd-=dt;
@@ -197,7 +197,7 @@ function update(dt){
   }
   dist += scroll; score = Math.floor(dist/4) + killScore;
 
-  // dÃ©cor : dÃ©file Ã  la vitesse du joueur (s'arrÃªte s'il s'arrÃªte)
+  // décor : défile à la vitesse du joueur (s'arrête s'il s'arrête)
   decor.forEach((d,i)=>{ d.y+=scroll; if(d.y-d.s>H){ decor[i]=makeDecor(-20); } });
 
   // balles joueur
@@ -219,7 +219,7 @@ function update(dt){
   if(spawnT<=0){
     const r=Math.random();
     if(dist>700 && r<0.12 && !enemies.some(e=>e.moto)) spawnMoto();   // moto parfois
-    else if(r<0.34) spawnFoxhole();                                   // embusquÃ© en crevasse
+    else if(r<0.34) spawnFoxhole();                                   // embusqué en crevasse
     else spawnEnemy();
     spawnT=Math.max(0.35, 1.1 - dist/4000);
   }
@@ -230,30 +230,30 @@ function update(dt){
     if(Math.hypot(c.x-p.x, c.y-p.y)<14 && !p.dead){ c.got=true; grenadeCount+=3; burst(c.x,c.y,'#cfcf6a',8); flash('Caisse : grenades +3 !'); } });
   crates=crates.filter(c=>!c.got && c.y<H+30);
 
-  // crevasses : trou persistant + occupants embusquÃ©s immobiles
+  // crevasses : trou persistant + occupants embusqués immobiles
   holes.forEach(h=>{ h.y+=scroll;
     for(const s of h.occ){ if(!s.alive) continue;
       const sx=h.x+s.ox, sy=h.y; s.shootCd-=dt;
       const dx=p.x-sx, dy=p.y-sy, d=Math.hypot(dx,dy)||1;
-      if(s.shootCd<=0 && !p.dead && h.y>0 && h.y<H-10 && d<185){   // n'ouvre le feu qu'Ã  l'approche
+      if(s.shootCd<=0 && !p.dead && h.y>0 && h.y<H-10 && d<185){   // n'ouvre le feu qu'à l'approche
         ebullets.push({x:sx, y:sy, vx:dx/d*EBSPEED, vy:dy/d*EBSPEED, life:3});
         s.shootCd=1.3+Math.random()*1.4; sfxEnemyShot();
       }
     }
   });
-  holes=holes.filter(h=>h.y<H+30);          // le trou reste visible jusqu'Ã  sortir de l'Ã©cran
+  holes=holes.filter(h=>h.y<H+30);          // le trou reste visible jusqu'à sortir de l'écran
 
-  // ennemis : trajectoires linÃ©aires variÃ©es (pas de poursuite), tir visÃ© vers le joueur
+  // ennemis : trajectoires linéaires variées (pas de poursuite), tir visé vers le joueur
   enemies.forEach(e=>{
-    e.y += scroll;                                      // portÃ© par le dÃ©filement du niveau
+    e.y += scroll;                                      // porté par le défilement du niveau
     const sx=e.vx*dt, sy=e.vy*dt;
-    if(!blockedPoint(e.x+sx, e.y, 12)) e.x+=sx;         // bloquÃ© par un muret -> longe (axe ignorÃ©)
+    if(!blockedPoint(e.x+sx, e.y, 12)) e.x+=sx;         // bloqué par un muret -> longe (axe ignoré)
     if(!blockedPoint(e.x, e.y+sy, 12)) e.y+=sy;
     if(!e.runner){
       e.shootCd-=dt;
       if(e.shootCd<=0 && !p.dead && e.y>0 && e.y<H-10){
         const dx=p.x-e.x, dy=p.y-e.y, d=Math.hypot(dx,dy)||1;
-        ebullets.push({x:e.x, y:e.y, vx:dx/d*EBSPEED, vy:dy/d*EBSPEED, life:3});  // visÃ© sur le joueur
+        ebullets.push({x:e.x, y:e.y, vx:dx/d*EBSPEED, vy:dy/d*EBSPEED, life:3});  // visé sur le joueur
         e.shootCd=1.1+Math.random()*1.4; sfxEnemyShot();
       }
     }
@@ -264,12 +264,12 @@ function update(dt){
     const r=e.moto?20:15;
     if(Math.abs(b.x-e.x)<r && Math.abs(b.y-e.y)<r+1){ b.life=0; e.hp--;
       if(e.hp<=0){ e.dead=true; killEnemy(e); } else burst(b.x,b.y,'#fff',2); } }); });
-  // balles joueur -> embusquÃ©s dans les trous
+  // balles joueur -> embusqués dans les trous
   bullets.forEach(b=>{ if(b.life<=0) return; for(const h of holes) for(const s of h.occ){ if(!s.alive) continue;
     const sx=h.x+s.ox, sy=h.y;
     if(Math.abs(b.x-sx)<10 && Math.abs(b.y-sy)<12){ b.life=0; s.hp--;
       if(s.hp<=0){ s.alive=false; killScore+=150; burst(sx,sy,'#7a2e22',8); } else burst(b.x,b.y,'#fff',2); break; } } });
-  // explosions -> ennemis et embusquÃ©s
+  // explosions -> ennemis et embusqués
   blasts.forEach(bl=>{ enemies.forEach(e=>{ if(e.dead) return;
     if(Math.hypot(bl.x-e.x,bl.y-e.y)<bl.r+11){ e.dead=true; killEnemy(e); } });
     for(const h of holes) for(const s of h.occ){ if(!s.alive) continue;
@@ -296,7 +296,7 @@ let killScore=0;
 function killEnemy(e){
   killScore += e.moto?400:(e.foxhole?150:(e.runner?200:100));
   burst(e.x,e.y, e.color, e.moto?14:8);
-  if(e.moto) flash('Moto dÃ©truite !');
+  if(e.moto) flash('Moto détruite !');
 }
 function burst(x,y,col,n){ for(let i=0;i<n;i++){ const a=Math.random()*Math.PI*2, s=40+Math.random()*120;
   parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:0.3+Math.random()*0.3,col}); } }
@@ -307,20 +307,20 @@ function hitPlayer(){
   if(lives<=0){
     player.dead=true; running=false;
     ArcadeFX.die(cv, player.x, player.y, 'explosion', ()=>{
-      over=true; showOverlay('MISSION TERMINÃ‰E', 'Distance '+Math.floor(dist/10)+' m Â· Score : '+score);
+      over=true; showOverlay('MISSION TERMINÉE', 'Distance '+Math.floor(dist/10)+' m · Score : '+score);
     });
   }
 }
 
-// â”€â”€ rendu â”€â”€
+// ── rendu ──
 function draw(){
   // sol de base (terre)
   ctx.fillStyle='#7e6c40'; ctx.fillRect(0,0,W,H);
-  // dÃ©cor au sol (taches de terrain, troncs, buissons, rochers, murets)
+  // décor au sol (taches de terrain, troncs, buissons, rochers, murets)
   decor.forEach(d=>drawDecor(d));
   // caisses de grenades
   crates.forEach(c=>drawCrate(c));
-  // crevasses (trous + embusquÃ©s)
+  // crevasses (trous + embusqués)
   holes.forEach(h=>drawHole(h));
   // grenades (avec ombre)
   grenades.forEach(g=>{ ctx.fillStyle='rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(g.x,g.y+4,4,2,0,0,Math.PI*2); ctx.fill();
@@ -340,7 +340,7 @@ function draw(){
   // particules
   parts.forEach(pt=>{ ctx.globalAlpha=Math.max(0,pt.life*3); ctx.fillStyle=pt.col; ctx.fillRect(pt.x-1.5,pt.y-1.5,3,3); });
   ctx.globalAlpha=1;
-  // houppiers des arbres : dessinÃ©s PAR-DESSUS (les personnages passent dessous â†’ profondeur)
+  // houppiers des arbres : dessinés PAR-DESSUS (les personnages passent dessous → profondeur)
   decor.forEach(d=>{ if(d.type==='tree') drawTreeCanopy(d); });
 
   drawHUD();
@@ -385,7 +385,7 @@ function drawSandbag(d){
   ctx.strokeStyle='rgba(0,0,0,.2)'; ctx.lineWidth=1; ctx.strokeRect(d.x-w, d.y-7, w*2, 13);
 }
 function drawTreeBase(d){
-  // tronc + ombre au sol (le houppier est dessinÃ© aprÃ¨s les personnages)
+  // tronc + ombre au sol (le houppier est dessiné après les personnages)
   const h=d.s*2.0;
   ctx.fillStyle='rgba(0,0,0,.26)'; ctx.beginPath(); ctx.ellipse(d.x+h*0.10, d.y+3, d.s*0.95, d.s*0.4, 0, 0, Math.PI*2); ctx.fill();
   ctx.fillStyle='#5a3f22'; ctx.fillRect(d.x-d.s*0.13, d.y-h*0.5, d.s*0.26, h*0.5);
@@ -402,29 +402,29 @@ function drawTreeCanopy(d){
   ctx.fillStyle='#3a7a30'; ctx.beginPath(); ctx.arc(d.x-cr*0.25,cy-cr*0.3,cr*0.7,0,Math.PI*2); ctx.fill();
   ctx.fillStyle='rgba(255,255,255,.08)'; ctx.beginPath(); ctx.arc(d.x-cr*0.4,cy-cr*0.45,cr*0.4,0,Math.PI*2); ctx.fill();
 }
-// soldat dessinÃ© comme une silhouette humaine debout, vue 3/4 (de dos quand il monte)
+// soldat dessiné comme une silhouette humaine debout, vue 3/4 (de dos quand il monte)
 function drawSoldier(x,y,fx,fy,col,isPlayer){
   const a=Math.atan2(fy,fx);
   ctx.save(); ctx.translate(x,y);
-  // ombre portÃ©e (donne l'impression de hauteur / vue en plongÃ©e)
+  // ombre portée (donne l'impression de hauteur / vue en plongée)
   ctx.fillStyle='rgba(0,0,0,.30)'; ctx.beginPath(); ctx.ellipse(1,13,12,4.5,0,0,Math.PI*2); ctx.fill();
   // jambes + bottes
   const pants=isPlayer?'#2e6e2a':'#5e2a22';
   ctx.fillStyle=pants; ctx.fillRect(-5,3,4,9); ctx.fillRect(1,3,4,9);
   ctx.fillStyle='#161616'; ctx.fillRect(-5.5,11,4.6,3); ctx.fillRect(0.9,11,4.6,3);
-  // sac Ã  dos (derriÃ¨re, opposÃ© Ã  la visÃ©e)
+  // sac à dos (derrière, opposé à la visée)
   ctx.save(); ctx.rotate(a); ctx.fillStyle='rgba(0,0,0,.35)'; ctx.fillRect(-10,-4,5,8); ctx.restore();
   // torse
   ctx.fillStyle=col; ctx.beginPath(); ctx.ellipse(0,-1,8,9,0,0,Math.PI*2); ctx.fill();
   ctx.fillStyle='rgba(255,255,255,.10)'; ctx.beginPath(); ctx.ellipse(-2.5,-3,3.5,5,0,0,Math.PI*2); ctx.fill();
-  // bras tendus + fusil dans la direction de visÃ©e
+  // bras tendus + fusil dans la direction de visée
   ctx.save(); ctx.rotate(a);
   ctx.strokeStyle=col; ctx.lineWidth=4.5; ctx.lineCap='round';
   ctx.beginPath(); ctx.moveTo(0,-2.5); ctx.lineTo(8,-1); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(0, 2.5); ctx.lineTo(8, 1); ctx.stroke();
   ctx.fillStyle='#15151a'; ctx.fillRect(6,-1.8,15,3.6);
   ctx.restore();
-  // tÃªte + casque
+  // tête + casque
   ctx.fillStyle='#caa07a'; ctx.beginPath(); ctx.arc(0,-10,4.6,0,Math.PI*2); ctx.fill();
   ctx.fillStyle=isPlayer?'#2e6e2a':'#7a2e22';
   ctx.beginPath(); ctx.arc(0,-11,5,Math.PI,Math.PI*2); ctx.fill(); ctx.fillRect(-5,-11,10,2.2);
@@ -446,12 +446,12 @@ function drawMoto(e){
   ctx.fillStyle=e.color||'#5e2a22'; ctx.fillRect(-7,-8,9,11);            // torse/dos
   ctx.strokeStyle=e.color||'#5e2a22'; ctx.lineWidth=3; ctx.lineCap='round';
   ctx.beginPath(); ctx.moveTo(0,-3); ctx.lineTo(9,1); ctx.stroke();      // bras au guidon
-  ctx.fillStyle='#caa07a'; ctx.beginPath(); ctx.arc(-1,-11,4,0,Math.PI*2); ctx.fill(); // tÃªte
+  ctx.fillStyle='#caa07a'; ctx.beginPath(); ctx.arc(-1,-11,4,0,Math.PI*2); ctx.fill(); // tête
   ctx.fillStyle='#2a2a30'; ctx.beginPath(); ctx.arc(-1,-12,4.4,Math.PI,Math.PI*2); ctx.fill(); ctx.fillRect(-5.4,-12,8.8,2); // casque
   ctx.restore();
 }
 function drawHole(h){
-  // le trou (terrain) reste dessinÃ©, occupÃ© ou non
+  // le trou (terrain) reste dessiné, occupé ou non
   const rw=h.two?19:14;
   ctx.save(); ctx.translate(h.x,h.y);
   ctx.fillStyle='#574629'; ctx.beginPath(); ctx.ellipse(0,1,rw,10,0,0,Math.PI*2); ctx.fill();   // bord de terre
@@ -461,7 +461,7 @@ function drawHole(h){
 }
 function drawHoleSoldier(x,y){
   ctx.save(); ctx.translate(x,y);
-  ctx.fillStyle='#caa07a'; ctx.beginPath(); ctx.arc(0,-1,4,0,Math.PI*2); ctx.fill();              // tÃªte
+  ctx.fillStyle='#caa07a'; ctx.beginPath(); ctx.arc(0,-1,4,0,Math.PI*2); ctx.fill();              // tête
   ctx.fillStyle='#7a2e22'; ctx.beginPath(); ctx.arc(0,-2.5,4.6,Math.PI,Math.PI*2); ctx.fill(); ctx.fillRect(-4.6,-2.5,9.2,2.2); // casque
   ctx.fillStyle='#15151a'; ctx.fillRect(-1.6,2,3.2,10);                                            // fusil vers le bas
   ctx.restore();
@@ -469,7 +469,7 @@ function drawHoleSoldier(x,y){
 function drawCrate(c){
   ctx.fillStyle='rgba(0,0,0,.28)'; ctx.fillRect(c.x-9,c.y+6,18,4);          // ombre
   ctx.fillStyle='#8a6a34'; ctx.fillRect(c.x-9,c.y-9,18,16);                 // caisse
-  ctx.fillStyle='#a0823f'; ctx.fillRect(c.x-9,c.y-9,18,3);                  // dessus Ã©clairÃ©
+  ctx.fillStyle='#a0823f'; ctx.fillRect(c.x-9,c.y-9,18,3);                  // dessus éclairé
   ctx.strokeStyle='#5a3f1c'; ctx.lineWidth=1.5; ctx.strokeRect(c.x-9,c.y-9,18,16);
   ctx.beginPath(); ctx.moveTo(c.x-9,c.y-9); ctx.lineTo(c.x+9,c.y+7); ctx.moveTo(c.x+9,c.y-9); ctx.lineTo(c.x-9,c.y+7); ctx.stroke();
   // symbole grenade
@@ -479,7 +479,7 @@ function drawCrate(c){
 function drawHUD(){
   ctx.textAlign='left'; ctx.font='bold 16px "Courier New",monospace';
   ctx.fillStyle='#fff'; ctx.fillText('SCORE '+score, 10, 22);
-  ctx.textAlign='center'; ctx.fillStyle='#ff5252'; ctx.fillText('â™¥'.repeat(Math.max(0,lives)), W/2, 22);
+  ctx.textAlign='center'; ctx.fillStyle='#ff5252'; ctx.fillText('♥'.repeat(Math.max(0,lives)), W/2, 22);
   ctx.textAlign='right'; ctx.fillStyle='#ffd23a'; ctx.fillText('GRENADES '+grenadeCount, W-10, 22);
   if(msgT>0){ ctx.textAlign='center'; ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(0,H-20,W,20);
     ctx.fillStyle='#ffe28a'; ctx.font='13px "Courier New",monospace'; ctx.fillText(msg, W/2, H-6); }
