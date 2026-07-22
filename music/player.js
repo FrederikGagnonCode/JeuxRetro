@@ -436,7 +436,7 @@
     tab.forEach((e2, i) => { html += '<div class="row"><span>' + (i + 1) + '. <b>' + e2.n + '</b></span><span>' + e2.s + '</span></div>'; });
     tablePop.innerHTML = html;
     const wrap = document.getElementById('wrap');
-    (wrap || document.body).appendChild(tablePop);
+    (document.fullscreenElement || wrap || document.body).appendChild(tablePop);
     if (autoMs) { clearTimeout(tableT); tableT = setTimeout(() => { if (tablePop) { tablePop.remove(); tablePop = null; } }, autoMs); }
   }
   function pauseGame() {
@@ -450,7 +450,8 @@
     const div = document.createElement('div'); div.id = 'arcade-hi-init';
     div.innerHTML = '<div class="t">★ MEILLEUR SCORE ! ★</div><div class="s">' + s +
       ' pts — entre tes initiales</div><div class="l"></div><div class="h">Lettres A-Z · Retour = effacer · Entrée = valider</div>';
-    document.body.appendChild(div);
+    // en plein écran, seul l'élément fullscreen est visible : on s'y accroche
+    (document.fullscreenElement || document.body).appendChild(div);
     const lb = div.querySelector('.l');
     const render = () => { lb.textContent = (letters + '···').slice(0, 3).toUpperCase().split('').join(' '); };
     render();
@@ -474,6 +475,7 @@
   function refresh() { if (badge) badge.innerHTML = 'RECORD <b>' + best + '</b>'; }
   function showToast() {
     if (!toast) return;
+    (document.fullscreenElement || document.body).appendChild(toast);   // visible aussi en plein écran
     toast.classList.add('show');
     clearTimeout(toastT); toastT = setTimeout(() => toast.classList.remove('show'), 2800);
   }
@@ -543,7 +545,8 @@
   document.addEventListener('keydown', e => {
     if ((e.key === 'f' || e.key === 'F') && !e.repeat) {
       const c = theCanvas(); if (!c) return;
-      const target = document.getElementById('wrap') || c;
+      // le conteneur (et pas le canvas seul) : les écrans de fin restent visibles
+      const target = document.getElementById('wrap') || c.parentElement || c;
       if (document.fullscreenElement) document.exitFullscreen();
       else if (target.requestFullscreen) target.requestFullscreen().catch(() => {});
     }
