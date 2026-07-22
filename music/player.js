@@ -359,7 +359,7 @@
   let best = parseInt(localStorage.getItem(KEY) || '0', 10) || 0;
   let prev = best, beaten = false, last = 0, badge = null, toast = null, toastT = null;
   let tab = []; try { tab = JSON.parse(localStorage.getItem(TKEY) || '[]') || []; } catch (e) { tab = []; }
-  let prompting = false, tablePop = null, tableT = null;
+  let prompting = false, tablePop = null, tableT = null, promptedScore = -1;
   function saveTab() { tab.sort((a, b) => b.s - a.s); tab = tab.slice(0, 5); localStorage.setItem(TKEY, JSON.stringify(tab)); }
   function qualifies(s) { return s > 0 && (tab.length < 5 || s > tab[tab.length - 1].s); }
 
@@ -406,6 +406,20 @@
     toast = document.createElement('div'); toast.id = 'arcade-hi-toast';
     toast.textContent = '★ NOUVEAU RECORD ! ★'; document.body.appendChild(toast);
     refresh();
+    // guetteur de fin de partie : l'invite d'initiales s'ouvre SUR l'écran de
+    // game over (avant la relance), en lisant les globaux over/running du jeu
+    setInterval(() => {
+      if (prompting) return;
+      let isOver = false;
+      try {
+        if (typeof over !== 'undefined') isOver = over === true;
+        else if (typeof running !== 'undefined') isOver = running === false;
+      } catch (e) {}
+      if (isOver && last > 0 && promptedScore !== last && qualifies(last)) {
+        promptedScore = last;
+        openPrompt(last);
+      }
+    }, 400);
   }
   function toggleTable(autoMs) {
     if (tablePop) { tablePop.remove(); tablePop = null; clearTimeout(tableT); if (!autoMs) return; }
@@ -463,7 +477,9 @@
     submit(score) {
       score = Math.floor(score) || 0;
       if (score < last - 1) {                                  // score reparti à la baisse = nouvelle partie
-        if (qualifies(last) && badge) openPrompt(last);        // la partie finie entre au tableau ?
+        // secours (jeux sans over/running) : invite si pas déjà faite au game over
+        if (promptedScore !== last && qualifies(last) && badge) openPrompt(last);
+        promptedScore = -1;
         prev = best; beaten = false;
       }
       last = score;
