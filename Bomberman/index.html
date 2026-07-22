@@ -29,14 +29,14 @@
     <canvas id="game" width="480" height="416"></canvas>
     <div id="overlay">
       <h2 id="ovTitle">BOMBERMAN</h2>
-      <p>Détruis les blocs, élimine les ballons, trouve la sortie.</p>
-      <p>← ↑ ↓ → (ou WASD) : bouger · Espace : poser une bombe</p>
-      <p>Bonus cachés : 💣 bombe en plus · 🔥 portée + · 👟 vitesse</p>
-      <p class="blink" style="margin-top:12px">▶ Cliquez ou Espace pour jouer</p>
+      <p>DÃ©truis les blocs, Ã©limine les ballons, trouve la sortie.</p>
+      <p>â† â†‘ â†“ â†’ (ou WASD) : bouger Â· Espace : poser une bombe</p>
+      <p>Bonus cachÃ©s : ðŸ’£ bombe en plus Â· ðŸ”¥ portÃ©e + Â· ðŸ‘Ÿ vitesse</p>
+      <p class="blink" style="margin-top:12px">â–¶ Cliquez ou Espace pour jouer</p>
     </div>
   </div>
-  <div id="hint">Flèches / WASD : bouger · Espace : bombe · élimine tout puis va à la porte · P = pause</div>
-  <a class="back" href="../index.html">← Menu Arcade</a>
+  <div id="hint">FlÃ¨ches / WASD : bouger Â· Espace : bombe Â· Ã©limine tout puis va Ã  la porte Â· P = pause</div>
+  <a class="back" href="../index.html">â† Menu Arcade</a>
 
 <script>
 const cv=document.getElementById('game'), ctx=cv.getContext('2d');
@@ -70,7 +70,7 @@ function genLevel(){
       else grid[y][x]=Math.random()<0.62?2:0;
     }
   }
-  // dégager le coin de départ
+  // dÃ©gager le coin de dÃ©part
   grid[1][1]=0; grid[1][2]=0; grid[2][1]=0;
   // sortie + power-ups sous des blocs
   const soft=[];
@@ -132,7 +132,7 @@ function moveEntity(o,dx,dy,sp,dt){
   const nx=o.px+dx*sp*dt, ny=o.py+dy*sp*dt;
   const cx=cellOf(o.px), cy=cellOf(o.py);
   const tx=cellOf(nx+(dx>0?10:dx<0?-10:0)), ty=cellOf(ny+(dy>0?10:dy<0?-10:0));
-  // autorisé si la case visée est libre (la bombe sous soi ne bloque pas)
+  // autorisÃ© si la case visÃ©e est libre (la bombe sous soi ne bloque pas)
   const under=(tx===cx&&ty===cy);
   if(dx!==0){
     if(under || !solid(tx,cy)){ o.px=nx; o.py+= (cy*CS-o.py)*Math.min(1,10*dt); return true; }
@@ -209,7 +209,7 @@ function explode(b){
         for(const pw of powers){ if(pw.x===x&&pw.y===y) pw.revealed=true; }
         break;
       }
-      // chaîne
+      // chaÃ®ne
       const ob=bombs.find(bb=>bb.cx===x&&bb.cy===y&&bb.t>0);
       if(ob){ ob.t=0.01; }
     }
@@ -224,7 +224,7 @@ function killPlayer(){
   lives--; p.dead=true; running=false;
   ArcadeFX.die(cv, p.px+CS/2, p.py+CS/2, 'explosion', ()=>{
     if(lives<=0){ over=true; if(window.ArcadeHi)ArcadeHi.submit(score);
-      showOverlay('GAME OVER','Niveau '+level+' · Score : '+score); }
+      showOverlay('GAME OVER','Niveau '+level+' Â· Score : '+score); }
     else { p.px=CS; p.py=CS; p.dead=false; p.inv=2.5; running=true; }
   });
 }
@@ -255,12 +255,12 @@ function draw(){
     ctx.fillRect(px+8,py+6,CS-16,CS-10);
     if(exit.open && Math.floor(performance.now()/300)%2){ ctx.fillStyle='#c0ffc8'; ctx.fillRect(px+12,py+10,CS-24,CS-18); }
   }
-  // power-ups révélés
+  // power-ups rÃ©vÃ©lÃ©s
   powers.forEach(pw=>{ if(!pw.revealed) return;
     const px=pw.x*CS, py=pw.y*CS;
     ctx.fillStyle='#1c1c30'; ctx.fillRect(px+4,py+4,CS-8,CS-8);
     ctx.font='16px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(pw.type==='bomb'?'💣':pw.type==='fire'?'🔥':'👟', px+CS/2, py+CS/2+1);
+    ctx.fillText(pw.type==='bomb'?'ðŸ’£':pw.type==='fire'?'ðŸ”¥':'ðŸ‘Ÿ', px+CS/2, py+CS/2+1);
     ctx.textBaseline='alphabetic';
   });
   // bombes
@@ -301,7 +301,7 @@ function draw(){
     ctx.fillStyle='rgba(0,0,0,.28)'; ctx.beginPath(); ctx.ellipse(px,py+12,9,3.4,0,0,Math.PI*2); ctx.fill();
     ctx.fillStyle='#e8e8f0'; ctx.beginPath(); ctx.arc(px,py+3,8.4,0,Math.PI*2); ctx.fill();      // corps
     ctx.fillStyle='#3a5ae8'; ctx.fillRect(px-8,py+1,16,5);                                        // ceinture
-    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(px,py-7,7.6,0,Math.PI*2); ctx.fill();          // tête
+    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(px,py-7,7.6,0,Math.PI*2); ctx.fill();          // tÃªte
     ctx.fillStyle='#3a5ae8'; ctx.beginPath(); ctx.arc(px,py-9,7.8,Math.PI,Math.PI*2); ctx.fill(); // casque
     ctx.fillStyle='#ffb8d0'; ctx.fillRect(px-8.4,py-9,2.6,4);                                      // oreillettes
     ctx.fillRect(px+5.8,py-9,2.6,4);
@@ -313,8 +313,8 @@ function draw(){
   ctx.fillStyle='rgba(0,0,0,.5)'; ctx.fillRect(0,0,COLS*CS,16);
   ctx.font='bold 12px "Courier New",monospace'; ctx.textAlign='left';
   ctx.fillStyle='#fff'; ctx.fillText('SCORE '+score, 6, 12);
-  ctx.fillStyle='#ff5252'; ctx.fillText('♥'.repeat(Math.max(0,lives)), 130, 12);
-  ctx.fillStyle='#ffd23a'; ctx.fillText('💣'+player.maxB+' 🔥'+player.range, 190, 12);
+  ctx.fillStyle='#ff5252'; ctx.fillText('â™¥'.repeat(Math.max(0,lives)), 130, 12);
+  ctx.fillStyle='#ffd23a'; ctx.fillText('ðŸ’£'+player.maxB+' ðŸ”¥'+player.range, 190, 12);
   ctx.textAlign='right'; ctx.fillStyle='#4ddc5a'; ctx.fillText('NIVEAU '+level, COLS*CS-6, 12);
   if(paused){ ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(0,0,cv.width,cv.height);
     ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.font='30px "Courier New",monospace'; ctx.fillText('PAUSE',cv.width/2,cv.height/2); }
@@ -329,7 +329,7 @@ function loop(now){
 level=1; score=0; lives=3; genLevel(); player=makePlayer();
 requestAnimationFrame(loop);
 </script>
-<script src="../music/playlist.js"></script>
-<script src="../music/player.js"></script>
+<script src="../music/playlist.js?v=2"></script>
+<script src="../music/player.js?v=2"></script>
 </body>
 </html>

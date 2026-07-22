@@ -32,14 +32,14 @@
     <div id="overlay">
       <h2 id="ovTitle">GUN.SMOKE</h2>
       <p>Nettoie la ville de ses hors-la-loi, cow-boy.</p>
-      <p>← ↑ ↓ → (ou WASD) : se déplacer</p>
-      <p>Espace : tir droit · X : tir en diagonale gauche · C : diagonale droite</p>
-      <p>Ramasse l'étoile de shérif pour un fusil plus rapide</p>
-      <p class="blink" style="margin-top:12px">▶ Cliquez ou Espace pour dégainer</p>
+      <p>â† â†‘ â†“ â†’ (ou WASD) : se dÃ©placer</p>
+      <p>Espace : tir droit Â· X : tir en diagonale gauche Â· C : diagonale droite</p>
+      <p>Ramasse l'Ã©toile de shÃ©rif pour un fusil plus rapide</p>
+      <p class="blink" style="margin-top:12px">â–¶ Cliquez ou Espace pour dÃ©gainer</p>
     </div>
   </div>
-  <div id="hint">Flèches / WASD : bouger · Espace : tir droit · X / C : tirs diagonaux · P = pause</div>
-  <a class="back" href="../index.html">← Menu Arcade</a>
+  <div id="hint">FlÃ¨ches / WASD : bouger Â· Espace : tir droit Â· X / C : tirs diagonaux Â· P = pause</div>
+  <a class="back" href="../index.html">â† Menu Arcade</a>
 
 <script>
 const cv = document.getElementById('game');
@@ -58,7 +58,7 @@ let last=0;
 const keys={};
 function flash(m){ msg=m; msgT=2.5; }
 
-// ── audio ──
+// â”€â”€ audio â”€â”€
 let _ac=null;
 function ac(){ if(!_ac) _ac=new (window.AudioContext||window.webkitAudioContext)(); if(_ac.state==='suspended') _ac.resume(); return _ac; }
 function sfxShot(){ const a=ac(),t=a.currentTime;
@@ -96,7 +96,7 @@ function floatTxt(x,y,t){ floats.push({x,y,txt:t,life:1}); }
 
 function spawnEnemy(){
   const r=Math.random();
-  if(r<0.62){                                  // bandit à pied (du haut)
+  if(r<0.62){                                  // bandit Ã  pied (du haut)
     enemies.push({ type:'bandit', x:20+Math.random()*(W-40), y:-20,
       vx:(Math.random()*2-1)*30, vy:40+Math.random()*26, hp:1,
       shootCd:0.8+Math.random()*1.4 });
@@ -117,7 +117,7 @@ function fire(dx,dy){
   sfxShot();
 }
 
-// ── entrées ──
+// â”€â”€ entrÃ©es â”€â”€
 document.addEventListener('keydown',e=>{
   const k=e.key.toLowerCase(); keys[k]=true;
   if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)) e.preventDefault();
@@ -129,7 +129,7 @@ document.addEventListener('keyup',e=>{ keys[e.key.toLowerCase()]=false; });
 overlay.addEventListener('click',()=>{ if(!running||over) newGame(); });
 cv.addEventListener('touchstart',e=>{ e.preventDefault(); if(!running||over) newGame(); },{passive:false});
 
-// ── mise à jour ──
+// â”€â”€ mise Ã  jour â”€â”€
 function update(dt){
   if(!running||paused||over) return;
   if(msgT>0) msgT-=dt;
@@ -182,7 +182,7 @@ function update(dt){
   ebullets.forEach(b=>{ b.x+=b.vx*dt; b.y+=b.vy*dt; b.life-=dt; });
   ebullets=ebullets.filter(b=>b.life>0 && b.x>-10 && b.x<W+10 && b.y>-10 && b.y<H+10);
 
-  // étoiles de shérif
+  // Ã©toiles de shÃ©rif
   stars.forEach(s=>{ s.y+=SCROLL*dt;
     if(Math.hypot(s.x-p.x,s.y-p.y)<15 && !p.dead){ s.got=true; p.rifle=10; sfxStar(); flash('Fusil rapide 10 s !'); } });
   stars=stars.filter(s=>!s.got && s.y<H+20);
@@ -212,12 +212,12 @@ function hitPlayer(){
   lives--; player.dead=true; running=false;
   ArcadeFX.die(cv, player.x, player.y, 'explosion', ()=>{
     if(lives<=0){ over=true; if(window.ArcadeHi)ArcadeHi.submit(score);
-      showOverlay('TU ES TOMBÉ','Score : '+score); }
+      showOverlay('TU ES TOMBÃ‰','Score : '+score); }
     else { player=makePlayer(); running=true; }
   });
 }
 
-// ── rendu ──
+// â”€â”€ rendu â”€â”€
 function draw(){
   ctx.fillStyle='#b8935a'; ctx.fillRect(0,0,W,H);
   // pistes de charrette
@@ -272,9 +272,9 @@ function drawCowboy(p){
   ctx.fillStyle='#3a5a8f'; ctx.fillRect(-4.6,3,4,9); ctx.fillRect(0.6,3,4,9);      // jeans
   ctx.fillStyle='#241a10'; ctx.fillRect(-5,11,4.6,3); ctx.fillRect(0.4,11,4.6,3);  // bottes
   ctx.fillStyle='#8a4a2a'; ctx.beginPath(); ctx.ellipse(0,-1,7,8,0,0,Math.PI*2); ctx.fill();   // veste
-  ctx.fillStyle='#ffd23a'; ctx.beginPath(); ctx.arc(-3,-2,1.6,0,Math.PI*2); ctx.fill();        // étoile
+  ctx.fillStyle='#ffd23a'; ctx.beginPath(); ctx.arc(-3,-2,1.6,0,Math.PI*2); ctx.fill();        // Ã©toile
   ctx.fillStyle='#15151a'; ctx.fillRect(-1.6,-22,3.2,10);                                       // fusil vers le haut
-  ctx.fillStyle='#caa07a'; ctx.beginPath(); ctx.arc(0,-10,4.4,0,Math.PI*2); ctx.fill();         // tête
+  ctx.fillStyle='#caa07a'; ctx.beginPath(); ctx.arc(0,-10,4.4,0,Math.PI*2); ctx.fill();         // tÃªte
   ctx.fillStyle='#5f4426'; ctx.beginPath(); ctx.ellipse(0,-12.4,7,2.2,0,0,Math.PI*2); ctx.fill();// chapeau
   ctx.fillStyle='#5f4426'; ctx.beginPath(); ctx.arc(0,-13.4,3.6,Math.PI,Math.PI*2); ctx.fill();
   ctx.restore();
@@ -300,8 +300,8 @@ function drawRider(e){
   ctx.beginPath(); ctx.moveTo(-9,7); ctx.lineTo(-11+gallop,13); ctx.moveTo(-4,7); ctx.lineTo(-4-gallop,13);
   ctx.moveTo(5,7); ctx.lineTo(5+gallop,13); ctx.moveTo(9,7); ctx.lineTo(11-gallop,13); ctx.stroke();
   ctx.fillStyle='#6e4a26'; ctx.beginPath(); ctx.ellipse(0,4,11,5,0,0,Math.PI*2); ctx.fill();     // corps du cheval
-  ctx.fillStyle='#6e4a26'; ctx.beginPath(); ctx.ellipse(11,-1,4,3,0.5,0,Math.PI*2); ctx.fill();  // tête cheval
-  ctx.fillStyle='#3d2c14'; ctx.beginPath(); ctx.moveTo(8,-3); ctx.quadraticCurveTo(4,-6,-2,-3); ctx.lineTo(0,0); ctx.fill(); // crinière
+  ctx.fillStyle='#6e4a26'; ctx.beginPath(); ctx.ellipse(11,-1,4,3,0.5,0,Math.PI*2); ctx.fill();  // tÃªte cheval
+  ctx.fillStyle='#3d2c14'; ctx.beginPath(); ctx.moveTo(8,-3); ctx.quadraticCurveTo(4,-6,-2,-3); ctx.lineTo(0,0); ctx.fill(); // criniÃ¨re
   ctx.fillStyle='#3d2c14'; ctx.beginPath(); ctx.moveTo(-11,4); ctx.quadraticCurveTo(-15,6,-14,10); ctx.lineTo(-11,8); ctx.fill(); // queue
   ctx.fillStyle='#6e2a22'; ctx.fillRect(-3,-9,6,8);                                              // cavalier
   ctx.fillStyle='#caa07a'; ctx.beginPath(); ctx.arc(0,-11.4,3.4,0,Math.PI*2); ctx.fill();
@@ -313,7 +313,7 @@ function drawHUD(){
   ctx.fillStyle='rgba(0,0,0,.4)'; ctx.fillRect(0,0,W,17);
   ctx.textAlign='left'; ctx.font='bold 13px "Courier New",monospace';
   ctx.fillStyle='#fff'; ctx.fillText('SCORE '+score, 8, 13);
-  ctx.textAlign='center'; ctx.fillStyle='#ff5252'; ctx.fillText('♥'.repeat(Math.max(0,lives)), W/2, 13);
+  ctx.textAlign='center'; ctx.fillStyle='#ff5252'; ctx.fillText('â™¥'.repeat(Math.max(0,lives)), W/2, 13);
   ctx.textAlign='right'; ctx.fillStyle=player&&player.rifle>0?'#ffd23a':'#8a8aa0';
   ctx.fillText(player&&player.rifle>0?'FUSIL '+Math.ceil(player.rifle):'COLT', W-8, 13);
   if(msgT>0){ ctx.textAlign='center'; ctx.fillStyle='rgba(0,0,0,.5)'; ctx.fillRect(0,H-18,W,18);
@@ -330,7 +330,7 @@ player=makePlayer(); bullets=[]; ebullets=[]; enemies=[]; parts=[]; stars=[]; fl
 score=0; lives=3; dist=0; killScore=0; initDecor();
 requestAnimationFrame(loop);
 </script>
-<script src="../music/playlist.js"></script>
-<script src="../music/player.js"></script>
+<script src="../music/playlist.js?v=2"></script>
+<script src="../music/player.js?v=2"></script>
 </body>
 </html>

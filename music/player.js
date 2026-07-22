@@ -408,18 +408,25 @@
     refresh();
     // guetteur de fin de partie : l'invite d'initiales s'ouvre SUR l'écran de
     // game over (avant la relance), en lisant les globaux over/running du jeu
-    setInterval(() => {
-      if (prompting) return;
-      let isOver = false;
+    function gameEnded() {
       try {
-        if (typeof over !== 'undefined') isOver = over === true;
-        else if (typeof running !== 'undefined') isOver = running === false;
+        if (typeof over !== 'undefined') return over === true;
+        if (typeof running !== 'undefined') return running === false;
       } catch (e) {}
-      if (isOver && last > 0 && promptedScore !== last && qualifies(last)) {
-        promptedScore = last;
-        openPrompt(last);
+      return false;
+    }
+    function pendingPrompt() { return !prompting && last > 0 && promptedScore !== last && qualifies(last); }
+    setInterval(() => {
+      if (gameEnded() && pendingPrompt()) { promptedScore = last; openPrompt(last); }
+    }, 150);
+    // filet de sécurité : au game over, la PREMIÈRE touche ouvre l'invite au
+    // lieu de relancer la partie (aucune course possible avec le guetteur)
+    window.addEventListener('keydown', (e) => {
+      if (gameEnded() && pendingPrompt()) {
+        e.stopImmediatePropagation(); e.preventDefault();
+        promptedScore = last; openPrompt(last);
       }
-    }, 400);
+    }, true);
   }
   function toggleTable(autoMs) {
     if (tablePop) { tablePop.remove(); tablePop = null; clearTimeout(tableT); if (!autoMs) return; }

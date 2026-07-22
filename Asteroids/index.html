@@ -29,14 +29,14 @@
     <canvas id="game" width="520" height="400"></canvas>
     <div id="overlay">
       <h2 id="ovTitle">ASTEROIDS</h2>
-      <p>Pulvérise les astéroïdes — les gros se brisent en morceaux.</p>
-      <p>← → pivoter · ↑ propulsion (inertie !) · Espace : tirer</p>
-      <p>X : hyperespace (téléportation risquée) · gare à l'OVNI</p>
-      <p class="blink" style="margin-top:12px">▶ Cliquez ou Espace pour décoller</p>
+      <p>PulvÃ©rise les astÃ©roÃ¯des â€” les gros se brisent en morceaux.</p>
+      <p>â† â†’ pivoter Â· â†‘ propulsion (inertie !) Â· Espace : tirer</p>
+      <p>X : hyperespace (tÃ©lÃ©portation risquÃ©e) Â· gare Ã  l'OVNI</p>
+      <p class="blink" style="margin-top:12px">â–¶ Cliquez ou Espace pour dÃ©coller</p>
     </div>
   </div>
-  <div id="hint">← → pivoter · ↑ propulser · Espace : tir · X : hyperespace · P = pause</div>
-  <a class="back" href="../index.html">← Menu Arcade</a>
+  <div id="hint">â† â†’ pivoter Â· â†‘ propulser Â· Espace : tir Â· X : hyperespace Â· P = pause</div>
+  <a class="back" href="../index.html">â† Menu Arcade</a>
 
 <script>
 const cv=document.getElementById('game'), ctx=cv.getContext('2d');
@@ -150,7 +150,7 @@ function update(dt){
   uShots.forEach(b=>{ b.x+=b.vx*dt; b.y+=b.vy*dt; b.life-=dt; wrapPos(b); });
   uShots=uShots.filter(b=>b.life>0);
 
-  // tirs -> astéroïdes / OVNI
+  // tirs -> astÃ©roÃ¯des / OVNI
   shots.forEach(b=>{
     for(const r of rocks){ if(r.dead) continue;
       if(Math.hypot(b.x-r.x,b.y-r.y)<r.r){ b.life=0; splitRock(r); break; } }
@@ -185,7 +185,7 @@ function killShip(){
   lives--; s.dead=true; running=false; sfxBoom(40);
   ArcadeFX.die(cv, s.x, s.y, 'explosion', ()=>{
     if(lives<=0){ over=true; if(window.ArcadeHi)ArcadeHi.submit(score);
-      showOverlay('GAME OVER','Vague '+wave+' · Score : '+score); }
+      showOverlay('GAME OVER','Vague '+wave+' Â· Score : '+score); }
     else { ship=makeShip(); running=true; }
   });
 }
@@ -251,7 +251,7 @@ ship=makeShip(); shots=[]; rocks=[]; uShots=[]; parts=[];
 score=0; lives=3; wave=0; startWave(); running=false;
 requestAnimationFrame(loop);
 </script>
-<script src="../music/playlist.js"></script>
-<script src="../music/player.js"></script>
+<script src="../music/playlist.js?v=2"></script>
+<script src="../music/player.js?v=2"></script>
 </body>
 </html>

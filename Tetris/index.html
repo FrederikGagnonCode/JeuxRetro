@@ -31,14 +31,14 @@
     <canvas id="game" width="300" height="340"></canvas>
     <div id="overlay">
       <h2 id="ovTitle">TETRIS</h2>
-      <p>Empile les pièces, complète des lignes pour les effacer.</p>
-      <p>← → déplacer · ↑ pivoter · ↓ descente douce · Espace : chute</p>
+      <p>Empile les piÃ¨ces, complÃ¨te des lignes pour les effacer.</p>
+      <p>â† â†’ dÃ©placer Â· â†‘ pivoter Â· â†“ descente douce Â· Espace : chute</p>
       <p>P : pause</p>
-      <p class="blink" style="margin-top:14px">▶ Cliquez ou Espace pour commencer</p>
+      <p class="blink" style="margin-top:14px">â–¶ Cliquez ou Espace pour commencer</p>
     </div>
   </div>
-  <div id="hint">← → déplacer · ↑ pivoter · ↓ descendre · Espace : chute instantanée · P = pause</div>
-  <a class="back" href="../index.html">← Menu Arcade</a>
+  <div id="hint">â† â†’ dÃ©placer Â· â†‘ pivoter Â· â†“ descendre Â· Espace : chute instantanÃ©e Â· P = pause</div>
+  <a class="back" href="../index.html">â† Menu Arcade</a>
 
 <script>
 const cv = document.getElementById('game');
@@ -66,7 +66,7 @@ let running=false, paused=false, over=false;
 let last=0;
 const keys={};
 
-// ── audio ──
+// â”€â”€ audio â”€â”€
 let _ac=null;
 function ac(){ if(!_ac) _ac=new (window.AudioContext||window.webkitAudioContext)(); if(_ac.state==='suspended') _ac.resume(); return _ac; }
 function blip(f,d,type){ const a=ac(),t=a.currentTime; const o=a.createOscillator(); o.type=type||'square';
@@ -86,7 +86,7 @@ function spawn(){
   cur={ k, c:s.c, m, x:Math.floor((COLS-m[0].length)/2), y:(k==='I'?-1:0) };
   if(collide(cur.m,cur.x,cur.y)){ over=true; running=false;
     if(window.ArcadeHi) ArcadeHi.submit(score);
-    showOverlay('GAME OVER','Lignes : '+lines+' · Score : '+score); }
+    showOverlay('GAME OVER','Lignes : '+lines+' Â· Score : '+score); }
 }
 function newGame(){
   board=Array.from({length:ROWS},()=>new Array(COLS).fill(0));
@@ -146,7 +146,7 @@ function clearLines(){
   }
 }
 
-// ── entrées ──
+// â”€â”€ entrÃ©es â”€â”€
 document.addEventListener('keydown',e=>{
   const k=e.key.toLowerCase(); keys[k]=true;
   if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)) e.preventDefault();
@@ -164,7 +164,7 @@ document.addEventListener('keyup',e=>{ keys[e.key.toLowerCase()]=false; });
 overlay.addEventListener('click',()=>{ if(!running||over) newGame(); });
 cv.addEventListener('touchstart',e=>{ e.preventDefault(); if(!running||over) newGame(); },{passive:false});
 
-// ── mise à jour ──
+// â”€â”€ mise Ã  jour â”€â”€
 function update(dt){
   if(!running||paused||over) return;
   dropT+=dt;
@@ -172,7 +172,7 @@ function update(dt){
   if(dropT>=interval){ dropT=0; stepDown(keys['arrowdown']||keys['s']); }
 }
 
-// ── rendu ──
+// â”€â”€ rendu â”€â”€
 function cellRect(bx,by,col){
   const x=PFX+bx*CELL, y=PFY+by*CELL;
   ctx.fillStyle=col; ctx.fillRect(x,y,CELL,CELL);
@@ -190,16 +190,16 @@ function draw(){
   ctx.strokeStyle='#39c6e0'; ctx.lineWidth=2; ctx.strokeRect(PFX-1,PFY-1,PW+2,PH+2);
 
   if(running||over){
-    // blocs posés
+    // blocs posÃ©s
     for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++) if(board[y][x]) cellRect(x,y,board[y][x]);
     if(!over && cur){
-      // fantôme
+      // fantÃ´me
       const gy=ghostY();
       for(let y=0;y<cur.m.length;y++) for(let x=0;x<cur.m[y].length;x++) if(cur.m[y][x]){
         const bx=cur.x+x, by=gy+y; if(by>=0){ const px=PFX+bx*CELL, py=PFY+by*CELL;
           ctx.fillStyle='rgba(255,255,255,.10)'; ctx.fillRect(px,py,CELL,CELL);
           ctx.strokeStyle='rgba(255,255,255,.30)'; ctx.strokeRect(px+0.5,py+0.5,CELL-1,CELL-1); } }
-      // pièce courante
+      // piÃ¨ce courante
       for(let y=0;y<cur.m.length;y++) for(let x=0;x<cur.m[y].length;x++) if(cur.m[y][x]){
         const by=cur.y+y; if(by>=0) cellRect(cur.x+x, by, cur.c); }
     }
@@ -213,7 +213,7 @@ function drawPanel(){
   const px=PFX+PW+18;
   ctx.textAlign='left'; ctx.font='bold 12px "Courier New",monospace';
   ctx.fillStyle='#39c6e0'; ctx.fillText('SUIVANT', px, PFY+12);
-  // aperçu pièce suivante
+  // aperÃ§u piÃ¨ce suivante
   if(nextK){
     const s=SHAPES[nextK], m=s.m, bx0=px, by0=PFY+22;
     for(let y=0;y<m.length;y++) for(let x=0;x<m[y].length;x++) if(m[y][x]){
@@ -238,7 +238,7 @@ board=Array.from({length:ROWS},()=>new Array(COLS).fill(0));
 bag=newBag(); nextK=nextPiece(); score=0; lines=0; level=1; dropInt=0.8; dropT=0;
 requestAnimationFrame(loop);
 </script>
-<script src="../music/playlist.js"></script>
-<script src="../music/player.js"></script>
+<script src="../music/playlist.js?v=2"></script>
+<script src="../music/player.js?v=2"></script>
 </body>
 </html>

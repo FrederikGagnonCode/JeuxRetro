@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Arcade Rétro</title>
+<title>Arcade RÃ©tro</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="apple-touch-icon" href="favicon.svg">
 <meta name="theme-color" content="#0b0b1a">
@@ -27,7 +27,7 @@
     padding:40px 20px 60px;min-height:100vh;
     position:relative;
   }
-  /* ── fond psychédélique animé ── */
+  /* â”€â”€ fond psychÃ©dÃ©lique animÃ© â”€â”€ */
   #psych{
     position:fixed; inset:-25%; z-index:-2; pointer-events:none;
     background:
@@ -114,7 +114,7 @@
   .card:hover .year{color:#7CFFCB}
   .thumb{position:relative;width:100%;aspect-ratio:4/3;background:#000;display:block}
   .thumb svg{width:100%;height:100%;display:block;image-rendering:pixelated}
-  /* effet écran CRT : fines scanlines + vignettage sur toutes les vignettes */
+  /* effet Ã©cran CRT : fines scanlines + vignettage sur toutes les vignettes */
   .thumb::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:1;
     background:
       repeating-linear-gradient(0deg, rgba(0,0,0,.15) 0 1px, transparent 1px 3px),
@@ -138,18 +138,18 @@
 <body>
   <div id="psych"></div>
   <div id="veil"></div>
-  <h1>★ ARCADE RÉTRO ★</h1>
-  <div class="sub">Choisis ton jeu — Insert Coin</div>
-  <div class="count"><span>🕹️</span><b id="gameCount">0</b> JEUX</div>
+  <h1>â˜… ARCADE RÃ‰TRO â˜…</h1>
+  <div class="sub">Choisis ton jeu â€” Insert Coin</div>
+  <div class="count"><span>ðŸ•¹ï¸</span><b id="gameCount">0</b> JEUX</div>
   <div id="toolbar">
-    <button class="tbtn lucky" id="btnRandom">🎲 Jeu au hasard</button>
+    <button class="tbtn lucky" id="btnRandom">ðŸŽ² Jeu au hasard</button>
     <button class="tbtn on" data-dec="all">Tous</button>
-    <button class="tbtn" data-dec="70">Années 70</button>
-    <button class="tbtn" data-dec="80">Années 80</button>
+    <button class="tbtn" data-dec="70">AnnÃ©es 70</button>
+    <button class="tbtn" data-dec="80">AnnÃ©es 80</button>
     <button class="tbtn" data-dec="90">1990 +</button>
-    <input id="search" type="text" placeholder="🔍 Rechercher…">
-    <button class="tbtn" id="btnExport" title="Sauvegarder les records dans un fichier">💾 Records</button>
-    <button class="tbtn" id="btnImport" title="Restaurer des records depuis un fichier">📥 Importer</button>
+    <input id="search" type="text" placeholder="ðŸ” Rechercherâ€¦">
+    <button class="tbtn" id="btnExport" title="Sauvegarder les records dans un fichier">ðŸ’¾ Records</button>
+    <button class="tbtn" id="btnImport" title="Restaurer des records depuis un fichier">ðŸ“¥ Importer</button>
     <input id="importFile" type="file" accept=".json" style="display:none">
   </div>
 
@@ -170,7 +170,7 @@
           <g stroke="#3a4a5a" stroke-width="2" stroke-dasharray="3 4">
             <line x1="40" y1="3" x2="40" y2="57"/>
           </g>
-          <!-- scores néon -->
+          <!-- scores nÃ©on -->
           <text x="29" y="17" fill="#4ecca3" opacity=".35" font-family="monospace" font-size="11" text-anchor="middle">3</text>
           <text x="28" y="16" fill="#bfffe8" font-family="monospace" font-size="11" text-anchor="middle">3</text>
           <text x="53" y="17" fill="#ff2e88" opacity=".35" font-family="monospace" font-size="11" text-anchor="middle">2</text>
@@ -182,22 +182,22 @@
           <rect x="68.5" y="28.5" width="7" height="21" rx="2" fill="#ff2e88" opacity=".22"/>
           <rect x="70" y="30" width="4" height="18" rx="1" fill="#ff2e88"/>
           <rect x="70.8" y="31" width="1.2" height="16" rx=".6" fill="#ffc0dd"/>
-          <!-- balle : halo + trainée dégradée -->
+          <!-- balle : halo + trainÃ©e dÃ©gradÃ©e -->
           <circle cx="46" cy="34" r="5.5" fill="#fff" opacity=".14"/>
           <circle cx="46" cy="34" r="3" fill="#fff"/>
           <circle cx="40.5" cy="32.4" r="2" fill="#cfd8ff" opacity=".7"/>
           <circle cx="35.5" cy="30.8" r="1.5" fill="#9aa8d8" opacity=".5"/>
           <circle cx="31" cy="29.4" r="1" fill="#66719f" opacity=".35"/>
-          <!-- étincelle d'impact -->
+          <!-- Ã©tincelle d'impact -->
           <g stroke="#ffd23a" stroke-width=".8" opacity=".8">
             <line x1="68.5" y1="36" x2="65" y2="34.6"/><line x1="68.5" y1="42" x2="65" y2="43.4"/>
           </g>
         </svg>
-        <div class="play"><span>▶ JOUER</span></div>
+        <div class="play"><span>â–¶ JOUER</span></div>
       </div>
       <div class="meta">
         <p class="title">Pong</p>
-        <p class="tag">Raquettes · Arcade</p>
+        <p class="tag">Raquettes Â· Arcade</p>
       </div>
     </a>
 
@@ -220,9 +220,9 @@
           <!-- corps continu arrondi -->
           <path d="M14 42 H34 Q38 42 38 38 V30 Q38 26 42 26 H50" fill="none" stroke="#2e8f6e" stroke-width="9.5" stroke-linecap="round" stroke-linejoin="round"/>
           <path d="M14 42 H34 Q38 42 38 38 V30 Q38 26 42 26 H50" fill="none" stroke="#4ecca3" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
-          <!-- écailles -->
+          <!-- Ã©cailles -->
           <g fill="#2e8f6e" opacity=".55"><circle cx="20" cy="42" r="1.2"/><circle cx="27" cy="42" r="1.2"/><circle cx="34" cy="41.4" r="1.2"/><circle cx="38" cy="34" r="1.2"/><circle cx="44" cy="26" r="1.2"/></g>
-          <!-- tête + langue -->
+          <!-- tÃªte + langue -->
           <circle cx="53" cy="26" r="5.6" fill="#7CFFCB"/>
           <circle cx="51.4" cy="24" r="1.5" fill="#0d2b1e"/><circle cx="55" cy="24" r="1.5" fill="#0d2b1e"/>
           <circle cx="51.8" cy="23.6" r=".5" fill="#fff"/><circle cx="55.4" cy="23.6" r=".5" fill="#fff"/>
@@ -233,11 +233,11 @@
           <rect x="65.4" y="38.8" width="1.2" height="2.6" rx=".6" fill="#6b4a1d"/>
           <path d="M67 40 Q70 37.6 71.2 39.8 Q69 41.4 67 40" fill="#3aad3d"/>
         </svg>
-        <div class="play"><span>▶ JOUER</span></div>
+        <div class="play"><span>â–¶ JOUER</span></div>
       </div>
       <div class="meta">
         <p class="title">Serpent</p>
-        <p class="tag">Snake · Classique</p>
+        <p class="tag">Snake Â· Classique</p>
       </div>
     </a>
 
@@ -247,27 +247,27 @@
       <div class="thumb">
         <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
           <rect width="80" height="60" fill="#000"/>
-          <!-- étoiles -->
+          <!-- Ã©toiles -->
           <g fill="#123a12"><circle cx="10" cy="10" r=".7"/><circle cx="70" cy="8" r=".7"/><circle cx="44" cy="6" r=".6"/><circle cx="22" cy="16" r=".7"/><circle cx="60" cy="18" r=".7"/><circle cx="33" cy="11" r=".5"/></g>
           <!-- OVNI bonus -->
           <g transform="translate(40,6)">
             <ellipse rx="7" ry="2.6" fill="#ff2e2e"/><ellipse cy="-1.6" rx="3.4" ry="1.8" fill="#ff8a8a"/>
             <g fill="#7a0c0c"><circle cx="-4" cy=".8" r=".7"/><circle cx="0" cy="1.2" r=".7"/><circle cx="4" cy=".8" r=".7"/></g>
           </g>
-          <!-- rangée haute : calamars clairs -->
+          <!-- rangÃ©e haute : calamars clairs -->
           <g fill="#9ff09f">
             <g transform="translate(16,14)"><rect x="3" y="0" width="6" height="2"/><rect x="1" y="2" width="10" height="3"/><rect x="0" y="5" width="12" height="2"/><rect x="2" y="7" width="2" height="2"/><rect x="8" y="7" width="2" height="2"/></g>
             <g transform="translate(34,14)"><rect x="3" y="0" width="6" height="2"/><rect x="1" y="2" width="10" height="3"/><rect x="0" y="5" width="12" height="2"/><rect x="2" y="7" width="2" height="2"/><rect x="8" y="7" width="2" height="2"/></g>
             <g transform="translate(52,14)"><rect x="3" y="0" width="6" height="2"/><rect x="1" y="2" width="10" height="3"/><rect x="0" y="5" width="12" height="2"/><rect x="2" y="7" width="2" height="2"/><rect x="8" y="7" width="2" height="2"/></g>
           </g>
-          <!-- rangée basse : crabes avec yeux -->
+          <!-- rangÃ©e basse : crabes avec yeux -->
           <g fill="#0f0">
             <g transform="translate(25,27)"><rect x="2" y="0" width="8" height="3"/><rect x="0" y="3" width="12" height="3"/><rect x="0" y="6" width="3" height="3"/><rect x="9" y="6" width="3" height="3"/><rect x="4" y="1.6" width="1.6" height="1.6" fill="#020"/><rect x="6.6" y="1.6" width="1.6" height="1.6" fill="#020"/></g>
             <g transform="translate(43,27)"><rect x="2" y="0" width="8" height="3"/><rect x="0" y="3" width="12" height="3"/><rect x="0" y="6" width="3" height="3"/><rect x="9" y="6" width="3" height="3"/><rect x="4" y="1.6" width="1.6" height="1.6" fill="#020"/><rect x="6.6" y="1.6" width="1.6" height="1.6" fill="#020"/></g>
           </g>
           <!-- alien qui explose -->
           <g stroke="#ffd23a" stroke-width="1"><line x1="60" y1="28" x2="66" y2="34"/><line x1="66" y1="28" x2="60" y2="34"/><line x1="63" y1="26" x2="63" y2="36"/><line x1="58" y1="31" x2="68" y2="31"/></g>
-          <!-- boucliers érodés -->
+          <!-- boucliers Ã©rodÃ©s -->
           <g fill="#0c0">
             <path d="M12 44 h12 v7 h-3 v-3 h-6 v3 h-3 Z"/>
             <path d="M34 44 h12 v7 h-3 v-3 h-6 v3 h-3 Z"/>
@@ -285,11 +285,11 @@
           <!-- sol -->
           <rect x="2" y="58.4" width="76" height="1" fill="#0f0" opacity=".6"/>
         </svg>
-        <div class="play"><span>▶ JOUER</span></div>
+        <div class="play"><span>â–¶ JOUER</span></div>
       </div>
       <div class="meta">
         <p class="title">Space Invaders</p>
-        <p class="tag">Tir · Arcade</p>
+        <p class="tag">Tir Â· Arcade</p>
       </div>
     </a>
 
@@ -310,11 +310,11 @@
           <rect x="46" y="15" width="2" height="2" fill="#fff"/>
           <rect x="52" y="12" width="2" height="2" fill="#fff"/>
         </svg>
-        <div class="play"><span>▶ JOUER</span></div>
+        <div class="play"><span>â–¶ JOUER</span></div>
       </div>
       <div class="meta">
         <p class="title">Asteroids</p>
-        <p class="tag">Vectoriel · Arcade</p>
+        <p class="tag">Vectoriel Â· Arcade</p>
       </div>
     </a>
 
@@ -324,7 +324,7 @@
       <div class="thumb">
         <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
           <rect width="80" height="60" fill="#000"/>
-          <!-- labyrinthe à doubles murs -->
+          <!-- labyrinthe Ã  doubles murs -->
           <g fill="none" stroke="#2121de" stroke-width="1.2">
             <rect x="6" y="6" width="68" height="48" rx="5"/>
             <rect x="8.5" y="8.5" width="63" height="43" rx="4"/>
@@ -359,11 +359,11 @@
             <circle cx="3.5" cy="4.4" r=".85" fill="#2121de"/><circle cx="7.5" cy="4.4" r=".85" fill="#2121de"/>
           </g>
         </svg>
-        <div class="play"><span>▶ JOUER</span></div>
+        <div class="play"><span>â–¶ JOUER</span></div>
       </div>
       <div class="meta">
         <p class="title">Pac-Man</p>
-        <p class="tag">Labyrinthe · Arcade</p>
+        <p class="tag">Labyrinthe Â· Arcade</p>
       </div>
     </a>
 
@@ -387,16 +387,16 @@
           </g>
           <!-- obus -->
           <circle cx="40" cy="50" r="1.6" fill="#9fff9f"/>
-          <!-- réticule -->
+          <!-- rÃ©ticule -->
           <g stroke="#46d846" stroke-width="1"><line x1="20" y1="53" x2="30" y2="53"/><line x1="50" y1="53" x2="60" y2="53"/><polyline points="34,51 40,56 46,51" fill="none"/></g>
           <!-- radar -->
           <circle cx="40" cy="9" r="6" fill="none" stroke="#46d846" stroke-width="1"/><circle cx="42" cy="7" r="1" fill="#9fff9f"/>
         </svg>
-        <div class="play"><span>▶ JOUER</span></div>
+        <div class="play"><span>â–¶ JOUER</span></div>
       </div>
       <div class="meta">
         <p class="title">Battlezone</p>
-        <p class="tag">Char vectoriel · Arcade</p>
+        <p class="tag">Char vectoriel Â· Arcade</p>
       </div>
     </a>
 
@@ -406,7 +406,7 @@
       <div class="thumb">
         <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
           <rect width="80" height="60" fill="#16161e"/>
-          <!-- murs de pierre (plan du château) -->
+          <!-- murs de pierre (plan du chÃ¢teau) -->
           <g fill="#5a5a66">
             <rect x="0" y="0" width="80" height="4"/><rect x="0" y="56" width="80" height="4"/>
             <rect x="0" y="0" width="4" height="60"/><rect x="76" y="0" width="4" height="60"/>
@@ -419,16 +419,16 @@
           <rect x="58" y="10" width="9" height="8" fill="#8a6a2e"/><rect x="61.5" y="13" width="2" height="3" fill="#d8b24a"/>
           <!-- garde -->
           <g transform="translate(20,16)"><circle r="5" fill="#3c3c46"/><circle r="3" fill="#26262e"/><rect x="3" y="-1.5" width="8" height="3" fill="#1a1a1a"/></g>
-          <!-- joueur (héros bleu) -->
+          <!-- joueur (hÃ©ros bleu) -->
           <g transform="translate(22,44)"><circle r="5" fill="#3f7fae"/><circle r="3" fill="#2c5a78"/><rect x="-1.6" y="-12" width="3.2" height="9" fill="#1a1a1a"/></g>
           <!-- balle -->
           <rect x="22" y="30" width="2.5" height="2.5" fill="#fff5c0"/>
         </svg>
-        <div class="play"><span>▶ JOUER</span></div>
+        <div class="play"><span>â–¶ JOUER</span></div>
       </div>
       <div class="meta">
         <p class="title">Castle Wolfenstein</p>
-        <p class="tag">Infiltration · Rétro</p>
+        <p class="tag">Infiltration Â· RÃ©tro</p>
       </div>
     </a>
 
@@ -438,7 +438,7 @@
       <div class="thumb">
         <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
           <rect width="80" height="60" fill="#000"/>
-          <!-- traînées de missiles -->
+          <!-- traÃ®nÃ©es de missiles -->
           <g stroke="rgba(255,82,82,.7)" stroke-width="1">
             <line x1="14" y1="0" x2="30" y2="38"/><line x1="46" y1="0" x2="40" y2="30"/><line x1="70" y1="0" x2="58" y2="42"/>
           </g>
@@ -453,11 +453,11 @@
           <!-- viseur -->
           <g stroke="#5ad1e8" stroke-width="1"><line x1="20" y1="20" x2="28" y2="20"/><line x1="24" y1="16" x2="24" y2="24"/></g>
         </svg>
-        <div class="play"><span>▶ JOUER</span></div>
+        <div class="play"><span>â–¶ JOUER</span></div>
       </div>
       <div class="meta">
         <p class="title">Missile Command</p>
-        <p class="tag">Défense · Arcade</p>
+        <p class="tag">DÃ©fense Â· Arcade</p>
       </div>
     </a>
 
@@ -466,9 +466,9 @@
       <div class="year">1981</div>
       <div class="thumb">
         <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
-          <!-- rivière -->
+          <!-- riviÃ¨re -->
           <rect width="80" height="26" fill="#0a2a52"/>
-          <!-- berge + départ -->
+          <!-- berge + dÃ©part -->
           <rect y="26" width="80" height="7" fill="#3a7a2e"/>
           <rect y="53" width="80" height="7" fill="#3a7a2e"/>
           <!-- route -->
@@ -493,11 +493,11 @@
             <circle cx="-2" cy="-3.3" r=".6" fill="#111"/><circle cx="2" cy="-3.3" r=".6" fill="#111"/>
           </g>
         </svg>
-        <div class="play"><span>▶ JOUER</span></div>
+        <div class="play"><span>â–¶ JOUER</span></div>
       </div>
       <div class="meta">
         <p class="title">Frogger</p>
-        <p class="tag">Traversée · Arcade</p>
+        <p class="tag">TraversÃ©e Â· Arcade</p>
       </div>
     </a>
 
@@ -518,7 +518,7 @@
           <g fill="#445"><circle cx="20" cy="26" r=".6"/><circle cx="64" cy="22" r=".6"/><circle cx="36" cy="34" r=".6"/></g>
           <!-- montagnes -->
           <polyline points="0,52 12,46 22,50 34,43 46,50 58,45 70,51 80,47" fill="none" stroke="#2e7d32" stroke-width="1.5"/>
-          <!-- humanoïdes -->
+          <!-- humanoÃ¯des -->
           <g fill="#4ecca3"><rect x="18" y="47" width="2" height="4"/><rect x="50" y="48" width="2" height="4"/></g>
           <!-- lander -->
           <g transform="translate(58,28)"><path d="M0 -4 L5 0 L0 4 L-5 0 Z" fill="#ff2e88"/><rect x="-1.3" y="-1.3" width="2.6" height="2.6" fill="#ffd54f"/></g>
@@ -526,11 +526,11 @@
           <g transform="translate(30,30)" fill="#4ecca3"><path d="M9 0 L1 -4 L-8 -4 L-5 0 L-8 4 L1 4 Z"/></g>
           <rect x="34" y="29" width="9" height="1.6" fill="#fff"/>
         </svg>
-        <div class="play"><span>▶ JOUER</span></div>
+        <div class="play"><span>â–¶ JOUER</span></div>
       </div>
       <div class="meta">
         <p class="title">Defender</p>
-        <p class="tag">Shoot'em up · Arcade</p>
+        <p class="tag">Shoot'em up Â· Arcade</p>
       </div>
     </a>
 
@@ -543,14 +543,14 @@
             <stop offset="0" stop-color="#070a1c"/><stop offset="0.5" stop-color="#12245a"/><stop offset="1" stop-color="#05060f"/>
           </linearGradient></defs>
           <rect width="80" height="60" fill="url(#dkbg)"/>
-          <!-- poutrelles INCLINÉES rose-rouge -->
+          <!-- poutrelles INCLINÃ‰ES rose-rouge -->
           <g stroke="#d23b5c" stroke-width="3">
             <line x1="6" y1="13" x2="74" y2="16"/>
             <line x1="6" y1="31" x2="74" y2="27"/>
             <line x1="6" y1="44" x2="74" y2="48"/>
             <line x1="6" y1="58" x2="74" y2="58"/>
           </g>
-          <!-- échelles (dont une coupée) -->
+          <!-- Ã©chelles (dont une coupÃ©e) -->
           <g stroke="#5ad1e8" stroke-width=".8">
             <line x1="20" y1="14" x2="20" y2="30"/><line x1="23" y1="14" x2="23" y2="30"/>
             <line x1="55" y1="28" x2="55" y2="44"/><line x1="58" y1="28" x2="58" y2="44"/>
@@ -582,11 +582,11 @@
             <rect x="-3" y="-4" width="6" height="4" fill="#1e5fd0"/>
           </g>
         </svg>
-        <div class="play"><span>▶ JOUER</span></div>
+        <div class="play"><span>â–¶ JOUER</span></div>
       </div>
       <div class="meta">
         <p class="title">Donkey Kong</p>
-        <p class="tag">Plateforme · Arcade</p>
+        <p class="tag">Plateforme Â· Arcade</p>
       </div>
     </a>
 
@@ -598,7 +598,7 @@
           <rect width="80" height="60" fill="#000"/>
           <!-- toile au coin -->
           <g stroke="#2a2a3a" stroke-width=".5" fill="none"><path d="M80 0 L64 14 M80 0 L70 20 M80 0 L78 24 M72 8 Q76 10 78 7 M66 12 Q72 16 76 13"/></g>
-          <!-- champignons ombrés -->
+          <!-- champignons ombrÃ©s -->
           <g>
             <g transform="translate(16,16)"><path d="M-5 0 A5 5 0 0 1 5 0 Z" fill="#d98cff"/><path d="M-5 0 A5 5 0 0 1 0 -5 L0 0 Z" fill="#eab8ff"/><circle cx="1.8" cy="-1.8" r=".8" fill="#fff" opacity=".85"/><rect x="-1.4" y="0" width="2.8" height="4.4" rx="1" fill="#caa6e6"/></g>
             <g transform="translate(58,12)"><path d="M-5 0 A5 5 0 0 1 5 0 Z" fill="#d98cff"/><path d="M-5 0 A5 5 0 0 1 0 -5 L0 0 Z" fill="#eab8ff"/><circle cx="1.8" cy="-1.8" r=".8" fill="#fff" opacity=".85"/><rect x="-1.4" y="0" width="2.8" height="4.4" rx="1" fill="#caa6e6"/></g>
@@ -606,29 +606,29 @@
             <g transform="translate(24,40)"><path d="M-5 0 A5 5 0 0 1 5 0 Z" fill="#8a5cb0"/><path d="M2 -3.4 A5 5 0 0 1 5 0 L2 0 Z" fill="#000"/><rect x="-1.4" y="0" width="2.8" height="4.4" rx="1" fill="#9a86b6"/></g>
             <g transform="translate(68,44)"><path d="M-5 0 A5 5 0 0 1 5 0 Z" fill="#d98cff"/><path d="M-5 0 A5 5 0 0 1 0 -5 L0 0 Z" fill="#eab8ff"/><circle cx="1.8" cy="-1.8" r=".8" fill="#fff" opacity=".85"/><rect x="-1.4" y="0" width="2.8" height="4.4" rx="1" fill="#caa6e6"/></g>
           </g>
-          <!-- mille-pattes : pattes + segments dégradés -->
+          <!-- mille-pattes : pattes + segments dÃ©gradÃ©s -->
           <g stroke="#4a9e00" stroke-width=".9">
             <line x1="19" y1="26" x2="17" y2="29"/><line x1="26" y1="26" x2="24" y2="29"/><line x1="33" y1="26" x2="31" y2="29"/><line x1="40" y1="26" x2="38" y2="29"/>
             <line x1="21" y1="22" x2="19" y2="19"/><line x1="28" y1="22" x2="26" y2="19"/><line x1="35" y1="22" x2="33" y2="19"/><line x1="42" y1="22" x2="40" y2="19"/>
           </g>
           <circle cx="20" cy="24" r="3.2" fill="#5fd400"/><circle cx="27" cy="24" r="3.2" fill="#6fe210"/><circle cx="34" cy="24" r="3.2" fill="#7CFC00"/><circle cx="41" cy="24" r="3.2" fill="#8cff30"/>
           <g fill="#3a8f00" opacity=".6"><circle cx="20" cy="22.6" r="1"/><circle cx="27" cy="22.6" r="1"/><circle cx="34" cy="22.6" r="1"/><circle cx="41" cy="22.6" r="1"/></g>
-          <!-- tête avec œil et antennes -->
+          <!-- tÃªte avec Å“il et antennes -->
           <circle cx="48" cy="24" r="3.6" fill="#ff5252"/>
           <circle cx="49.3" cy="23" r="1" fill="#fff"/><circle cx="49.6" cy="23.2" r=".5" fill="#000"/>
           <path d="M50 20.8 L53 18 M50 27.2 L53 30" stroke="#ff5252" stroke-width="1" fill="none"/>
-          <!-- araignée détaillée -->
+          <!-- araignÃ©e dÃ©taillÃ©e -->
           <g transform="translate(60,46)"><ellipse rx="3.6" ry="2.7" fill="#b86cff"/><ellipse cy="-1" rx="2" ry="1.2" fill="#d8a6ff"/><circle cx="-1" cy="-.3" r=".5" fill="#2a0a3a"/><circle cx="1" cy="-.3" r=".5" fill="#2a0a3a"/>
             <g stroke="#b86cff" stroke-width=".8" fill="none"><path d="M-3 0 Q-6 -2 -7 1 M3 0 Q6 -2 7 1 M-2.5 1.5 Q-5 3 -6 5 M2.5 1.5 Q5 3 6 5"/></g></g>
           <!-- blaster + tir -->
           <rect x="29.4" y="44" width="1.2" height="6" fill="#fff"/>
           <g transform="translate(30,54)"><polygon points="0,-5 -4,4 4,4" fill="#5ad1e8"/><polygon points="0,-5 -2,2 2,2" fill="#9fe8f8"/></g>
         </svg>
-        <div class="play"><span>▶ JOUER</span></div>
+        <div class="play"><span>â–¶ JOUER</span></div>
       </div>
       <div class="meta">
         <p class="title">Centipede</p>
-        <p class="tag">Tir fixe · Arcade</p>
+        <p class="tag">Tir fixe Â· Arcade</p>
       </div>
     </a>
 
@@ -638,7 +638,7 @@
       <div class="thumb">
         <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
           <rect width="80" height="60" fill="#000"/>
-          <!-- étoiles colorées -->
+          <!-- Ã©toiles colorÃ©es -->
           <g><circle cx="12" cy="10" r=".8" fill="#7fd6ff"/><circle cx="66" cy="8" r=".7" fill="#ff8ad5"/><circle cx="40" cy="5" r=".6" fill="#fff"/><circle cx="24" cy="46" r=".7" fill="#ffd23a"/><circle cx="58" cy="50" r=".8" fill="#9fffa0"/><circle cx="72" cy="30" r=".6" fill="#fff"/><circle cx="8" cy="30" r=".6" fill="#cde"/></g>
           <!-- boss Galaga + faisceau tracteur -->
           <g transform="translate(24,12)">
@@ -655,12 +655,12 @@
           <!-- abeilles -->
           <g transform="translate(50,27)"><rect x="-3" y="-2" width="6" height="4" rx="1.4" fill="#ffd23a"/><path d="M-3 -2 L-5.5 -4 M3 -2 L5.5 -4" stroke="#7fd6ff" stroke-width="1"/></g>
           <g transform="translate(64,29)"><rect x="-3" y="-2" width="6" height="4" rx="1.4" fill="#ffd23a"/><path d="M-3 -2 L-5.5 -4 M3 -2 L5.5 -4" stroke="#7fd6ff" stroke-width="1"/></g>
-          <!-- alien en piqué + tirs ennemis -->
+          <!-- alien en piquÃ© + tirs ennemis -->
           <g transform="translate(36,38) rotate(24)"><path d="M0 0 L-4.5 -3 L-4.5 3 Z M0 0 L4.5 -3 L4.5 3 Z" fill="#ff5252"/><rect x="-1" y="-3" width="2" height="6" rx="1" fill="#fff"/></g>
           <circle cx="32" cy="44" r="1" fill="#ff8a8a"/><circle cx="29" cy="48" r="1" fill="#ff8a8a"/>
           <!-- tir joueur -->
           <rect x="43.2" y="40" width="1.6" height="7" fill="#7fd6ff"/>
-          <!-- chasseur détaillé -->
+          <!-- chasseur dÃ©taillÃ© -->
           <g transform="translate(44,53)">
             <polygon points="0,-8 -2.4,-2 2.4,-2" fill="#fff"/>
             <polygon points="0,-8 -1.2,-3.5 1.2,-3.5" fill="#9fd6ff"/>
@@ -669,11 +669,11 @@
             <rect x="-1" y="1" width="2" height="2" fill="#ff9d2e"/>
           </g>
         </svg>
-        <div class="play"><span>▶ JOUER</span></div>
+        <div class="play"><span>â–¶ JOUER</span></div>
       </div>
       <div class="meta">
         <p class="title">Galaga</p>
-        <p class="tag">Tir spatial · Arcade</p>
+        <p class="tag">Tir spatial Â· Arcade</p>
       </div>
     </a>
 
@@ -704,14 +704,14 @@
             <rect x="-2.6" y="-8" width="5.2" height="6" fill="#5a3a2a"/>
             <circle cy="-10" r="2.4" fill="#caa07a"/>
           </g>
-          <!-- œuf -->
+          <!-- Å“uf -->
           <ellipse cx="16" cy="36" rx="3.4" ry="4.4" fill="#e8e4d0"/>
         </svg>
-        <div class="play"><span>▶ JOUER</span></div>
+        <div class="play"><span>â–¶ JOUER</span></div>
       </div>
       <div class="meta">
         <p class="title">Joust</p>
-        <p class="tag">Joute volante · Arcade</p>
+        <p class="tag">Joute volante Â· Arcade</p>
       </div>
     </a>
 
@@ -721,7 +721,7 @@
       <div class="thumb">
         <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
           <rect width="80" height="60" fill="#0a160a"/>
-          <!-- canopée en couches -->
+          <!-- canopÃ©e en couches -->
           <rect y="0" width="80" height="18" fill="#123a17"/>
           <g fill="#1d6b2a"><circle cx="10" cy="12" r="9"/><circle cx="26" cy="8" r="10"/><circle cx="44" cy="12" r="11"/><circle cx="62" cy="8" r="10"/><circle cx="76" cy="12" r="8"/></g>
           <g fill="#2e8b3a"><circle cx="18" cy="5" r="6"/><circle cx="52" cy="4" r="6"/><circle cx="70" cy="6" r="5"/></g>
@@ -735,7 +735,7 @@
           <rect x="30" y="40" width="22" height="9" rx="2" fill="#1e4fd0"/>
           <g fill="#2e7d32"><path d="M34 40 l3 -2.4 l1.4 2.4 Z"/><path d="M43 40 l3 -2.4 l1.4 2.4 Z"/></g>
           <g fill="#fff"><circle cx="36.4" cy="39" r=".7"/><circle cx="45.4" cy="39" r=".7"/></g>
-          <!-- liane + Harry en plein élan -->
+          <!-- liane + Harry en plein Ã©lan -->
           <path d="M42 16 Q52 26 48 36" stroke="#6b4f1d" stroke-width="1.6" fill="none"/>
           <g transform="translate(48,32) rotate(14)">
             <rect x="-2.4" y="-6" width="4.8" height="6.4" fill="#d9b38c"/>
@@ -750,11 +750,11 @@
           <!-- rondin -->
           <circle cx="58" cy="53" r="3.6" fill="#6b4f1d"/><circle cx="58" cy="53" r="2.5" fill="none" stroke="#3d2c10" stroke-width=".5"/><circle cx="58" cy="53" r="1.3" fill="#3d2c10"/>
         </svg>
-        <div class="play"><span>▶ JOUER</span></div>
+        <div class="play"><span>â–¶ JOUER</span></div>
       </div>
       <div class="meta">
         <p class="title">Pitfall Jungle</p>
-        <p class="tag">Aventure · Console</p>
+        <p class="tag">Aventure Â· Console</p>
       </div>
     </a>
 
@@ -769,7 +769,7 @@
           <g transform="translate(12,13)"><rect x="-.5" y="-3" width="1" height="3" fill="#2e7d32"/><circle cy="-4" r="1.6" fill="#ff6ad5"/><circle cy="-4" r=".7" fill="#ffd23a"/></g>
           <g transform="translate(66,13)"><rect x="-.5" y="-3" width="1" height="3" fill="#2e7d32"/><circle cy="-4" r="1.6" fill="#ff8a5a"/><circle cy="-4" r=".7" fill="#ffd23a"/></g>
           <rect y="13" width="80" height="1.4" fill="#2e7d32"/>
-          <!-- couches de terre texturées -->
+          <!-- couches de terre texturÃ©es -->
           <rect y="14" width="80" height="12" fill="#c98a3a"/>
           <rect y="26" width="80" height="12" fill="#9c5a25"/>
           <rect y="38" width="80" height="12" fill="#7d4a3a"/>
@@ -782,7 +782,7 @@
             <rect x="10" y="28" width="40" height="10" rx="5"/>
             <rect x="46" y="40" width="26" height="10" rx="5"/>
           </g>
-          <!-- rocher fissuré -->
+          <!-- rocher fissurÃ© -->
           <circle cx="20" cy="20" r="5" fill="#9e9e9e"/><circle cx="18.4" cy="18.4" r="1.6" fill="#cfcfcf"/>
           <path d="M17 22 L20 20.5 L22 23" stroke="#6a6a6a" stroke-width=".8" fill="none"/>
           <!-- Dig Dug avec sa pompe -->
@@ -792,7 +792,7 @@
             <rect x="-1.5" y="0" width="3" height="2.5" fill="#000"/>
             <rect x="-13" y="0" width="8" height="1.6" fill="#e8e8f0"/>
           </g>
-          <!-- Pooka gonflé au bout du tuyau -->
+          <!-- Pooka gonflÃ© au bout du tuyau -->
           <g transform="translate(24,33)">
             <circle r="5.8" fill="#ff5252"/><circle cx="0" cy="1.8" r="2.6" fill="#ff8a8a"/>
             <g transform="translate(-1.8,-1)"><circle r="1.9" fill="#ffeb3b"/><circle r=".8" fill="#000"/></g>
@@ -807,11 +807,11 @@
             <path d="M5 0 Q9 -2.4 12.5 0 Q9 2.4 5 0" fill="#ff9d2e"/><path d="M5 0 Q8 -1.2 10.4 0 Q8 1.2 5 0" fill="#ffd23a"/>
           </g>
         </svg>
-        <div class="play"><span>▶ JOUER</span></div>
+        <div class="play"><span>â–¶ JOUER</span></div>
       </div>
       <div class="meta">
         <p class="title">Dig Dug</p>
-        <p class="tag">Creuser · Arcade</p>
+        <p class="tag">Creuser Â· Arcade</p>
       </div>
     </a>
 
@@ -821,16 +821,16 @@
       <div class="thumb">
         <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
           <rect width="80" height="60" fill="#05050f"/>
-          <!-- pyramide isométrique de cubes -->
+          <!-- pyramide isomÃ©trique de cubes -->
           <g>
             <!-- helper: chaque cube = dessus losange + 2 faces -->
-            <!-- rangée du bas (3 cubes) -->
+            <!-- rangÃ©e du bas (3 cubes) -->
             <g>
               <g transform="translate(26,42)"><polygon points="0,-5 9,0 0,5 -9,0" fill="#1e63d6"/><polygon points="-9,0 0,5 0,12 -9,7" fill="#6a3fa6"/><polygon points="0,5 9,0 9,7 0,12" fill="#412766"/></g>
               <g transform="translate(40,42)"><polygon points="0,-5 9,0 0,5 -9,0" fill="#ffce1f"/><polygon points="-9,0 0,5 0,12 -9,7" fill="#6a3fa6"/><polygon points="0,5 9,0 9,7 0,12" fill="#412766"/></g>
               <g transform="translate(54,42)"><polygon points="0,-5 9,0 0,5 -9,0" fill="#1e63d6"/><polygon points="-9,0 0,5 0,12 -9,7" fill="#6a3fa6"/><polygon points="0,5 9,0 9,7 0,12" fill="#412766"/></g>
             </g>
-            <!-- rangée du milieu (2 cubes) -->
+            <!-- rangÃ©e du milieu (2 cubes) -->
             <g>
               <g transform="translate(33,30)"><polygon points="0,-5 9,0 0,5 -9,0" fill="#ffce1f"/><polygon points="-9,0 0,5 0,12 -9,7" fill="#6a3fa6"/><polygon points="0,5 9,0 9,7 0,12" fill="#412766"/></g>
               <g transform="translate(47,30)"><polygon points="0,-5 9,0 0,5 -9,0" fill="#1e63d6"/><polygon points="-9,0 0,5 0,12 -9,7" fill="#6a3fa6"/><polygon points="0,5 9,0 9,7 0,12" fill="#412766"/></g>
@@ -850,10 +850,10 @@
             <!-- yeux -->
             <ellipse cx="-1.6" cy="-1.5" rx="2" ry="2.4" fill="#fff"/><ellipse cx="2" cy="-1.5" rx="2" ry="2.4" fill="#fff"/>
             <circle cx="-2" cy="-1" r=".9" fill="#000"/><circle cx="1.6" cy="-1" r=".9" fill="#000"/>
-            <!-- sourcils fâchés -->
+            <!-- sourcils fÃ¢chÃ©s -->
             <path d="M-4,-4 L-0.5,-2.5 M4,-4 L0.5,-2.5" stroke="#c81000" stroke-width="1.1" stroke-linecap="round"/>
           </g>
-          <!-- Coily : serpent mauve enroulé -->
+          <!-- Coily : serpent mauve enroulÃ© -->
           <g transform="translate(56,34)">
             <ellipse cy="4" rx="5" ry="2.2" fill="#6a23a0"/><ellipse cy="2.5" rx="5" ry="1.6" fill="#8a2be2"/>
             <ellipse cy="0" rx="4" ry="2" fill="#6a23a0"/><ellipse cy="-1.3" rx="4" ry="1.4" fill="#8a2be2"/>
@@ -863,11 +863,11 @@
             <path d="M-1.6,-4 A1.6 1.6 0 0 0 1.6 -4 Z" fill="#d6188a"/>
           </g>
         </svg>
-        <div class="play"><span>▶ JOUER</span></div>
+        <div class="play"><span>â–¶ JOUER</span></div>
       </div>
       <div class="meta">
         <p class="title">Q*bert</p>
-        <p class="tag">Iso · Arcade</p>
+        <p class="tag">Iso Â· Arcade</p>
       </div>
     </a>
 
@@ -897,11 +897,11 @@
           <!-- ballon ennemi -->
           <g transform="translate(70,54)"><circle r="5" fill="#ff8ad5"/><circle cx="-1.6" cy="-1" r="1" fill="#111"/><circle cx="1.8" cy="-1" r="1" fill="#111"/></g>
         </svg>
-        <div class="play"><span>▶ JOUER</span></div>
+        <div class="play"><span>â–¶ JOUER</span></div>
       </div>
       <div class="meta">
         <p class="title">Bomberman</p>
-        <p class="tag">Labyrinthe · Bombes</p>
+        <p class="tag">Labyrinthe Â· Bombes</p>
       </div>
     </a>
 
@@ -911,7 +911,7 @@
       <div class="thumb">
         <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
           <rect width="80" height="60" fill="#000"/>
-          <!-- étoiles -->
+          <!-- Ã©toiles -->
           <g fill="#fff"><circle cx="14" cy="40" r=".6"/><circle cx="64" cy="46" r=".6"/><circle cx="30" cy="50" r=".6"/><circle cx="52" cy="14" r=".6"/></g>
           <!-- tours rouge/bleu de la surface -->
           <g><rect x="8" y="34" width="9" height="16" fill="none" stroke="#d23b3b" stroke-width="1"/><line x1="8" y1="42" x2="17" y2="42" stroke="#2b6dff" stroke-width="1"/></g>
@@ -926,14 +926,14 @@
           <!-- lasers convergents -->
           <line x1="4" y1="58" x2="38" y2="40" stroke="#5ad1ff" stroke-width="1"/>
           <line x1="76" y1="58" x2="42" y2="40" stroke="#5ad1ff" stroke-width="1"/>
-          <!-- réticule -->
+          <!-- rÃ©ticule -->
           <g stroke="#5ad1ff" stroke-width="1" fill="none"><circle cx="40" cy="40" r="4"/><line x1="33" y1="40" x2="37" y2="40"/><line x1="43" y1="40" x2="47" y2="40"/></g>
         </svg>
-        <div class="play"><span>▶ JOUER</span></div>
+        <div class="play"><span>â–¶ JOUER</span></div>
       </div>
       <div class="meta">
         <p class="title">Star Wars</p>
-        <p class="tag">Vectoriel · Arcade</p>
+        <p class="tag">Vectoriel Â· Arcade</p>
       </div>
     </a>
 
@@ -961,11 +961,11 @@
             <rect x="-3" y="1" width="2" height="3" fill="#1565c0"/><rect x="1" y="1" width="2" height="3" fill="#1565c0"/>
           </g>
         </svg>
-        <div class="play"><span>▶ JOUER</span></div>
+        <div class="play"><span>â–¶ JOUER</span></div>
       </div>
       <div class="meta">
         <p class="title">Mario Bros</p>
-        <p class="tag">Plateforme · Arcade</p>
+        <p class="tag">Plateforme Â· Arcade</p>
       </div>
     </a>
 
@@ -978,9 +978,9 @@
             <stop offset="0" stop-color="#2b83c0"/><stop offset="1" stop-color="#175d92"/>
           </radialGradient></defs>
           <rect width="80" height="60" fill="url(#sea42)"/>
-          <!-- moutons d'écume -->
+          <!-- moutons d'Ã©cume -->
           <g fill="rgba(255,255,255,.16)"><ellipse cx="14" cy="12" rx="6" ry="1.6"/><ellipse cx="62" cy="24" rx="7" ry="1.8"/><ellipse cx="28" cy="46" rx="5" ry="1.4"/><ellipse cx="70" cy="54" rx="4" ry="1.2"/></g>
-          <!-- île : hauts-fonds, ressac, plage, forêt -->
+          <!-- Ã®le : hauts-fonds, ressac, plage, forÃªt -->
           <path d="M52 38 Q58 32 66 34 Q76 36 75 44 Q74 52 64 53 Q54 54 51 47 Q49 41 52 38Z" fill="rgba(130,210,225,.35)"/>
           <path d="M54 39 Q59 34 66 36 Q74 38 73 44 Q72 50 63 51 Q55 52 53 46 Q51 42 54 39Z" fill="rgba(255,255,255,.5)"/>
           <path d="M55 40 Q59 36 65 37 Q72 39 71 44 Q70 49 63 50 Q56 50 54 45 Q53 42 55 40Z" fill="#d8bd86"/>
@@ -999,7 +999,7 @@
           <circle cx="15" cy="26" r="2" fill="#ff8a2a" opacity=".85"/><circle cx="17.5" cy="23.5" r="1.3" fill="#ffd23a" opacity=".8"/>
           <!-- tirs -->
           <rect x="39.2" y="33" width="1.6" height="5" fill="#fff"/><rect x="39.2" y="25" width="1.6" height="5" fill="#fff"/>
-          <!-- bimoteur du joueur (ombre + hélices) -->
+          <!-- bimoteur du joueur (ombre + hÃ©lices) -->
           <g transform="translate(40,48)">
             <ellipse cx="1.5" cy="7" rx="10" ry="2" fill="rgba(0,0,0,.25)"/>
             <rect x="-9" y="-6" width="2.6" height="12" rx="1.2" fill="#dfe6ee"/>
@@ -1012,11 +1012,11 @@
             <circle cx="-9.5" cy="-.3" r="1" fill="#ffd23a"/><circle cx="9.5" cy="-.3" r="1" fill="#ffd23a"/>
           </g>
         </svg>
-        <div class="play"><span>▶ JOUER</span></div>
+        <div class="play"><span>â–¶ JOUER</span></div>
       </div>
       <div class="meta">
         <p class="title">1942</p>
-        <p class="tag">Shoot'em up · Arcade</p>
+        <p class="tag">Shoot'em up Â· Arcade</p>
       </div>
     </a>
 
@@ -1028,24 +1028,24 @@
           <rect width="80" height="60" fill="#0a0a16"/>
           <!-- puits -->
           <rect x="26" y="4" width="28" height="52" fill="#05050d" stroke="#39c6e0" stroke-width="1"/>
-          <!-- grille légère -->
+          <!-- grille lÃ©gÃ¨re -->
           <g stroke="#1c1c30" stroke-width=".4">
             <line x1="33" y1="4" x2="33" y2="56"/><line x1="40" y1="4" x2="40" y2="56"/><line x1="47" y1="4" x2="47" y2="56"/>
           </g>
-          <!-- pièce I qui tombe (cyan) -->
+          <!-- piÃ¨ce I qui tombe (cyan) -->
           <g fill="#39c6e0"><rect x="33.5" y="8" width="6" height="6"/><rect x="33.5" y="14" width="6" height="6"/><rect x="33.5" y="20" width="6" height="6"/><rect x="33.5" y="26" width="6" height="6"/></g>
-          <!-- blocs posés -->
+          <!-- blocs posÃ©s -->
           <g><rect x="26.5" y="44" width="6" height="6" fill="#b06cff"/><rect x="32.5" y="44" width="6" height="6" fill="#b06cff"/><rect x="38.5" y="44" width="6" height="6" fill="#b06cff"/></g>
           <g><rect x="26.5" y="50" width="6" height="6" fill="#f0962e"/><rect x="32.5" y="50" width="6" height="6" fill="#4ddc5a"/><rect x="38.5" y="50" width="6" height="6" fill="#ff5252"/><rect x="44.5" y="50" width="6" height="6" fill="#f0d932"/></g>
           <rect x="44.5" y="44" width="6" height="6" fill="#3a78e0"/>
-          <!-- pièce suivante (O) à droite -->
+          <!-- piÃ¨ce suivante (O) Ã  droite -->
           <g fill="#f0d932"><rect x="60" y="10" width="5" height="5"/><rect x="65" y="10" width="5" height="5"/><rect x="60" y="15" width="5" height="5"/><rect x="65" y="15" width="5" height="5"/></g>
         </svg>
-        <div class="play"><span>▶ JOUER</span></div>
+        <div class="play"><span>â–¶ JOUER</span></div>
       </div>
       <div class="meta">
         <p class="title">Tetris</p>
-        <p class="tag">Puzzle · Blocs</p>
+        <p class="tag">Puzzle Â· Blocs</p>
       </div>
     </a>
 
@@ -1063,21 +1063,21 @@
           <!-- soldats ennemis (haut) -->
           <g transform="translate(30,16)"><circle r="3.5" fill="#b0432f"/><circle r="2.2" fill="#7a2e22"/><rect x="1" y="-1" width="6" height="2" fill="#222"/></g>
           <g transform="translate(52,24)"><circle r="3.5" fill="#c87a2a"/><circle r="2.2" fill="#7a2e22"/><rect x="-7" y="-1" width="6" height="2" fill="#222"/></g>
-          <!-- héros (bas) qui tire vers le haut -->
+          <!-- hÃ©ros (bas) qui tire vers le haut -->
           <g transform="translate(38,48)"><circle r="4" fill="#3f8f3a"/><circle r="2.6" fill="#2e6e2a"/><rect x="-1.4" y="-11" width="2.8" height="9" fill="#222"/></g>
           <!-- balles -->
           <rect x="37" y="36" width="2.5" height="2.5" fill="#fff5c0"/>
           <rect x="37" y="28" width="2.5" height="2.5" fill="#fff5c0"/>
-          <!-- grenade + éclat -->
+          <!-- grenade + Ã©clat -->
           <circle cx="60" cy="42" r="3" fill="#2c3a22"/>
           <g fill="#ffd23a" opacity=".8"><circle cx="22" cy="30" r="4"/></g>
           <circle cx="22" cy="30" r="2.2" fill="#ff6a1a"/>
         </svg>
-        <div class="play"><span>▶ JOUER</span></div>
+        <div class="play"><span>â–¶ JOUER</span></div>
       </div>
       <div class="meta">
         <p class="title">Commando</p>
-        <p class="tag">Run & gun · Arcade</p>
+        <p class="tag">Run & gun Â· Arcade</p>
       </div>
     </a>
 
@@ -1091,7 +1091,7 @@
           <g stroke="rgba(90,60,30,.3)" stroke-width="3"><line x1="30" y1="0" x2="30" y2="60"/><line x1="50" y1="0" x2="50" y2="60"/></g>
           <!-- cactus -->
           <g fill="#3f7a2e"><rect x="10" y="10" width="3" height="14"/><rect x="6" y="13" width="4" height="2.6"/><rect x="6" y="9" width="2.6" height="6"/><rect x="13" y="15" width="4" height="2.6"/></g>
-          <!-- crâne -->
+          <!-- crÃ¢ne -->
           <ellipse cx="68" cy="40" rx="4" ry="3" fill="#e8dcc0"/>
           <!-- bandit -->
           <g transform="translate(40,14)"><ellipse cy="1" rx="5" ry="6" fill="#6e2a22"/><circle cy="-7" r="3.4" fill="#caa07a"/><ellipse cy="-9" rx="5" ry="1.6" fill="#26262a"/><rect x="-1.2" y="4" width="2.4" height="7" fill="#15151a"/></g>
@@ -1108,11 +1108,11 @@
             <rect x="-1.2" y="-17" width="2.4" height="8" fill="#15151a"/>
           </g>
         </svg>
-        <div class="play"><span>▶ JOUER</span></div>
+        <div class="play"><span>â–¶ JOUER</span></div>
       </div>
       <div class="meta">
         <p class="title">Gun.Smoke</p>
-        <p class="tag">Western · Arcade</p>
+        <p class="tag">Western Â· Arcade</p>
       </div>
     </a>
 
@@ -1143,11 +1143,11 @@
           <!-- capsule -->
           <ellipse cx="46" cy="42" rx="5" ry="3.6" fill="#ff8a2a" stroke="#ffd23a" stroke-width="1"/>
         </svg>
-        <div class="play"><span>▶ JOUER</span></div>
+        <div class="play"><span>â–¶ JOUER</span></div>
       </div>
       <div class="meta">
         <p class="title">Gradius</p>
-        <p class="tag">Shoot'em up · Arcade</p>
+        <p class="tag">Shoot'em up Â· Arcade</p>
       </div>
     </a>
 
@@ -1165,7 +1165,7 @@
           <g><rect x="2" y="4" width="16" height="12" fill="#e8e0c8"/><rect x="1" y="1" width="18" height="4" fill="#c05a3a"/><rect x="4" y="7" width="5" height="4" fill="#8fd0e8"/></g>
           <g><rect x="2" y="26" width="16" height="12" fill="#6a7a8a"/><rect x="1" y="23" width="18" height="4" fill="#3a3a44"/><rect x="4" y="29" width="5" height="4" fill="#101018"/></g>
           <g><rect x="2" y="47" width="16" height="12" fill="#e8e0c8"/><rect x="1" y="44" width="18" height="4" fill="#c05a3a"/><rect x="4" y="50" width="5" height="4" fill="#8fd0e8"/></g>
-          <!-- boîte aux lettres -->
+          <!-- boÃ®te aux lettres -->
           <rect x="19" y="12" width="4" height="3" fill="#c0392b"/><rect x="20.5" y="15" width="1" height="4" fill="#5a5a66"/>
           <!-- journal en vol -->
           <rect x="27" y="10" width="5" height="3.4" fill="#f0ead0" transform="rotate(20 29 11)"/>
@@ -1173,7 +1173,7 @@
           <g transform="translate(62,18)"><rect x="-7" y="-7" width="14" height="14" rx="1" fill="#b03a5a"/><rect x="-5" y="-3" width="10" height="4" fill="#101018"/></g>
           <!-- chien -->
           <g transform="translate(40,40)"><ellipse rx="4.4" ry="2.6" fill="#8a6a42"/><circle cx="4.4" cy="-1.4" r="2" fill="#8a6a42"/></g>
-          <!-- livreur à vélo -->
+          <!-- livreur Ã  vÃ©lo -->
           <g transform="translate(38,52)">
             <ellipse cx="0" cy="-4.4" rx="0" ry="0"/>
             <circle cy="-5" r="0" fill="none"/>
@@ -1186,11 +1186,11 @@
             <path d="M-2.6 -9.4 A2.6 2.6 0 0 1 2.6 -9.4 Z" fill="#e8443a"/>
           </g>
         </svg>
-        <div class="play"><span>▶ JOUER</span></div>
+        <div class="play"><span>â–¶ JOUER</span></div>
       </div>
       <div class="meta">
         <p class="title">Paperboy</p>
-        <p class="tag">Livraison · Arcade</p>
+        <p class="tag">Livraison Â· Arcade</p>
       </div>
     </a>
 
@@ -1206,13 +1206,13 @@
           <rect width="80" height="34" fill="url(#orsky)"/>
           <!-- nuages -->
           <g fill="rgba(255,255,255,.75)"><ellipse cx="16" cy="9" rx="7" ry="2"/><ellipse cx="21" cy="7.6" rx="4" ry="1.6"/><ellipse cx="38" cy="15" rx="5" ry="1.5"/></g>
-          <!-- soleil rétro à bandes -->
+          <!-- soleil rÃ©tro Ã  bandes -->
           <circle cx="58" cy="12" r="7.5" fill="#ffd23a"/>
           <circle cx="58" cy="12" r="7.5" fill="none" stroke="#ffb300" stroke-width=".6"/>
           <g fill="#8fd0f0"><rect x="50" y="13.6" width="16" height="1"/><rect x="50" y="16.2" width="16" height="1.5"/></g>
           <!-- montagnes lointaines -->
           <g fill="#3d7ba6" opacity=".8"><polygon points="0,30 10,22 20,30"/><polygon points="14,30 26,20 38,30"/><polygon points="64,30 72,24 80,30"/></g>
-          <!-- herbe à bandes -->
+          <!-- herbe Ã  bandes -->
           <rect y="30" width="80" height="30" fill="#329a35"/>
           <g fill="#2b8a2e"><rect y="34" width="80" height="3"/><rect y="42" width="80" height="4"/><rect y="53" width="80" height="4"/></g>
           <!-- route -->
@@ -1221,7 +1221,7 @@
           <!-- bordures rouge/blanc -->
           <polygon points="35,30 36.4,30 17.6,60 13,60" fill="#fff"/>
           <polygon points="43.6,30 45,30 67,60 62.4,60" fill="#c23a3a"/>
-          <!-- pointillés centraux en perspective -->
+          <!-- pointillÃ©s centraux en perspective -->
           <g fill="#fff"><polygon points="39.7,32 40.3,32 40.4,35 39.6,35"/><polygon points="39.5,39 40.5,39 40.7,44 39.3,44"/><polygon points="39.2,50 40.8,50 41.1,57 38.9,57"/></g>
           <!-- palmiers -->
           <g stroke-width="1.5" fill="none">
@@ -1230,7 +1230,7 @@
           </g>
           <!-- trafic au loin -->
           <g transform="translate(41,36)"><rect x="-3" y="-2.4" width="6" height="2.6" rx=".6" fill="#5ad1e8"/><rect x="-2" y="-3.6" width="4" height="1.6" rx=".5" fill="#8ae4f5"/></g>
-          <!-- voiture rouge détaillée (pilotes visibles) -->
+          <!-- voiture rouge dÃ©taillÃ©e (pilotes visibles) -->
           <g transform="translate(40,52)">
             <ellipse cx="0" cy="6.4" rx="11" ry="1.6" fill="rgba(0,0,0,.3)"/>
             <rect x="-10" y="-1" width="20" height="6" rx="1.4" fill="#d11414"/>
@@ -1242,11 +1242,11 @@
             <rect x="-11.4" y="1" width="2.6" height="4.4" rx=".8" fill="#111"/><rect x="8.8" y="1" width="2.6" height="4.4" rx=".8" fill="#111"/>
           </g>
         </svg>
-        <div class="play"><span>▶ JOUER</span></div>
+        <div class="play"><span>â–¶ JOUER</span></div>
       </div>
       <div class="meta">
         <p class="title">Out Run</p>
-        <p class="tag">Course · Arcade</p>
+        <p class="tag">Course Â· Arcade</p>
       </div>
     </a>
 
@@ -1274,11 +1274,11 @@
           <rect x="34" y="52" width="4" height="5" fill="#e04a3a"/><rect x="56" y="52" width="4" height="5" fill="#e04a3a"/>
           <rect x="39" y="52.6" width="16" height="1.6" fill="#c8c8e0"/>
         </svg>
-        <div class="play"><span>▶ JOUER</span></div>
+        <div class="play"><span>â–¶ JOUER</span></div>
       </div>
       <div class="meta">
         <p class="title">Arkanoid</p>
-        <p class="tag">Casse-briques · Arcade</p>
+        <p class="tag">Casse-briques Â· Arcade</p>
       </div>
     </a>
 
@@ -1302,7 +1302,7 @@
             <polygon points="-7,-3 -9,-7 -5,-6" fill="#2e8b34"/>
             <rect x="2" y="3" width="4" height="2" fill="#e26a2c"/>
           </g>
-          <!-- bulle avec ennemi piégé -->
+          <!-- bulle avec ennemi piÃ©gÃ© -->
           <g transform="translate(40,22)">
             <circle r="8" fill="rgba(255,90,90,.18)" stroke="#ff8c8c" stroke-width="1.5"/>
             <circle cy="1" r="4" fill="#ffd23a"/>
@@ -1318,11 +1318,11 @@
           <!-- bulle vide qui monte -->
           <circle cx="32" cy="10" r="5" fill="rgba(120,200,255,.14)" stroke="#9fe" stroke-width="1.2"/>
         </svg>
-        <div class="play"><span>▶ JOUER</span></div>
+        <div class="play"><span>â–¶ JOUER</span></div>
       </div>
       <div class="meta">
         <p class="title">Bubble Bobble</p>
-        <p class="tag">Plateforme · Arcade</p>
+        <p class="tag">Plateforme Â· Arcade</p>
       </div>
     </a>
 
@@ -1343,7 +1343,7 @@
             <polygon points="8,-1.2 2,-4 -2,-1.2" fill="#3982e0"/>
             <rect x="-10" y="-5.6" width="7" height="2.6" fill="#e04a3a"/><rect x="-10" y="3" width="7" height="2.6" fill="#e04a3a"/>
           </g>
-          <!-- sphère de charge -->
+          <!-- sphÃ¨re de charge -->
           <circle cx="40" cy="30" r="6" fill="rgba(120,220,255,.5)"/><circle cx="40" cy="30" r="3" fill="#fff"/>
           <!-- rayon -->
           <rect x="44" y="27" width="22" height="6" fill="#39c6e0"/><rect x="44" y="29" width="22" height="2.4" fill="#c0f2ff"/>
@@ -1351,11 +1351,11 @@
           <g fill="#e07a3a"><circle cx="64" cy="14" r="4"/><circle cx="57" cy="18" r="3.4"/><circle cx="51" cy="23" r="3"/></g>
           <circle cx="68" cy="44" r="4" fill="#b06cff"/>
         </svg>
-        <div class="play"><span>▶ JOUER</span></div>
+        <div class="play"><span>â–¶ JOUER</span></div>
       </div>
       <div class="meta">
         <p class="title">R-Type</p>
-        <p class="tag">Tir chargé · Arcade</p>
+        <p class="tag">Tir chargÃ© Â· Arcade</p>
       </div>
     </a>
 
@@ -1365,7 +1365,7 @@
       <div class="thumb">
         <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
           <rect width="80" height="60" fill="#1c1c26"/>
-          <!-- mur de briques + néon -->
+          <!-- mur de briques + nÃ©on -->
           <rect y="6" width="80" height="34" fill="#4a3038"/>
           <g stroke="rgba(0,0,0,.3)" stroke-width=".6"><line x1="0" y1="14" x2="80" y2="14"/><line x1="0" y1="22" x2="80" y2="22"/><line x1="0" y1="30" x2="80" y2="30"/></g>
           <rect x="8" y="10" width="16" height="9" fill="#ffd23a" opacity=".8"/>
@@ -1373,7 +1373,7 @@
           <!-- trottoir/rue -->
           <rect y="40" width="80" height="8" fill="#5a5a66"/>
           <rect y="48" width="80" height="12" fill="#3a3a44"/>
-          <!-- héros bleu qui frappe -->
+          <!-- hÃ©ros bleu qui frappe -->
           <g transform="translate(32,44)">
             <circle cy="-14" r="3.4" fill="#caa07a"/><path d="M-3.4 -15 A3.4 3.4 0 0 1 3.4 -15" fill="#1c1c26"/>
             <polygon points="-4,-11 4,-11 3,0 -3,0" fill="#3a5ae8"/>
@@ -1382,7 +1382,7 @@
             <line x1="0" y1="0" x2="-3" y2="8" stroke="#1c2ea8" stroke-width="2.6"/>
             <line x1="0" y1="0" x2="4" y2="8" stroke="#1c2ea8" stroke-width="2.6"/>
           </g>
-          <!-- punk touché -->
+          <!-- punk touchÃ© -->
           <g transform="translate(52,44) scale(-1,1)">
             <circle cy="-13" r="3.4" fill="#caa07a"/>
             <polygon points="-4,-10 4,-10 3,0 -3,0" fill="#3a6a3a" transform="rotate(-10)"/>
@@ -1393,11 +1393,11 @@
           <!-- batte au sol -->
           <line x1="12" y1="55" x2="22" y2="51" stroke="#a8763a" stroke-width="2.6" stroke-linecap="round"/>
         </svg>
-        <div class="play"><span>▶ JOUER</span></div>
+        <div class="play"><span>â–¶ JOUER</span></div>
       </div>
       <div class="meta">
         <p class="title">Double Dragon</p>
-        <p class="tag">Beat'em up · Arcade</p>
+        <p class="tag">Beat'em up Â· Arcade</p>
       </div>
     </a>
 
@@ -1433,11 +1433,11 @@
           <text x="30" y="20" font-family="monospace" font-size="8" fill="#ffd23a">$</text>
           <text x="37" y="28" font-family="monospace" font-size="8" fill="#ff6ad5">!</text>
         </svg>
-        <div class="play"><span>▶ JOUER</span></div>
+        <div class="play"><span>â–¶ JOUER</span></div>
       </div>
       <div class="meta">
         <p class="title">NetHack</p>
-        <p class="tag">Roguelike · Donjon</p>
+        <p class="tag">Roguelike Â· Donjon</p>
       </div>
     </a>
 
@@ -1475,11 +1475,11 @@
           <!-- potion -->
           <circle cx="34" cy="23" r="2.6" fill="#c03a5a"/><rect x="33" y="18.6" width="2" height="3" fill="#8a2440"/>
         </svg>
-        <div class="play"><span>▶ JOUER</span></div>
+        <div class="play"><span>â–¶ JOUER</span></div>
       </div>
       <div class="meta">
         <p class="title">Prince of Persia</p>
-        <p class="tag">Évasion · Duel</p>
+        <p class="tag">Ã‰vasion Â· Duel</p>
       </div>
     </a>
 
@@ -1488,7 +1488,7 @@
       <div class="year">1989</div>
       <div class="thumb">
         <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
-          <!-- ciel crépusculaire -->
+          <!-- ciel crÃ©pusculaire -->
           <defs><linearGradient id="gax" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stop-color="#3a1a40"/><stop offset="1" stop-color="#c0562a"/>
           </linearGradient></defs>
@@ -1515,11 +1515,11 @@
             <line x1="-3" y1="-8" x2="-9" y2="-12" stroke="#5a8f3a" stroke-width="2"/>
           </g>
         </svg>
-        <div class="play"><span>▶ JOUER</span></div>
+        <div class="play"><span>â–¶ JOUER</span></div>
       </div>
       <div class="meta">
         <p class="title">Golden Axe</p>
-        <p class="tag">Beat'em up · Arcade</p>
+        <p class="tag">Beat'em up Â· Arcade</p>
       </div>
     </a>
 
@@ -1552,11 +1552,11 @@
           <!-- creuseur : trou -->
           <circle cx="30" cy="37" r="3" fill="#101024"/>
         </svg>
-        <div class="play"><span>▶ JOUER</span></div>
+        <div class="play"><span>â–¶ JOUER</span></div>
       </div>
       <div class="meta">
         <p class="title">Lemmings</p>
-        <p class="tag">Réflexion · Sauvetage</p>
+        <p class="tag">RÃ©flexion Â· Sauvetage</p>
       </div>
     </a>
 
@@ -1587,11 +1587,11 @@
           <!-- viseur -->
           <g stroke="#fff" stroke-width="1" opacity=".7"><line x1="37" y1="30" x2="43" y2="30"/><line x1="40" y1="27" x2="40" y2="33"/></g>
         </svg>
-        <div class="play"><span>▶ JOUER</span></div>
+        <div class="play"><span>â–¶ JOUER</span></div>
       </div>
       <div class="meta">
         <p class="title">Wolfenstein 3D</p>
-        <p class="tag">FPS · Raycasting</p>
+        <p class="tag">FPS Â· Raycasting</p>
       </div>
     </a>
 
@@ -1605,7 +1605,7 @@
           <circle cx="64" cy="10" r="6" fill="#e8e4d0"/><circle cx="62" cy="9" r="1.6" fill="#c8c4b0"/>
           <!-- pagode -->
           <g fill="#08040e"><rect x="4" y="20" width="12" height="26"/><polygon points="0,22 10,14 20,22"/></g>
-          <!-- sol dallé -->
+          <!-- sol dallÃ© -->
           <rect y="46" width="80" height="14" fill="#3a3444"/>
           <g stroke="rgba(0,0,0,.4)" stroke-width="1"><line x1="16" y1="46" x2="12" y2="60"/><line x1="36" y1="46" x2="32" y2="60"/><line x1="56" y1="46" x2="52" y2="60"/></g>
           <!-- barres de vie -->
@@ -1620,7 +1620,7 @@
             <line x1="0" y1="6" x2="-3" y2="14" stroke="#1c2ea8" stroke-width="2.6"/>
             <line x1="0" y1="6" x2="4" y2="14" stroke="#1c2ea8" stroke-width="2.6"/>
           </g>
-          <!-- adversaire jaune touché -->
+          <!-- adversaire jaune touchÃ© -->
           <g transform="translate(50,38) scale(-1,1)">
             <circle cy="-8" r="3.6" fill="#e8c23a"/><rect x="-2.6" y="-9.4" width="5.2" height="2" fill="#caa07a"/>
             <polygon points="-4,-4 4,-4 3,6 -3,6" fill="#e8c23a" transform="rotate(-8)"/>
@@ -1631,11 +1631,11 @@
           <g fill="#e02020"><circle cx="45" cy="34" r="1.2"/><circle cx="48" cy="31" r="1"/><circle cx="47" cy="36" r=".8"/></g>
           <text x="40" y="56" fill="#ffd23a" font-family="monospace" font-weight="bold" font-size="7" text-anchor="middle">FIGHT !</text>
         </svg>
-        <div class="play"><span>▶ JOUER</span></div>
+        <div class="play"><span>â–¶ JOUER</span></div>
       </div>
       <div class="meta">
         <p class="title">Mortal Kombat</p>
-        <p class="tag">Kombat · Arcade</p>
+        <p class="tag">Kombat Â· Arcade</p>
       </div>
     </a>
 
@@ -1660,7 +1660,7 @@
           <circle cx="26" cy="16" r="5" fill="#ffd23a"/><circle cx="26" cy="16" r="2.8" fill="#ff6a1a"/>
           <!-- tirs -->
           <g fill="#fff5c0"><rect x="36" y="30" width="2" height="4"/><rect x="33" y="36" width="2" height="4" transform="rotate(-14 34 38)"/></g>
-          <!-- hélico du joueur incliné, rotor flou -->
+          <!-- hÃ©lico du joueur inclinÃ©, rotor flou -->
           <g transform="translate(40,46) rotate(-16)">
             <ellipse cx="6" cy="6" rx="9" ry="4" fill="rgba(0,0,0,.25)"/>
             <ellipse cy="1" rx="5.4" ry="9" fill="#4e6a3e"/>
@@ -1670,22 +1670,22 @@
             <line x1="-12" y1="-3" x2="12" y2="3" stroke="rgba(30,30,30,.6)" stroke-width="1.6"/>
           </g>
         </svg>
-        <div class="play"><span>▶ JOUER</span></div>
+        <div class="play"><span>â–¶ JOUER</span></div>
       </div>
       <div class="meta">
         <p class="title">Under Defeat</p>
-        <p class="tag">Shmup hélico · Arcade</p>
+        <p class="tag">Shmup hÃ©lico Â· Arcade</p>
       </div>
     </a>
 
   </div>
 
-  <footer>Clique sur un jeu pour lancer · ↑ ↓ ← → pour jouer</footer>
+  <footer>Clique sur un jeu pour lancer Â· â†‘ â†“ â† â†’ pour jouer</footer>
   <script>
-    // compteur de jeux calculé dynamiquement (reste exact si on ajoute des cartes)
+    // compteur de jeux calculÃ© dynamiquement (reste exact si on ajoute des cartes)
     document.getElementById('gameCount').textContent =
       document.querySelectorAll('.grid .card').length;
-    // meilleur score de chaque jeu sur sa vignette (mêmes clés que le module ArcadeHi)
+    // meilleur score de chaque jeu sur sa vignette (mÃªmes clÃ©s que le module ArcadeHi)
     document.querySelectorAll('.grid .card').forEach(card => {
       const m = (card.getAttribute('href') || '').match(/\.\/([^/]+)\//);
       if (!m) return;
@@ -1693,18 +1693,18 @@
       if (best > 0) {
         const chip = document.createElement('div');
         chip.className = 'hiscore';
-        chip.textContent = '🏆 ' + best;
+        chip.textContent = 'ðŸ† ' + best;
         card.querySelector('.thumb').appendChild(chip);
       }
     });
 
-    // ── 🎲 jeu au hasard ──
+    // â”€â”€ ðŸŽ² jeu au hasard â”€â”€
     document.getElementById('btnRandom').addEventListener('click', () => {
       const cards = [...document.querySelectorAll('.grid .card')].filter(c => !c.classList.contains('hidden'));
       if (cards.length) location.href = cards[Math.floor(Math.random() * cards.length)].getAttribute('href');
     });
 
-    // ── filtres par décennie + recherche ──
+    // â”€â”€ filtres par dÃ©cennie + recherche â”€â”€
     let curDec = 'all';
     const searchEl = document.getElementById('search');
     function applyFilters() {
@@ -1729,7 +1729,7 @@
     }));
     searchEl.addEventListener('input', applyFilters);
 
-    // ── 💾 export / 📥 import des records (localStorage → JSON) ──
+    // â”€â”€ ðŸ’¾ export / ðŸ“¥ import des records (localStorage â†’ JSON) â”€â”€
     const RECORD_KEYS = k => /^(arcadeHi_|arcadeHiTab_|pitfallHiscore|pacman-hi)/.test(k);
     document.getElementById('btnExport').addEventListener('click', () => {
       const data = {};
@@ -1753,13 +1753,13 @@
           const data = JSON.parse(r.result);
           let n = 0;
           for (const k in data) if (RECORD_KEYS(k)) { localStorage.setItem(k, data[k]); n++; }
-          alert(n + ' records importés !'); location.reload();
+          alert(n + ' records importÃ©s !'); location.reload();
         } catch (err) { alert('Fichier invalide.'); }
       };
       r.readAsText(f);
     });
   </script>
-  <script src="music/playlist.js"></script>
-  <script src="music/player.js"></script>
+  <script src="music/playlist.js?v=2"></script>
+  <script src="music/player.js?v=2"></script>
 </body>
 </html>

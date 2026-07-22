@@ -32,13 +32,13 @@
     <div id="overlay">
       <h2 id="ovTitle">Q*BERT</h2>
       <p>Saute sur tous les cubes pour les changer de couleur</p>
-      <p>↑ haut-droite · ← haut-gauche · ↓ bas-gauche · → bas-droite</p>
-      <p>Ne tombe pas dans le vide · évite les ennemis</p>
-      <p class="blink" style="margin-top:14px">▶ Cliquez ou Espace pour jouer</p>
+      <p>â†‘ haut-droite Â· â† haut-gauche Â· â†“ bas-gauche Â· â†’ bas-droite</p>
+      <p>Ne tombe pas dans le vide Â· Ã©vite les ennemis</p>
+      <p class="blink" style="margin-top:14px">â–¶ Cliquez ou Espace pour jouer</p>
     </div>
   </div>
-  <div id="hint">Sauts en diagonale : ↑ haut-droite · ← haut-gauche · ↓ bas-gauche · → bas-droite · P = pause</div>
-  <a class="back" href="../index.html">← Menu Arcade</a>
+  <div id="hint">Sauts en diagonale : â†‘ haut-droite Â· â† haut-gauche Â· â†“ bas-gauche Â· â†’ bas-droite Â· P = pause</div>
+  <a class="back" href="../index.html">â† Menu Arcade</a>
 
 <script>
 const cv = document.getElementById('game');
@@ -48,11 +48,11 @@ const overlay=document.getElementById('overlay');
 const ovTitle=document.getElementById('ovTitle');
 
 const ROWS=7;
-const CW=48, CH=26, SH=24, ROWDY=CH/2+SH;     // géométrie isométrique
+const CW=48, CH=26, SH=24, ROWDY=CH/2+SH;     // gÃ©omÃ©trie isomÃ©trique
 const CENTERX=W/2, TOPY=HUD+52;
-const TOP_COLORS=['#1e63d6','#ffce1f'];        // 0 = départ, 1 = cible
+const TOP_COLORS=['#1e63d6','#ffce1f'];        // 0 = dÃ©part, 1 = cible
 const TARGET=1;
-const FACE_L='#6a3fa6', FACE_R='#412766';      // faces latérales (mauve)
+const FACE_L='#6a3fa6', FACE_R='#412766';      // faces latÃ©rales (mauve)
 
 let cubes, player, enemies, parts;
 let score=0, lives=3, level=1, hi=0;
@@ -93,7 +93,7 @@ function hideOverlay(){ overlay.style.display='none'; }
 let flashMsg=null, flashT=0;
 function flash(m){ flashMsg=m; flashT=70; }
 
-// ── entrées (diagonales) ──
+// â”€â”€ entrÃ©es (diagonales) â”€â”€
 document.addEventListener('keydown',e=>{
   const k=e.key.toLowerCase(); keys[k]=true;
   if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)) e.preventDefault();
@@ -114,7 +114,7 @@ function tryMove(dr,dc){
   if(player.hopping||player.falling||player.dead) return;
   const nr=player.r+dr, nc=player.c+dc;
   player.fromR=player.r; player.fromC=player.c;
-  player.face = dc>0?1 : dc<0?-1 : (dr>0?-1:1);   // trompe orientée selon la diagonale
+  player.face = dc>0?1 : dc<0?-1 : (dr>0?-1:1);   // trompe orientÃ©e selon la diagonale
   if(!valid(nr,nc)){
     // saute dans le vide
     const a=cubePos(player.r,player.c), b=cubePos(nr,nc);
@@ -124,7 +124,7 @@ function tryMove(dr,dc){
   }
 }
 
-// ── mise à jour ──
+// â”€â”€ mise Ã  jour â”€â”€
 function update(){
   if(!running||paused||over) return;
   if(flashT>0) flashT--;
@@ -168,7 +168,7 @@ function update(){
   });
   enemies=enemies.filter(e=>!e.dead);
 
-  // collision joueur <-> ennemi (tous deux posés)
+  // collision joueur <-> ennemi (tous deux posÃ©s)
   if(!player.hopping && !player.falling && !player.dead && player.inv<=0){
     for(const e of enemies){
       if(!e.hopping && e.r===player.r && e.c===player.c){ loseLife(); break; }
@@ -182,7 +182,7 @@ function update(){
 function landPlayer(){
   const cur=cubes[player.r][player.c];
   if(cur<TARGET){ cubes[player.r][player.c]=cur+1; score+=25; burst(player.x,player.y,'#ffce1f',8); }
-  // collision immédiate à l'atterrissage
+  // collision immÃ©diate Ã  l'atterrissage
   for(const e of enemies){ if(!e.hopping && e.r===player.r && e.c===player.c){ loseLife(); return; } }
   if(allChanged()) levelClear();
 }
@@ -200,7 +200,7 @@ function startEnemyHop(e){
   let dr,dc;
   if(e.kind==='ball' || (e.kind==='coily'&&e.state==='egg')){
     dr=1; dc=Math.random()<0.5?0:1;                 // descend en zigzag
-  } else { // Coily serpent : poursuit le joueur (plus court chemin à l'écran)
+  } else { // Coily serpent : poursuit le joueur (plus court chemin Ã  l'Ã©cran)
     const opts=[[-1,0],[-1,-1],[1,0],[1,1]].map(([a,b])=>({r:e.r+a,c:e.c+b}))
       .filter(n=>valid(n.r,n.c));
     if(!opts.length){ e.moveT=20; return; }
@@ -213,7 +213,7 @@ function startEnemyHop(e){
   e.fromR=e.r; e.fromC=e.c; e.tr=nr; e.tc=nc; e.t=0; e.hopping=true;
 }
 function landEnemy(e){
-  if(e.r>=ROWS){ e.dead=true; if(e.kind==='coily') coilyAlive=false; return; }   // tombé en bas
+  if(e.r>=ROWS){ e.dead=true; if(e.kind==='coily') coilyAlive=false; return; }   // tombÃ© en bas
   if(e.kind==='coily' && e.state==='egg' && e.r>=ROWS-1){ e.state='snake'; }
   e.moveT=(e.kind==='coily'?24:30)+Math.floor(Math.random()*12);
   if(!e.hopping && e.r===player.r && e.c===player.c && player.inv<=0 && !player.hopping) loseLife();
@@ -224,7 +224,7 @@ function loseLife(){
   lives--; running=false;
   ArcadeFX.die(cv, player.x, player.y, 'fall', ()=>{
     if(lives<=0){ over=true; if(score>hi)hi=score; showOverlay('GAME OVER','Score : '+score); return; }
-    resetPlayer(); player.inv=70;                 // respawn en haut, bref invincibilité
+    resetPlayer(); player.inv=70;                 // respawn en haut, bref invincibilitÃ©
     enemies=[]; coilyAlive=false; coilyT=Math.max(120, 300-level*20);
     running=true;
   });
@@ -234,14 +234,14 @@ function burst(x,y,color,n){ n=n||12;
   for(let i=0;i<n;i++){ const a=Math.random()*Math.PI*2,s=Math.random()*3+1;
     parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-1,life:16+Math.random()*12,color}); } }
 
-// ── rendu ──
+// â”€â”€ rendu â”€â”€
 function draw(){
   ctx.clearRect(0,0,W,H);
 
   // cubes (du haut vers le bas pour le bon recouvrement)
   for(let r=0;r<ROWS;r++) for(let c=0;c<=r;c++) drawCube(r,c,cubes[r][c]);
 
-  // entités triées par profondeur (rangée)
+  // entitÃ©s triÃ©es par profondeur (rangÃ©e)
   const ents=[player, ...enemies].filter(e=>e && !(e===player && player.dead && !player.falling));
   ents.sort((a,b)=>(a.r+(a.hopping?a.t:0))-(b.r+(b.hopping?b.t:0)));
   ents.forEach(e=>{ if(e===player) drawQbert(); else drawEnemy(e); });
@@ -277,14 +277,14 @@ function drawQbert(){
   if(player.dead && !player.falling) return;
   const x=player.x, y=player.y-12, f=player.face;
   const body = (player.inv>0 && Math.floor(player.inv/4)%2) ? '#ffd2a6' : '#ff7a00';
-  // pattes (deux pieds orange écartés)
+  // pattes (deux pieds orange Ã©cartÃ©s)
   ctx.fillStyle='#d35f00';
   ctx.beginPath(); ctx.ellipse(x-7,y+13,4.5,3,0,0,Math.PI*2); ctx.ellipse(x+7,y+13,4.5,3,0,0,Math.PI*2); ctx.fill();
   ctx.fillRect(x-9,y+8,5,6); ctx.fillRect(x+4,y+8,5,6);
   // corps rond
   ctx.fillStyle=body;
   ctx.beginPath(); ctx.arc(x,y,13,0,Math.PI*2); ctx.fill();
-  // grosse trompe (capsule épaisse, orientée + légèrement vers le bas)
+  // grosse trompe (capsule Ã©paisse, orientÃ©e + lÃ©gÃ¨rement vers le bas)
   ctx.strokeStyle=body; ctx.lineWidth=9; ctx.lineCap='round';
   ctx.beginPath(); ctx.moveTo(x+f*5,y+3); ctx.lineTo(x+f*18,y+7); ctx.stroke();
   ctx.fillStyle='#7a2e00';                       // narines
@@ -294,7 +294,7 @@ function drawQbert(){
   ctx.beginPath(); ctx.ellipse(x-4,y-4,4.5,5.5,0,0,Math.PI*2); ctx.ellipse(x+5,y-4,4.5,5.5,0,0,Math.PI*2); ctx.fill();
   ctx.fillStyle='#000';
   ctx.beginPath(); ctx.arc(x-4+f,y-3,2,0,Math.PI*2); ctx.arc(x+5+f,y-3,2,0,Math.PI*2); ctx.fill();
-  // sourcils rouges fâchés
+  // sourcils rouges fÃ¢chÃ©s
   ctx.strokeStyle='#c81000'; ctx.lineWidth=2.5; ctx.lineCap='round';
   ctx.beginPath(); ctx.moveTo(x-9,y-9); ctx.lineTo(x-1,y-6); ctx.moveTo(x+9,y-9); ctx.lineTo(x+1,y-6); ctx.stroke();
 }
@@ -303,19 +303,19 @@ function drawEnemy(e){
   const x=e.x, y=e.y-11;
   if(e.kind==='coily'){
     if(e.state==='egg'){
-      // œuf mauve tacheté
+      // Å“uf mauve tachetÃ©
       ctx.fillStyle='#7a2bb5'; ctx.beginPath(); ctx.ellipse(x,y,8,11,0,0,Math.PI*2); ctx.fill();
       ctx.fillStyle='#b06cff';
       ctx.beginPath(); ctx.arc(x-2,y-3,2,0,Math.PI*2); ctx.arc(x+3,y+2,1.5,0,Math.PI*2); ctx.arc(x-1,y+5,1.3,0,Math.PI*2); ctx.fill();
     } else {
       const dark='#6a23a0', mid='#8a2be2', lite='#b06cff';
-      // corps enroulé : anneaux empilés (effet ressort)
+      // corps enroulÃ© : anneaux empilÃ©s (effet ressort)
       for(let i=0;i<3;i++){
         const cy=y+9 - i*6, rw=11-i;
         ctx.fillStyle=dark; ctx.beginPath(); ctx.ellipse(x,cy,rw,5,0,0,Math.PI*2); ctx.fill();
         ctx.fillStyle=mid;  ctx.beginPath(); ctx.ellipse(x,cy-1.5,rw,3.5,0,0,Math.PI*2); ctx.fill();
       }
-      // tête au sommet
+      // tÃªte au sommet
       const hy=y-13;
       ctx.fillStyle=mid;  ctx.beginPath(); ctx.arc(x,hy,8,0,Math.PI*2); ctx.fill();
       ctx.fillStyle=lite; ctx.beginPath(); ctx.arc(x-2,hy-2,4,0,Math.PI*2); ctx.fill();
@@ -341,7 +341,7 @@ function drawHUD(){
   ctx.fillStyle='#000'; ctx.fillRect(0,0,W,HUD);
   ctx.fillStyle='#fff'; ctx.font='15px "Courier New",monospace';
   ctx.textAlign='left'; ctx.fillText('SCORE '+score, 10, 23);
-  ctx.textAlign='center'; ctx.fillStyle='#ff8a3d'; ctx.fillText('●'.repeat(Math.max(0,lives))+'  N'+level, W/2, 23);
+  ctx.textAlign='center'; ctx.fillStyle='#ff8a3d'; ctx.fillText('â—'.repeat(Math.max(0,lives))+'  N'+level, W/2, 23);
   ctx.textAlign='right';
   ctx.fillStyle='#bbb'; ctx.fillText('BUT', W-46, 23);
   ctx.fillStyle=TOP_COLORS[TARGET]; ctx.fillRect(W-34,12,22,14);
@@ -352,7 +352,7 @@ function loop(){ update(); draw(); if(window.ArcadeHi)ArcadeHi.submit(score); re
 initCubes(); resetPlayer(); enemies=[]; parts=[]; ballT=120; coilyT=300; coilyAlive=false;
 loop();
 </script>
-<script src="../music/playlist.js"></script>
-<script src="../music/player.js"></script>
+<script src="../music/playlist.js?v=2"></script>
+<script src="../music/player.js?v=2"></script>
 </body>
 </html>

@@ -32,20 +32,20 @@
     <div id="overlay">
       <h2 id="ovTitle">OUT RUN</h2>
       <p>Roulez le plus loin avant la fin du temps</p>
-      <p>← → diriger · ↑ accélérer · ↓ freiner</p>
-      <p>Évitez le trafic · chaque arrivée 🏁 ouvre un nouveau parcours !</p>
-      <p class="blink" style="margin-top:14px">▶ Cliquez ou Espace pour démarrer</p>
+      <p>â† â†’ diriger Â· â†‘ accÃ©lÃ©rer Â· â†“ freiner</p>
+      <p>Ã‰vitez le trafic Â· chaque arrivÃ©e ðŸ ouvre un nouveau parcours !</p>
+      <p class="blink" style="margin-top:14px">â–¶ Cliquez ou Espace pour dÃ©marrer</p>
     </div>
   </div>
-  <div id="hint">← → diriger · ↑ accélérer · ↓ freiner · Espace : démarrer · P = pause</div>
-  <a class="back" href="../index.html">← Menu Arcade</a>
+  <div id="hint">â† â†’ diriger Â· â†‘ accÃ©lÃ©rer Â· â†“ freiner Â· Espace : dÃ©marrer Â· P = pause</div>
+  <a class="back" href="../index.html">â† Menu Arcade</a>
 
 <script>
 const cv = document.getElementById('game');
 const ctx = cv.getContext('2d');
 const W=cv.width, H=cv.height;
 
-// ── paramètres pseudo-3D ──
+// â”€â”€ paramÃ¨tres pseudo-3D â”€â”€
 const segLength=200, rumbleLength=3, roadWidth=1100, lanes=3;
 const cameraHeight=1000;
 const fov=100, cameraDepth=1/Math.tan((fov/2)*Math.PI/180);
@@ -66,8 +66,8 @@ let cars=[];
 // minicarte du circuit
 const MAP_W=98, MAP_H=74, MAP_PAD=10, MAP_STEP=4;
 let trackPath=null, trackMapPts=[];
-let finishPos=0, finished=false;            // ligne d'arrivée
-let finishGantry=null;                       // portique capté pendant le rendu
+let finishPos=0, finished=false;            // ligne d'arrivÃ©e
+let finishGantry=null;                       // portique captÃ© pendant le rendu
 let position, speed, playerX, totalDist, timeLeft, stage, score, nextCP, bonusScore;
 let running=false, paused=false, over=false;
 let flashMsg='', flashT=0;
@@ -92,7 +92,7 @@ function project(p, camX, camY, camZ){
   p.sw=Math.round(p.scale*roadWidth*W/2);
 }
 
-// ── construction de la piste ──
+// â”€â”€ construction de la piste â”€â”€
 function lastY(){ return segments.length===0?0:segments[segments.length-1].p2.wy; }
 function addSeg(curve,y){
   const n=segments.length;
@@ -113,22 +113,22 @@ function addRoad(enter,hold,leave,curve,height){
 const S=25,M=50,L=100, CE=2.4,CM=4.2,CH=6.5, HL=20,HM=40,HH=60;
 function buildTrack(){
   segments=[];
-  addRoad(M,M,M,0,0);                          // ligne de départ plate
-  const nSec = 8 + rand(5);                    // 8 à 12 sections, différentes à chaque fois
+  addRoad(M,M,M,0,0);                          // ligne de dÃ©part plate
+  const nSec = 8 + rand(5);                    // 8 Ã  12 sections, diffÃ©rentes Ã  chaque fois
   for(let i=0;i<nSec;i++){
     const enter=pick([S,M,M,L]), hold=pick([S,M,L]), leave=pick([S,M,M,L]);
     const curve = pick([0,0,CE,CM,CM,CH]) * (Math.random()<0.5?-1:1);
     const hill  = pick([0,HL,HM,HM,HH])    * (Math.random()<0.5?-1:1);
     addRoad(enter,hold,leave,curve,hill);
   }
-  addRoad(L,M,M,0,0);                           // dernière ligne droite plate vers l'arrivée
-  // palmiers alternés en bordure
+  addRoad(L,M,M,0,0);                           // derniÃ¨re ligne droite plate vers l'arrivÃ©e
+  // palmiers alternÃ©s en bordure
   for(let n=10;n<segments.length;n+=6){
     const side = (n%12<6)? -1.5 : 1.5;
     segments[n].sprites.push({offset:side});
     if(Math.random()<0.3) segments[n].sprites.push({offset:-side*1.2});
   }
-  // bande d'arrivée à damier (3 segments) près de la fin du circuit
+  // bande d'arrivÃ©e Ã  damier (3 segments) prÃ¨s de la fin du circuit
   const FB = segments.length - 8;
   for(let n=0;n<3;n++){ if(segments[FB+n]) segments[FB+n].finish = n; }
   finishPos = FB*segLength;
@@ -136,7 +136,7 @@ function buildTrack(){
   buildMinimap();
 }
 
-// forme du circuit vue de dessus : on intègre le cap à partir des courbures
+// forme du circuit vue de dessus : on intÃ¨gre le cap Ã  partir des courbures
 function buildMinimap(){
   let h=0, x=0, y=0; const raw=[];
   for(let i=0;i<segments.length;i++){
@@ -168,7 +168,7 @@ function spawnTraffic(){
 }
 
 function newGame(){
-  buildTrack();                         // nouveau parcours aléatoire à chaque partie
+  buildTrack();                         // nouveau parcours alÃ©atoire Ã  chaque partie
   spawnTraffic();
   position=0; speed=0; playerX=0; totalDist=0;
   timeLeft=90; stage=1; score=0; nextCP=6000; bonusScore=0;
@@ -182,7 +182,7 @@ const ovTitle=document.getElementById('ovTitle');
 function showOverlay(t,s){ ovTitle.textContent=t; overlay.querySelector('p:nth-of-type(1)').textContent=s; overlay.style.display='flex'; }
 function hideOverlay(){ overlay.style.display='none'; }
 
-// ── entrées ──
+// â”€â”€ entrÃ©es â”€â”€
 document.addEventListener('keydown',e=>{
   const k=e.key.toLowerCase(); keys[k]=true;
   if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)) e.preventDefault();
@@ -194,7 +194,7 @@ document.addEventListener('keyup',e=>{ keys[e.key.toLowerCase()]=false; });
 overlay.addEventListener('click',()=>{ if(!running||over) newGame(); });
 cv.addEventListener('touchstart',e=>{ e.preventDefault(); if(!running||over) newGame(); },{passive:false});
 
-// ── mise à jour ──
+// â”€â”€ mise Ã  jour â”€â”€
 function update(dt){
   if(!running||paused||over) return;
 
@@ -216,27 +216,27 @@ function update(dt){
 
   // trafic
   cars.forEach(c=>{ c.z=(c.z+c.speed*dt)%trackLength; });
-  // collision : seulement si on rattrape une auto dans la MÊME voie
+  // collision : seulement si on rattrape une auto dans la MÃŠME voie
   for(const c of cars){
     let rel=c.z-position; if(rel<-trackLength/2) rel+=trackLength; if(rel>trackLength/2) rel-=trackLength;
     if(rel>0 && rel<segLength*1.5 && Math.abs(playerX-c.offset)<0.45 && speed>c.speed){
-      speed=c.speed*0.75;                                   // ralenti derrière elle
-      playerX += (playerX>c.offset?0.05:-0.05);             // léger écart, déporte-toi pour doubler
+      speed=c.speed*0.75;                                   // ralenti derriÃ¨re elle
+      playerX += (playerX>c.offset?0.05:-0.05);             // lÃ©ger Ã©cart, dÃ©porte-toi pour doubler
     }
   }
 
   position+=speed*dt;
   totalDist+=speed*dt;
 
-  // arrivée : franchi la ligne → on génère un NOUVEAU parcours et on continue
+  // arrivÃ©e : franchi la ligne â†’ on gÃ©nÃ¨re un NOUVEAU parcours et on continue
   if(position>=finishPos){
     const bonus=Math.floor(timeLeft)*20+500;
     bonusScore+=bonus;
-    timeLeft=Math.min(timeLeft+34, 120);          // temps rechargé pour l'étape suivante
+    timeLeft=Math.min(timeLeft+34, 120);          // temps rechargÃ© pour l'Ã©tape suivante
     stage++;
     buildTrack(); spawnTraffic();
     position=0; playerX=0; finished=false;
-    flash('🏁 ÉTAPE '+stage+' — NOUVEAU PARCOURS  (+'+bonus+')');
+    flash('ðŸ Ã‰TAPE '+stage+' â€” NOUVEAU PARCOURS  (+'+bonus+')');
     return;
   }
 
@@ -245,10 +245,10 @@ function update(dt){
   score=Math.floor(totalDist/10)+bonusScore;
 
   timeLeft-=dt;
-  if(timeLeft<=0){ timeLeft=0; over=true; running=false; showOverlay('TEMPS ÉCOULÉ','Distance : '+Math.floor(totalDist/100)+'  ·  Score : '+score); }
+  if(timeLeft<=0){ timeLeft=0; over=true; running=false; showOverlay('TEMPS Ã‰COULÃ‰','Distance : '+Math.floor(totalDist/100)+'  Â·  Score : '+score); }
 }
 
-// ── rendu ──
+// â”€â”€ rendu â”€â”€
 function poly(x1,y1,x2,y2,x3,y3,x4,y4,col){
   ctx.fillStyle=col; ctx.beginPath();
   ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.lineTo(x3,y3); ctx.lineTo(x4,y4); ctx.closePath(); ctx.fill();
@@ -271,7 +271,7 @@ function renderSeg(s,p1,p2){
   if(s.finish!==undefined) drawFinish(s,p1,p2);
 }
 
-// bande d'arrivée à damier (+ portique sur le segment le plus proche)
+// bande d'arrivÃ©e Ã  damier (+ portique sur le segment le plus proche)
 function drawFinish(s,p1,p2){
   const cols=10;
   for(let j=0;j<cols;j++){
@@ -280,7 +280,7 @@ function drawFinish(s,p1,p2){
     const flx=interp(p2.sx-p2.sw,p2.sx+p2.sw,t0), frx=interp(p2.sx-p2.sw,p2.sx+p2.sw,t1);
     poly(nlx,p1.sy,nrx,p1.sy,frx,p2.sy,flx,p2.sy, ((j+s.finish)%2)?'#f5f5f5':'#1a1a1a');
   }
-  // le portique est mémorisé puis dessiné APRÈS la boucle (sinon l'herbe le recouvre)
+  // le portique est mÃ©morisÃ© puis dessinÃ© APRÃˆS la boucle (sinon l'herbe le recouvre)
   if(s.finish===0) finishGantry={ lx:p1.sx-p1.sw, rx:p1.sx+p1.sw, by:p1.sy, sw:p1.sw };
 }
 
@@ -294,9 +294,9 @@ function drawFinishGantry(g){
     ctx.fillStyle=(j%2)?'#1a1a1a':'#f5f5f5'; ctx.fillRect(x0, g.by-ph, x1-x0, bh);
     ctx.fillStyle=(j%2)?'#f5f5f5':'#1a1a1a'; ctx.fillRect(x0, g.by-ph+bh, x1-x0, bh);
   }
-  // mot ARRIVÉE sur la banderole
+  // mot ARRIVÃ‰E sur la banderole
   ctx.fillStyle='#ff3030'; ctx.font='bold 11px "Courier New",monospace'; ctx.textAlign='center';
-  if(g.sw>40) ctx.fillText('ARRIVÉE', (g.lx+g.rx)/2, g.by-ph+bh*2-3);
+  if(g.sw>40) ctx.fillText('ARRIVÃ‰E', (g.lx+g.rx)/2, g.by-ph+bh*2-3);
 }
 function drawPalm(x,baseY,h){
   const w=h*0.55;
@@ -357,7 +357,7 @@ function render(){
 
   if(finishGantry) drawFinishGantry(finishGantry);
 
-  // sprites (palmiers) — du plus loin au plus proche
+  // sprites (palmiers) â€” du plus loin au plus proche
   for(let i=rendered.length-1;i>=0;i--){
     const s=rendered[i];
     s.sprites.forEach(sp=>{
@@ -369,7 +369,7 @@ function render(){
     });
   }
 
-  // trafic — projeté sur son segment
+  // trafic â€” projetÃ© sur son segment
   const drawn=[];
   cars.forEach(c=>{
     let rel=c.z-position; if(rel<0) rel+=trackLength;
@@ -415,10 +415,10 @@ function drawMinimap(){
   ctx.fillStyle='rgba(0,0,0,.55)';
   ctx.strokeStyle='rgba(255,255,255,.45)'; ctx.lineWidth=1;
   ctx.beginPath(); ctx.rect(0.5,0.5,MAP_W,MAP_H); ctx.fill(); ctx.stroke();
-  // tracé du circuit
+  // tracÃ© du circuit
   ctx.strokeStyle='#ffd23a'; ctx.lineWidth=2; ctx.lineJoin='round'; ctx.lineCap='round';
   ctx.stroke(trackPath);
-  // repère d'arrivée (damier)
+  // repÃ¨re d'arrivÃ©e (damier)
   const fk=clamp(Math.floor((finishPos/segLength)/MAP_STEP), 0, trackMapPts.length-1);
   const fp=trackMapPts[fk];
   ctx.fillStyle='#fff'; ctx.fillRect(fp.x-3,fp.y-3,6,6);
@@ -436,17 +436,17 @@ function drawPlayerCar(x,y){
   ctx.save(); ctx.translate(x,y);
   // ombre
   ctx.fillStyle='rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(0,16,34,7,0,0,Math.PI*2); ctx.fill();
-  // carrosserie rouge (vue arrière)
+  // carrosserie rouge (vue arriÃ¨re)
   ctx.fillStyle='#d11414'; ctx.fillRect(-32,-2,64,18);
   ctx.fillStyle='#e02020'; ctx.fillRect(-26,-14,52,14);
-  // lunette arrière
+  // lunette arriÃ¨re
   ctx.fillStyle='#101018'; ctx.fillRect(-20,-12,40,9);
   // bandeau feux
   ctx.fillStyle='#7a0c0c'; ctx.fillRect(-32,12,64,4);
   ctx.fillStyle='#ff4d4d'; ctx.fillRect(-30,3,12,5); ctx.fillRect(18,3,12,5);
   // roues
   ctx.fillStyle='#111'; ctx.fillRect(-34,8,8,10); ctx.fillRect(26,8,8,10);
-  // léger braquage
+  // lÃ©ger braquage
   if(steer){ ctx.fillStyle='#b00f0f'; ctx.fillRect(steer>0?20:-32,-14,12,4); }
   ctx.restore();
 }
@@ -461,7 +461,7 @@ function drawHUD(){
   ctx.textAlign='right'; ctx.font='bold 14px "Courier New",monospace';
   ctx.fillStyle='#5ad1e8';
   ctx.fillText(Math.round(speed/maxSpeed*293)+' km/h', W-10, 16);
-  ctx.fillStyle='#fff'; ctx.fillText('ÉTAPE '+stage, W-10, 31);
+  ctx.fillStyle='#fff'; ctx.fillText('Ã‰TAPE '+stage, W-10, 31);
 }
 
 function loop(now){
@@ -474,7 +474,7 @@ buildTrack(); spawnTraffic();
 position=0; speed=0; playerX=0; totalDist=0; timeLeft=90; stage=1; score=0; nextCP=6000; bonusScore=0;
 requestAnimationFrame(loop);
 </script>
-<script src="../music/playlist.js"></script>
-<script src="../music/player.js"></script>
+<script src="../music/playlist.js?v=2"></script>
+<script src="../music/player.js?v=2"></script>
 </body>
 </html>

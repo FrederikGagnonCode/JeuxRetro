@@ -32,16 +32,16 @@
     <div id="overlay">
       <h2 id="ovTitle">NetHack</h2>
       <p>Explore le donjon, descends les escaliers, survis.</p>
-      <p>← ↑ ↓ → · WASD · ou pavé numérique (1-9, diagonales incluses)</p>
-      <p>. : ramasser l'objet sous tes pieds · Espace : descendre (sur &gt;)</p>
-      <p>I : inventaire · Q : potion · R : parchemin · P : pause</p>
+      <p>â† â†‘ â†“ â†’ Â· WASD Â· ou pavÃ© numÃ©rique (1-9, diagonales incluses)</p>
+      <p>. : ramasser l'objet sous tes pieds Â· Espace : descendre (sur &gt;)</p>
+      <p>I : inventaire Â· Q : potion Â· R : parchemin Â· P : pause</p>
       <p>Visite les magasins (@ orange) : appuie sur . sur un article pour l'acheter.</p>
       <p>Trouve l'Amulette de Yendor au fond du donjon !</p>
-      <p class="blink" style="margin-top:14px">▶ Cliquez ou Espace pour descendre</p>
+      <p class="blink" style="margin-top:14px">â–¶ Cliquez ou Espace pour descendre</p>
     </div>
   </div>
-  <div id="hint">Flèches / WASD / pavé num. (1-9) · diagonales Y U B N · . : ramasser · Espace : escalier · I : inventaire · Q : potion · R : parchemin · P = pause</div>
-  <a class="back" href="../index.html">← Menu Arcade</a>
+  <div id="hint">FlÃ¨ches / WASD / pavÃ© num. (1-9) Â· diagonales Y U B N Â· . : ramasser Â· Espace : escalier Â· I : inventaire Â· Q : potion Â· R : parchemin Â· P = pause</div>
+  <a class="back" href="../index.html">â† Menu Arcade</a>
 
 <script>
 const cv = document.getElementById('game');
@@ -50,7 +50,7 @@ const overlay = document.getElementById('overlay');
 const ovTitle = document.getElementById('ovTitle');
 
 const COLS=40, ROWS=24, TS=14;
-const HUDH=40, MSGH=22, MAPY=HUDH;        // bande d'état (haut, 2 lignes) et message (bas), en pixels
+const HUDH=40, MSGH=22, MAPY=HUDH;        // bande d'Ã©tat (haut, 2 lignes) et message (bas), en pixels
 const MAXDEPTH=8;
 const rand=n=>Math.floor(Math.random()*n);
 const sign=v=>v<0?-1:v>0?1:0;
@@ -60,9 +60,9 @@ let map, rooms, monsters, items, seen, visible, player;
 let running=false, paused=false, over=false, invOpen=false, logLine='', flashT=0;
 const keys={};
 
-// ── table de monstres (apparaissent selon la profondeur) ──
+// â”€â”€ table de monstres (apparaissent selon la profondeur) â”€â”€
 const BESTIARY=[
-  {ch:'r',name:'rat géant', hp:3,  dmg:2,  xp:1,  color:'#b08860', minD:1},
+  {ch:'r',name:'rat gÃ©ant', hp:3,  dmg:2,  xp:1,  color:'#b08860', minD:1},
   {ch:'d',name:'chien sauvage',hp:6,dmg:3, xp:2,  color:'#d4c0a0', minD:1},
   {ch:'k',name:'kobold',    hp:8,  dmg:3,  xp:3,  color:'#7ccb5a', minD:2},
   {ch:'o',name:'orc',       hp:12, dmg:4,  xp:5,  color:'#46b246', minD:3},
@@ -71,15 +71,15 @@ const BESTIARY=[
   {ch:'D',name:'dragon',    hp:42, dmg:12, xp:22, color:'#ef5252', minD:7},
 ];
 
-// ── définitions d'objets transportables ──
+// â”€â”€ dÃ©finitions d'objets transportables â”€â”€
 const ITEMDEF={
   potion:{ch:'!',color:'#ff6ad5',name:'potion de soin'},
-  scroll:{ch:'?',color:'#9cf', name:'parchemin de téléportation'},
+  scroll:{ch:'?',color:'#9cf', name:'parchemin de tÃ©lÃ©portation'},
 };
-// armes et armures trouvables (équipées automatiquement si meilleures)
+// armes et armures trouvables (Ã©quipÃ©es automatiquement si meilleures)
 const WEAPONS=[
   {ch:')',name:'dague',       bonus:1, color:'#cfd'},
-  {ch:')',name:'épée courte', bonus:3, color:'#cfd'},
+  {ch:')',name:'Ã©pÃ©e courte', bonus:3, color:'#cfd'},
   {ch:')',name:'hache de guerre',bonus:5,color:'#eda'},
 ];
 const ARMORS=[
@@ -104,7 +104,7 @@ function useItemLetter(letter){
 }
 function newGame(){
   player=makePlayer();
-  addItem('potion');                 // potion de départ
+  addItem('potion');                 // potion de dÃ©part
   genLevel(player.depth);
   over=false; paused=false; invOpen=false; running=true;
   logLine='Bienvenue dans le donjon de Yendor.';
@@ -112,7 +112,7 @@ function newGame(){
 }
 function log(m){ logLine=m; }
 
-// ── génération de niveau ──
+// â”€â”€ gÃ©nÃ©ration de niveau â”€â”€
 function genLevel(depth){
   map=[]; for(let y=0;y<ROWS;y++){ map.push(new Array(COLS).fill('#')); }
   rooms=[]; monsters=[]; items=[]; seen=new Set(); visible=new Set();
@@ -156,7 +156,7 @@ function genLevel(depth){
   if(Math.random()<0.4){ const w=WEAPONS[Math.min(WEAPONS.length-1, 1+rand(depth))]; drop({type:'weapon',data:w,ch:w.ch,color:w.color}); }
   if(Math.random()<0.35){ const a=ARMORS[Math.min(ARMORS.length-1, 1+rand(depth))]; drop({type:'armor',data:a,ch:a.ch,color:a.color}); }
 
-  // magasin : parfois, une salle (jamais celle de départ) devient une boutique
+  // magasin : parfois, une salle (jamais celle de dÃ©part) devient une boutique
   if(depth>=2 && rooms.length>2 && Math.random()<0.55) makeShop(rooms[1+rand(rooms.length-1)], depth);
 
   computeFOV();
@@ -182,7 +182,7 @@ function freeTile(room){
   }
   return null;
 }
-// ── magasin : marchand pacifique + articles à vendre ──
+// â”€â”€ magasin : marchand pacifique + articles Ã  vendre â”€â”€
 function makeShop(room, depth){
   // marchand dans un coin de la salle
   let mx=room.x, my=room.y;
@@ -191,7 +191,7 @@ function makeShop(room, depth){
   // stock
   const stock=[
     {type:'potion',ch:'!',color:'#ff6ad5',price:24,label:'potion de soin'},
-    {type:'scroll',ch:'?',color:'#9cf', price:30,label:'parchemin de téléportation'},
+    {type:'scroll',ch:'?',color:'#9cf', price:30,label:'parchemin de tÃ©lÃ©portation'},
   ];
   const w=WEAPONS[Math.min(WEAPONS.length-1,1+rand(2))];
   stock.push({type:'weapon',data:w,ch:w.ch,color:w.color,price:35+w.bonus*15,label:w.name});
@@ -202,19 +202,19 @@ function makeShop(room, depth){
   log('Une boutique ! Marche sur un article, puis . pour l\'acheter.');
 }
 function buy(it){
-  if(player.gold<it.price){ log('Trop cher : '+it.label+' coûte '+it.price+' or (tu as '+player.gold+').'); return; }
+  if(player.gold<it.price){ log('Trop cher : '+it.label+' coÃ»te '+it.price+' or (tu as '+player.gold+').'); return; }
   player.gold-=it.price;
   if(it.type==='potion') addItem('potion');
   else if(it.type==='scroll') addItem('scroll');
   else if(it.type==='weapon') player.weapon=it.data;
   else if(it.type==='armor')  player.armor=it.data;
   items=items.filter(o=>o!==it);
-  log('Acheté : '+it.label+' pour '+it.price+' or.');
+  log('AchetÃ© : '+it.label+' pour '+it.price+' or.');
 }
 function monsterAt(x,y){ return monsters.find(m=>m.hp>0 && m.x===x && m.y===y); }
 function itemAt(x,y){ return items.find(it=>it.x===x && it.y===y); }
 
-// ── champ de vision (FOV) ──
+// â”€â”€ champ de vision (FOV) â”€â”€
 function computeFOV(){
   visible=new Set();
   const R=7;
@@ -239,7 +239,7 @@ function los(x0,y0,x1,y1){
   }
 }
 
-// ── tour de jeu ──
+// â”€â”€ tour de jeu â”€â”€
 function tryMove(dx,dy){
   if(!running||paused||over) return;
   const nx=player.x+dx, ny=player.y+dy;
@@ -247,20 +247,20 @@ function tryMove(dx,dy){
   if(map[ny][nx]==='#') return;                 // mur : aucun tour
   const m=monsterAt(nx,ny);
   if(m){
-    if(m.shopkeeper){ log('Le marchand : « Pas touche ! Regarde les articles. »'); return; }
+    if(m.shopkeeper){ log('Le marchand : Â« Pas touche ! Regarde les articles. Â»'); return; }
     playerAttack(m); endTurn(); return;
   }
   player.x=nx; player.y=ny;
   lookHere();
   endTurn();
 }
-// détails d'un objet quand on marche dessus (sans le ramasser)
+// dÃ©tails d'un objet quand on marche dessus (sans le ramasser)
 function describeItem(it){
-  if(it.forSale) return 'À vendre : '+it.label+' — '+it.price+' or  (appuie sur . pour acheter)';
+  if(it.forSale) return 'Ã€ vendre : '+it.label+' â€” '+it.price+' or  (appuie sur . pour acheter)';
   switch(it.type){
-    case 'gold':   return it.amt+' pièces d\'or ici  (. pour ramasser)';
+    case 'gold':   return it.amt+' piÃ¨ces d\'or ici  (. pour ramasser)';
     case 'potion': return 'Une potion de soin ici  (. pour ramasser)';
-    case 'scroll': return 'Un parchemin de téléportation ici  (. pour ramasser)';
+    case 'scroll': return 'Un parchemin de tÃ©lÃ©portation ici  (. pour ramasser)';
     case 'weapon': return 'Une arme : '+it.data.name+' (+'+it.data.bonus+' att)  (. pour ramasser)';
     case 'armor':  return 'Une armure : '+it.data.name+' (CA '+(10-it.data.def)+')  (. pour ramasser)';
     case 'amulet': return 'L\'Amulette de Yendor est ici !  (. pour la prendre)';
@@ -271,26 +271,26 @@ function lookHere(){
   const it=itemAt(player.x,player.y);
   if(it) log(describeItem(it));
 }
-// action « ramasser » (touche .)
+// action Â« ramasser Â» (touche .)
 function grab(){
   if(!running||paused||over) return;
   const it=itemAt(player.x,player.y);
-  if(!it){ log('Il n\'y a rien à ramasser ici.'); return; }
+  if(!it){ log('Il n\'y a rien Ã  ramasser ici.'); return; }
   grabHere();
   endTurn();
 }
 function grabHere(){
   const it=itemAt(player.x,player.y); if(!it) return;
   if(it.forSale){ buy(it); return; }
-  if(it.type==='gold'){ player.gold+=it.amt; log('Tu ramasses '+it.amt+' pièces d\'or.'); }
+  if(it.type==='gold'){ player.gold+=it.amt; log('Tu ramasses '+it.amt+' piÃ¨ces d\'or.'); }
   else if(it.type==='potion'){ addItem('potion'); log('Tu ramasses une potion de soin.'); }
-  else if(it.type==='scroll'){ addItem('scroll'); log('Tu ramasses un parchemin de téléportation.'); }
+  else if(it.type==='scroll'){ addItem('scroll'); log('Tu ramasses un parchemin de tÃ©lÃ©portation.'); }
   else if(it.type==='weapon'){
-    if(it.data.bonus>player.weapon.bonus){ player.weapon=it.data; log('Tu t\'équipes : '+it.data.name+' (+'+it.data.bonus+' att).'); }
+    if(it.data.bonus>player.weapon.bonus){ player.weapon=it.data; log('Tu t\'Ã©quipes : '+it.data.name+' (+'+it.data.bonus+' att).'); }
     else log('Une '+it.data.name+', mais ton arme est meilleure.');
   }
   else if(it.type==='armor'){
-    if(it.data.def>player.armor.def){ player.armor=it.data; log('Tu enfiles : '+it.data.name+' (déf '+it.data.def+').'); }
+    if(it.data.def>player.armor.def){ player.armor=it.data; log('Tu enfiles : '+it.data.name+' (dÃ©f '+it.data.def+').'); }
     else log('Une '+it.data.name+', mais ton armure est meilleure.');
   }
   else if(it.type==='amulet'){ player.hasAmulet=true; items=items.filter(o=>o!==it); win(); return; }
@@ -306,13 +306,13 @@ function quaffStack(st){
 }
 function readStack(st){
   if(!st || st.count<=0){ log('Tu n\'as aucun parchemin.'); return; }
-  // téléportation : place le joueur sur une case de sol au hasard
+  // tÃ©lÃ©portation : place le joueur sur une case de sol au hasard
   for(let t=0;t<200;t++){
     const x=rand(COLS), y=rand(ROWS);
     if(map[y][x]==='#' || monsterAt(x,y)) continue;
     player.x=x; player.y=y; break;
   }
-  consume(st); log('Tu lis le parchemin… téléportation !');
+  consume(st); log('Tu lis le parcheminâ€¦ tÃ©lÃ©portation !');
   invOpen=false; endTurn();
 }
 function quaff(){
@@ -384,13 +384,13 @@ function die(){
   over=true; running=false;
   const px=(player.x+0.5)*TS, py=MAPY+(player.y+0.5)*TS;
   ArcadeFX.die(cv, px, py, 'explosion', ()=>{
-    showOverlay('TU ES MORT', 'Niveau '+player.depth+' · Score : '+scoreNow());
+    showOverlay('TU ES MORT', 'Niveau '+player.depth+' Â· Score : '+scoreNow());
   });
 }
 function win(){
   over=true; running=false;
   log('Tu t\'empares de l\'Amulette de Yendor !');
-  showOverlay('★ VICTOIRE ★', 'Amulette obtenue ! Score : '+(scoreNow()+2000));
+  showOverlay('â˜… VICTOIRE â˜…', 'Amulette obtenue ! Score : '+(scoreNow()+2000));
 }
 function showOverlay(t,s){
   ovTitle.textContent=t;
@@ -398,7 +398,7 @@ function showOverlay(t,s){
   overlay.style.display='flex';
 }
 
-// ── entrées ──
+// â”€â”€ entrÃ©es â”€â”€
 document.addEventListener('keydown',e=>{
   const k=e.key.toLowerCase(); keys[k]=true;
   if(['arrowup','arrowdown','arrowleft','arrowright',' ','home','end','pageup','pagedown','clear'].includes(k)) e.preventDefault();
@@ -406,7 +406,7 @@ document.addEventListener('keydown',e=>{
   if((k===' '||k==='enter') && (!running||over)){ newGame(); return; }
   if(k==='p' && running && !over){ paused=!paused; return; }
   if(!running||over) return;
-  // écran d'inventaire ouvert : choisir un objet par sa lettre, ou fermer
+  // Ã©cran d'inventaire ouvert : choisir un objet par sa lettre, ou fermer
   if(invOpen){
     if(k==='i'||k==='escape') invOpen=false;
     else if(k.length===1 && k>='a' && k<='z') useItemLetter(k);
@@ -433,7 +433,7 @@ document.addEventListener('keyup',e=>{ keys[e.key.toLowerCase()]=false; });
 overlay.addEventListener('click',()=>{ if(!running||over) newGame(); });
 cv.addEventListener('touchstart',e=>{ e.preventDefault(); if(!running||over) newGame(); },{passive:false});
 
-// ── rendu ──
+// â”€â”€ rendu â”€â”€
 function draw(){
   ctx.clearRect(0,0,cv.width,cv.height);
   if(flashT>0) flashT--;
@@ -450,7 +450,7 @@ function draw(){
         const ch=map[y][x];
         const cx=x*TS+TS/2, cy=MAPY+y*TS+TS/2;
         if(ch==='#'){ ctx.fillStyle=vis?'#5f8f5f':'#26402a'; ctx.fillText('#',cx,cy); }
-        else if(ch==='.'){ ctx.fillStyle=vis?'#444a55':'#1c2030'; ctx.fillText('·',cx,cy); }
+        else if(ch==='.'){ ctx.fillStyle=vis?'#444a55':'#1c2030'; ctx.fillText('Â·',cx,cy); }
         else if(ch==='>'){ ctx.fillStyle=vis?'#ffd23a':'#7a6a20'; ctx.fillText('>',cx,cy); }
         else if(ch==='<'){ ctx.fillStyle=vis?'#9fe':'#2a4a52'; ctx.fillText('<',cx,cy); }
       }
@@ -484,38 +484,38 @@ function drawInventory(){
   ctx.fillStyle='rgba(0,0,10,.88)'; ctx.fillRect(0,0,cv.width,cv.height);
   ctx.textAlign='left'; ctx.textBaseline='alphabetic';
   ctx.fillStyle='#6c6'; ctx.font='bold 16px "Courier New",monospace';
-  ctx.fillText('— INVENTAIRE —', 24, 38);
+  ctx.fillText('â€” INVENTAIRE â€”', 24, 38);
   ctx.font='13px "Courier New",monospace';
   let y=68;
   ctx.fillStyle='#cfd';    ctx.fillText('Arme   : '+player.weapon.name+'  (+'+player.weapon.bonus+' att)', 24, y); y+=21;
   ctx.fillStyle='#bcd';    ctx.fillText('Armure : '+player.armor.name+'  (CA '+(10-player.armor.def)+')', 24, y); y+=21;
-  ctx.fillStyle='#cdeb8e'; ctx.fillText('Niveau '+player.lvl+'  ·  XP '+player.xp+'/'+player.xpNext, 24, y); y+=21;
-  ctx.fillStyle='#ffd23a'; ctx.fillText('Or     : '+player.gold+' pièces', 24, y); y+=30;
-  ctx.fillStyle='#9a9'; ctx.fillText('Objets transportés :', 24, y); y+=22;
+  ctx.fillStyle='#cdeb8e'; ctx.fillText('Niveau '+player.lvl+'  Â·  XP '+player.xp+'/'+player.xpNext, 24, y); y+=21;
+  ctx.fillStyle='#ffd23a'; ctx.fillText('Or     : '+player.gold+' piÃ¨ces', 24, y); y+=30;
+  ctx.fillStyle='#9a9'; ctx.fillText('Objets transportÃ©s :', 24, y); y+=22;
   if(player.inv.length===0){ ctx.fillStyle='#777'; ctx.fillText('   (aucun)', 24, y); y+=20; }
   else player.inv.forEach((st,i)=>{
     const letter=String.fromCharCode(97+i);
     ctx.fillStyle=st.color;
-    ctx.fillText('  '+letter+')  '+st.ch+'  '+st.name+(st.count>1?'   ×'+st.count:''), 24, y);
+    ctx.fillText('  '+letter+')  '+st.ch+'  '+st.name+(st.count>1?'   Ã—'+st.count:''), 24, y);
     y+=20;
   });
   if(player.hasAmulet){ ctx.fillStyle='#ffd23a'; ctx.fillText('   "   Amulette de Yendor', 24, y); y+=20; }
   ctx.fillStyle='#888'; ctx.font='12px "Courier New",monospace';
-  ctx.fillText('Lettre = utiliser l\'objet · I / Échap = fermer', 24, cv.height-18);
+  ctx.fillText('Lettre = utiliser l\'objet Â· I / Ã‰chap = fermer', 24, cv.height-18);
   ctx.textBaseline='middle';
 }
 function drawHUD(){
-  // bande d'état en haut, sur deux lignes
+  // bande d'Ã©tat en haut, sur deux lignes
   const ac=10-player.armor.def;          // classe d'armure (plus bas = mieux)
   const yA=13, yB=30;                     // lignes haut / bas
   ctx.textAlign='left'; ctx.font='bold 14px "Courier New",monospace';
   ctx.fillStyle='#0a0a18'; ctx.fillRect(0,0,cv.width,HUDH);
-  // ligne 1 : PV · CA · Héros · XP
+  // ligne 1 : PV Â· CA Â· HÃ©ros Â· XP
   ctx.fillStyle='#ff5a5a'; ctx.fillText('PV '+player.hp+'/'+player.maxhp, 6, yA);
   ctx.fillStyle='#7fd6ff'; ctx.fillText('CA '+ac, 150, yA);
-  ctx.fillStyle='#9cf';    ctx.fillText('Héros '+player.lvl, 232, yA);
+  ctx.fillStyle='#9cf';    ctx.fillText('HÃ©ros '+player.lvl, 232, yA);
   ctx.fillStyle='#cdeb8e'; ctx.fillText('XP '+player.xp+'/'+player.xpNext, 350, yA);
-  // ligne 2 : Or · Donjon · Potions · Parchemins · sac
+  // ligne 2 : Or Â· Donjon Â· Potions Â· Parchemins Â· sac
   ctx.fillStyle='#ffd23a'; ctx.fillText('Or '+player.gold, 6, yB);
   ctx.fillStyle='#6c6';    ctx.fillText('Don.'+player.depth, 120, yB);
   ctx.fillStyle='#ff6ad5'; ctx.fillText('Pot '+countItem('potion'), 210, yB);
@@ -529,7 +529,7 @@ function drawHUD(){
 
 draw();
 </script>
-<script src="../music/playlist.js"></script>
-<script src="../music/player.js"></script>
+<script src="../music/playlist.js?v=2"></script>
+<script src="../music/player.js?v=2"></script>
 </body>
 </html>

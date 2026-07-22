@@ -29,14 +29,14 @@
     <canvas id="game" width="560" height="320"></canvas>
     <div id="overlay">
       <h2 id="ovTitle">PRINCE OF PERSIA</h2>
-      <p>Évade-toi du donjon avant la fin du temps et sauve la princesse.</p>
-      <p>← → courir · Espace / ↑ : sauter · ↓ : se baisser</p>
-      <p>Face à un garde : X frapper · S parer · 🧪 potions = vie</p>
-      <p class="blink" style="margin-top:12px">▶ Cliquez ou Espace pour t'évader</p>
+      <p>Ã‰vade-toi du donjon avant la fin du temps et sauve la princesse.</p>
+      <p>â† â†’ courir Â· Espace / â†‘ : sauter Â· â†“ : se baisser</p>
+      <p>Face Ã  un garde : X frapper Â· S parer Â· ðŸ§ª potions = vie</p>
+      <p class="blink" style="margin-top:12px">â–¶ Cliquez ou Espace pour t'Ã©vader</p>
     </div>
   </div>
-  <div id="hint">← → courir · Espace/↑ saut · ↓ baissé · X épée · S parade · P = pause</div>
-  <a class="back" href="../index.html">← Menu Arcade</a>
+  <div id="hint">â† â†’ courir Â· Espace/â†‘ saut Â· â†“ baissÃ© Â· X Ã©pÃ©e Â· S parade Â· P = pause</div>
+  <a class="back" href="../index.html">â† Menu Arcade</a>
 
 <script>
 const cv=document.getElementById('game'), ctx=cv.getContext('2d');
@@ -96,7 +96,7 @@ function newGame(){
   timeLeft=300; score=0;
   over=false; paused=false; running=true; msg=''; msgT=0;
   overlay.style.display='none';
-  flash('Évade-toi ! La princesse attend…');
+  flash('Ã‰vade-toi ! La princesse attendâ€¦');
 }
 function showOverlay(t,s){ ovTitle.textContent=t; overlay.querySelector('p:nth-of-type(1)').textContent=s; overlay.style.display='flex'; }
 
@@ -116,8 +116,8 @@ overlay.addEventListener('click',()=>{ if(!running||over) newGame(); });
 cv.addEventListener('touchstart',e=>{ e.preventDefault(); if(!running||over) newGame(); },{passive:false});
 
 function physics(o,dt){
-  // collision « balayée » : on détecte le franchissement du dessus d'une dalle
-  // entre l'ancienne et la nouvelle position (aucun tunnel possible, même si
+  // collision Â« balayÃ©e Â» : on dÃ©tecte le franchissement du dessus d'une dalle
+  // entre l'ancienne et la nouvelle position (aucun tunnel possible, mÃªme si
   // une frame est longue et que la chute avance de beaucoup d'un coup)
   const oldFeet=o.y+40;
   o.vy+=900*dt;
@@ -136,7 +136,7 @@ function update(dt){
   if(!running||paused||over) return;
   if(msgT>0) msgT-=dt;
   timeLeft-=dt;
-  if(timeLeft<=0){ timeLeft=0; killPlayer('Le temps est écoulé…'); return; }
+  if(timeLeft<=0){ timeLeft=0; killPlayer('Le temps est Ã©coulÃ©â€¦'); return; }
   const p=player;
   if(!p.dead){
     p.crouch=!!(keys['arrowdown']) && p.grounded;
@@ -159,10 +159,10 @@ function update(dt){
     }
     if(p.parryT>0) p.parryT-=dt;
     if(p.inv>0) p.inv-=dt;
-    if(p.y+40>=H-6){ killPlayer('Empalé au fond de la fosse !'); return; }
+    if(p.y+40>=H-6){ killPlayer('EmpalÃ© au fond de la fosse !'); return; }
     // pics
     if(p.grounded && p.inv<=0){
-      for(const s of spikes){ if(p.x>s.x&&p.x<s.x+s.w&&Math.abs((p.y+40)-s.y)<6){ killPlayer('Empalé sur les pics !'); return; } }
+      for(const s of spikes){ if(p.x>s.x&&p.x<s.x+s.w&&Math.abs((p.y+40)-s.y)<6){ killPlayer('EmpalÃ© sur les pics !'); return; } }
     }
     // potions
     for(const po of potions){ if(Math.abs(po.x-p.x)<16&&Math.abs(po.y-(p.y+30))<26){
@@ -173,7 +173,7 @@ function update(dt){
     if(Math.abs(p.x-exitDoor.x)<20 && p.grounded && !guards.length){
       running=false; over=true; score+=1000+Math.floor(timeLeft)*5;
       if(window.ArcadeHi)ArcadeHi.submit(score);
-      showOverlay('★ LIBRE ! ★','La princesse est sauvée ! Score : '+score);
+      showOverlay('â˜… LIBRE ! â˜…','La princesse est sauvÃ©e ! Score : '+score);
       return;
     } else if(Math.abs(p.x-exitDoor.x)<20 && guards.length){ flash('Des gardes barrent encore la route !'); }
     // attaque
@@ -184,7 +184,7 @@ function update(dt){
         for(const g of guards){
           if(Math.sign(g.x-p.x)===p.face && Math.abs(g.x-p.x)<44 && Math.abs(g.y-p.y)<30){
             p.atkHit=true;
-            if(g.parryT>0){ sfxClang(); p.hitT=0.25; flash('Paré !'); }
+            if(g.parryT>0){ sfxClang(); p.hitT=0.25; flash('ParÃ© !'); }
             else { g.hp--; g.hitT=0.3; g.x+=p.face*10; sfxSlash(); score+=50;
               if(g.hp<=0){ g.dead=true; score+=g.boss?800:300; flash(g.boss?'Le vizir est vaincu !':'Garde vaincu !'); } }
           }
@@ -215,7 +215,7 @@ function update(dt){
           g.atkHit=true;
           if(p.parryT>0){ sfxClang(); g.hitT=0.3; flash('Parade !'); score+=25; }
           else { p.hp--; p.hitT=0.3; p.inv=0.8; p.x-=g.face*-1*0; p.x+=Math.sign(p.x-g.x)*12; sfxSlash();
-            if(p.hp<=0){ killPlayer('Tué en duel…'); return; } }
+            if(p.hp<=0){ killPlayer('TuÃ© en duelâ€¦'); return; } }
         }
       } else g.atkHit=false;
     } else { // patrouille
@@ -223,7 +223,7 @@ function update(dt){
       if(g.x<g.zone[0]||g.x>g.zone[1]){ g.face*=-1; g.x=clamp(g.x,g.zone[0],g.zone[1]); }
     }
   }
-  // caméra
+  // camÃ©ra
   cam=clamp(p.x-W*0.45,0,LEVELW-W);
 }
 function killPlayer(reason){
@@ -232,7 +232,7 @@ function killPlayer(reason){
   p.dead=true; running=false;
   ArcadeFX.die(cv, p.x-cam, p.y+20, 'explosion', ()=>{
     over=true; if(window.ArcadeHi)ArcadeHi.submit(score);
-    showOverlay('MORT',''+reason+' · Score : '+score);
+    showOverlay('MORT',''+reason+' Â· Score : '+score);
   });
 }
 
@@ -266,7 +266,7 @@ function draw(){
   // fond du donjon
   ctx.fillStyle='#14100e'; ctx.fillRect(0,0,W,H);
   ctx.save(); ctx.translate(-cam,0);
-  // colonnes et torches d'arrière-plan
+  // colonnes et torches d'arriÃ¨re-plan
   for(let x=100;x<LEVELW;x+=260){
     ctx.fillStyle='#241c16'; ctx.fillRect(x,30,26,H-30);
     ctx.fillStyle='#31261e'; ctx.fillRect(x+3,30,6,H-30);
@@ -275,7 +275,7 @@ function draw(){
     ctx.fillStyle='#ff9d2e'; ctx.beginPath(); ctx.ellipse(x+62,84,4,7+fl,0,0,Math.PI*2); ctx.fill();
     ctx.fillStyle='#ffd23a'; ctx.beginPath(); ctx.ellipse(x+62,86,2,3.6,0,0,Math.PI*2); ctx.fill();
   }
-  // fenêtres à barreaux
+  // fenÃªtres Ã  barreaux
   for(let x=220;x<LEVELW;x+=420){
     ctx.fillStyle='#0a1826'; ctx.fillRect(x,60,34,44);
     ctx.strokeStyle='#31261e'; ctx.lineWidth=3;
@@ -289,7 +289,7 @@ function draw(){
     ctx.strokeStyle='rgba(0,0,0,.35)'; ctx.lineWidth=1;
     for(let bx=p.x;bx<p.x+p.w;bx+=34){ ctx.beginPath(); ctx.moveTo(bx,p.y); ctx.lineTo(bx,p.y+12); ctx.stroke(); }
   });
-  // fosses : fond sombre, parois éclairées et pics au fond (danger visible)
+  // fosses : fond sombre, parois Ã©clairÃ©es et pics au fond (danger visible)
   const gaps=[[360,420],[640,700],[870,930],[1230,1290],[1550,1610]];
   gaps.forEach(([a,b])=>{
     ctx.fillStyle='#0b0806'; ctx.fillRect(a,FLOOR,b-a,H-FLOOR);
@@ -330,7 +330,7 @@ function draw(){
   ctx.fillStyle='rgba(0,0,0,.5)'; ctx.fillRect(0,0,W,18);
   ctx.font='bold 12px "Courier New",monospace'; ctx.textAlign='left';
   ctx.fillStyle='#e05a5a';
-  for(let i=0;i<player.maxhp;i++){ ctx.fillText(i<player.hp?'▲':'△', 8+i*14, 13); }
+  for(let i=0;i<player.maxhp;i++){ ctx.fillText(i<player.hp?'â–²':'â–³', 8+i*14, 13); }
   ctx.fillStyle='#fff'; ctx.fillText('SCORE '+score, 90, 13);
   ctx.textAlign='center'; ctx.fillStyle=timeLeft<60?'#ff5252':'#d8a23a';
   const mn=Math.floor(timeLeft/60), sc=Math.floor(timeLeft%60);
@@ -352,7 +352,7 @@ player=makePlayer(); potions=[]; guards=[]; exitDoor={x:LEVELW-70,y:FLOOR};
 timeLeft=300; score=0; cam=0;
 requestAnimationFrame(loop);
 </script>
-<script src="../music/playlist.js"></script>
-<script src="../music/player.js"></script>
+<script src="../music/playlist.js?v=2"></script>
+<script src="../music/player.js?v=2"></script>
 </body>
 </html>

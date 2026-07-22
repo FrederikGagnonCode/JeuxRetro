@@ -31,14 +31,14 @@
     <canvas id="game" width="480" height="360"></canvas>
     <div id="overlay">
       <h2 id="ovTitle">BATTLEZONE</h2>
-      <p>Détruisez les chars ennemis avant qu'ils ne vous touchent</p>
-      <p>← → pivoter · ↑ ↓ avancer/reculer · Espace : tirer</p>
-      <p>Surveillez le radar · abritez-vous derrière les obstacles</p>
-      <p class="blink" style="margin-top:14px">▶ Cliquez ou Espace pour entrer en zone</p>
+      <p>DÃ©truisez les chars ennemis avant qu'ils ne vous touchent</p>
+      <p>â† â†’ pivoter Â· â†‘ â†“ avancer/reculer Â· Espace : tirer</p>
+      <p>Surveillez le radar Â· abritez-vous derriÃ¨re les obstacles</p>
+      <p class="blink" style="margin-top:14px">â–¶ Cliquez ou Espace pour entrer en zone</p>
     </div>
   </div>
-  <div id="hint">← → pivoter le char · ↑ ↓ avancer/reculer · Espace : tirer · P = pause</div>
-  <a class="back" href="../index.html">← Menu Arcade</a>
+  <div id="hint">â† â†’ pivoter le char Â· â†‘ â†“ avancer/reculer Â· Espace : tirer Â· P = pause</div>
+  <a class="back" href="../index.html">â† Menu Arcade</a>
 
 <script>
 const cv = document.getElementById('game');
@@ -54,7 +54,7 @@ let score=0, lives=3, over=false, running=false, paused=false;
 let crackT=0, crackX=0, crackY=0, invT=0, spawnT=0;
 const keys={};
 
-// ── sons ──
+// â”€â”€ sons â”€â”€
 let _ac=null;
 function actx(){ try{ if(!_ac) _ac=new (window.AudioContext||window.webkitAudioContext)(); if(_ac.state==='suspended') _ac.resume(); }catch(e){} return _ac; }
 function tone(freq,dur,vol,type){ const ac=actx(); if(!ac) return; const t=ac.currentTime;
@@ -99,7 +99,7 @@ function newGame(){
 function showOverlay(t,s){ ovTitle.textContent=t; overlay.querySelector('p:nth-of-type(1)').textContent=s; overlay.style.display='flex'; }
 function hideOverlay(){ overlay.style.display='none'; }
 
-// ── entrées ──
+// â”€â”€ entrÃ©es â”€â”€
 document.addEventListener('keydown',e=>{
   const k=e.key.toLowerCase(); keys[k]=true;
   if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)) e.preventDefault();
@@ -112,12 +112,12 @@ overlay.addEventListener('click',()=>{ if(!running||over) newGame(); });
 cv.addEventListener('touchstart',e=>{ e.preventDefault(); if(!running||over) newGame(); else fire(); },{passive:false});
 
 function fire(){
-  if(over || shots.length>0) return;   // un seul obus à la fois
+  if(over || shots.length>0) return;   // un seul obus Ã  la fois
   shots.push({ x:player.x, y:0.7, z:player.z, h:player.h, dist:0 });
   sfxFire();
 }
 
-// ── projection 3D ──
+// â”€â”€ projection 3D â”€â”€
 function project(wx,wz,height){
   const dx=wx-player.x, dz=wz-player.z;
   const fwd = dx*Math.sin(player.h) + dz*Math.cos(player.h);
@@ -130,13 +130,13 @@ function seg(x1,z1,h1,x2,z2,h2){
   if(a&&b){ ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); }
 }
 
-// ── mise à jour ──
+// â”€â”€ mise Ã  jour â”€â”€
 function update(){
   if(!running||paused||over) return;
   if(invT>0) invT--;
-  if(crackT>0){ crackT--; return; }   // figé pendant l'éclat de l'écran
+  if(crackT>0){ crackT--; return; }   // figÃ© pendant l'Ã©clat de l'Ã©cran
 
-  // déplacement du char
+  // dÃ©placement du char
   if(keys['arrowleft']) player.h -= 0.035;
   if(keys['arrowright']) player.h += 0.035;
   let mv=0; if(keys['arrowup']) mv=0.32; if(keys['arrowdown']) mv=-0.22;
@@ -155,7 +155,7 @@ function update(){
 
   // obus joueur
   shots.forEach(s=>{ s.x+=Math.sin(s.h)*1.1; s.z+=Math.cos(s.h)*1.1; s.dist+=1.1;
-    if(inObstacle(s.x,s.z)){ s.dead=true; return; }              // bloqué par un obstacle
+    if(inObstacle(s.x,s.z)){ s.dead=true; return; }              // bloquÃ© par un obstacle
     for(const e of enemies){ if(Math.hypot(s.x-e.x,s.z-e.z)<1.8){ e.dead=true; s.dead=true; score+=1000; explode(e.x,e.z); sfxBoom(); break; } }
     if(s.dist>70) s.dead=true;
   });
@@ -164,7 +164,7 @@ function update(){
 
   // obus ennemis
   eshots.forEach(s=>{ s.x+=s.vx; s.z+=s.vz; s.dist+=Math.hypot(s.vx,s.vz);
-    if(inObstacle(s.x,s.z)){ s.dead=true; return; }              // bloqué par un obstacle
+    if(inObstacle(s.x,s.z)){ s.dead=true; return; }              // bloquÃ© par un obstacle
     if(Math.hypot(s.x-player.x,s.z-player.z)<1.4 && invT<=0){ s.dead=true; hit(); }
     if(s.dist>80) s.dead=true;
   });
@@ -180,19 +180,19 @@ function hit(){
   if(over) return;
   crackT=70; crackX=rnd(W*0.3,W*0.7); crackY=rnd(H*0.3,H*0.6); invT=80; sfxBoom();
   lives--;
-  if(lives<=0){ over=true; running=false; ArcadeFX.die(cv, CX, HORIZON, 'explosion', ()=>{ showOverlay('CHAR DÉTRUIT','Score : '+score); }); }
+  if(lives<=0){ over=true; running=false; ArcadeFX.die(cv, CX, HORIZON, 'explosion', ()=>{ showOverlay('CHAR DÃ‰TRUIT','Score : '+score); }); }
   else { eshots=[]; }
 }
 
-// ── rendu ──
+// â”€â”€ rendu â”€â”€
 function draw(){
   ctx.clearRect(0,0,W,H);
   ctx.lineCap='round'; ctx.lineJoin='round';
   ctx.strokeStyle='#46d846'; ctx.shadowColor='#46d846';
 
-  // ciel/sol séparés par l'horizon
+  // ciel/sol sÃ©parÃ©s par l'horizon
   ctx.shadowBlur=4;
-  // montagnes (crête qui tourne avec le cap)
+  // montagnes (crÃªte qui tourne avec le cap)
   ctx.beginPath(); let started=false;
   for(const r of ridge){
     let da=r.a-player.h; while(da>Math.PI)da-=2*Math.PI; while(da<-Math.PI)da+=2*Math.PI;
@@ -240,7 +240,7 @@ function drawObstacle(o){
     for(let i=0;i<4;i++){ const a=c[i], b=c[(i+1)%4];
       seg(o.x+a[0],o.z+a[1],0, o.x+b[0],o.z+b[1],0);            // base
       seg(o.x+a[0],o.z+a[1],2*s, o.x+b[0],o.z+b[1],2*s);        // haut
-      seg(o.x+a[0],o.z+a[1],0, o.x+a[0],o.z+a[1],2*s);          // arête
+      seg(o.x+a[0],o.z+a[1],0, o.x+a[0],o.z+a[1],2*s);          // arÃªte
     }
   } else {
     const c=[[-s,-s],[s,-s],[s,s],[-s,s]];
@@ -253,7 +253,7 @@ function drawObstacle(o){
 function drawTank(e){
   const co=Math.cos(e.h), si=Math.sin(e.h);
   const P=(lx,lz)=>[e.x+lx*co+lz*si, e.z-lx*si+lz*co];
-  // coque (boîte)
+  // coque (boÃ®te)
   const hull=[[-1.1,-1.4],[1.1,-1.4],[1.1,1.4],[-1.1,1.4]];
   for(let i=0;i<4;i++){ const a=P(...hull[i]), b=P(...hull[(i+1)%4]);
     seg(a[0],a[1],0,b[0],b[1],0); seg(a[0],a[1],0.9,b[0],b[1],0.9); seg(a[0],a[1],0,a[0],a[1],0.9); }
@@ -270,7 +270,7 @@ function drawVolcano(){
   const x=CX+Math.tan(da)*FOC*0.6, base=HORIZON;
   ctx.strokeStyle='#46d846'; ctx.lineWidth=1.5; ctx.beginPath();
   ctx.moveTo(x-26,base); ctx.lineTo(x-7,base-34); ctx.lineTo(x+7,base-34); ctx.lineTo(x+26,base); ctx.stroke();
-  // éruption
+  // Ã©ruption
   const t=performance.now()*0.005;
   ctx.strokeStyle='#ff5a2a';
   for(let i=-2;i<=2;i++){ const h=20+Math.sin(t+i)*8; ctx.beginPath(); ctx.moveTo(x+i*4,base-34); ctx.lineTo(x+i*5,base-34-h); ctx.stroke(); }
@@ -305,7 +305,7 @@ function drawRadar(){
 function drawHUD(){
   ctx.fillStyle='#46d846'; ctx.font='bold 15px "Courier New",monospace'; ctx.textAlign='left';
   ctx.fillText('SCORE '+String(score).padStart(6,'0'), 12, 22);
-  ctx.textAlign='right'; ctx.fillText('▲'.repeat(Math.max(0,lives)), W-12, 22);
+  ctx.textAlign='right'; ctx.fillText('â–²'.repeat(Math.max(0,lives)), W-12, 22);
 }
 function drawCrack(){
   ctx.strokeStyle='rgba(255,255,255,'+clamp(crackT/40,0,1)+')'; ctx.lineWidth=1.5; ctx.shadowBlur=0;
@@ -319,7 +319,7 @@ function loop(){ update(); draw(); if(window.ArcadeHi)ArcadeHi.submit(score); re
 player={x:0,z:0,h:0}; obstacles=[]; enemies=[]; shots=[]; eshots=[]; parts=[]; buildRidge(); placeObstacles();
 loop();
 </script>
-<script src="../music/playlist.js"></script>
-<script src="../music/player.js"></script>
+<script src="../music/playlist.js?v=2"></script>
+<script src="../music/player.js?v=2"></script>
 </body>
 </html>

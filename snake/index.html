@@ -121,7 +121,7 @@
   </style>
 </head>
 <body>
-  <h1>🐍 Serpent</h1>
+  <h1>ðŸ Serpent</h1>
   <div id="scoreboard">
     Score : <span id="score">0</span> &nbsp;&nbsp; Meilleur : <span id="best">0</span>
   </div>
@@ -129,21 +129,21 @@
     <canvas id="c" width="400" height="400"></canvas>
     <div id="overlay">
       <h2 id="overlay-title">Jeu du Serpent</h2>
-      <p id="overlay-msg">Flèches / WASD pour jouer · bonus 🎯 = munitions, Espace pour tirer sur les boules… ou ta queue !</p>
+      <p id="overlay-msg">FlÃ¨ches / WASD pour jouer Â· bonus ðŸŽ¯ = munitions, Espace pour tirer sur les boulesâ€¦ ou ta queue !</p>
       <button id="btn">Jouer</button>
     </div>
   </div>
   <div id="bottom-bar">
-    <div id="instructions">↑ ↓ ← → ou W A S D &nbsp;|&nbsp; Espace = tirer (bonus 🎯) &nbsp;|&nbsp; P = Pause</div>
-    <button id="mute-btn">🎮 Chiptune</button>
+    <div id="instructions">â†‘ â†“ â† â†’ ou W A S D &nbsp;|&nbsp; Espace = tirer (bonus ðŸŽ¯) &nbsp;|&nbsp; P = Pause</div>
+    <button id="mute-btn">ðŸŽ® Chiptune</button>
   </div>
-  <script src="../music/playlist.js"></script>
-  <script src="../music/player.js"></script>
+  <script src="../music/playlist.js?v=2"></script>
+  <script src="../music/player.js?v=2"></script>
 
   <script>
-    /* ══════════════════════════════════════════════════════
-       MOTEUR AUDIO — chiptune 4 pistes, scheduler précis
-       ══════════════════════════════════════════════════════ */
+    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+       MOTEUR AUDIO â€” chiptune 4 pistes, scheduler prÃ©cis
+       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
     const AC = new (window.AudioContext || window.webkitAudioContext)();
     let masterGain;
     let muted = false;
@@ -155,11 +155,11 @@
     // Bouton muet
     document.getElementById('mute-btn').addEventListener('click', () => {
       muted = !muted;
-      document.getElementById('mute-btn').textContent = muted ? '🔇 Chiptune' : '🎮 Chiptune';
+      document.getElementById('mute-btn').textContent = muted ? 'ðŸ”‡ Chiptune' : 'ðŸŽ® Chiptune';
       if (masterGain) masterGain.gain.setTargetAtTime(muted ? 0 : 0.55, AC.currentTime, 0.08);
     });
 
-    /* ── Fréquences (Hz) ── */
+    /* â”€â”€ FrÃ©quences (Hz) â”€â”€ */
     const F = {
       C3:131, D3:147, E3:165, F3:175, G3:196, A3:220, B3:247,
       C4:262, D4:294, E4:330, F4:349, G4:392, A4:440, B4:494,
@@ -167,21 +167,21 @@
       C6:1047, D6:1175, E6:1319,
     };
 
-    /* ── Tempo ──
-       BPM = 148  →  noire = 0.4054 s  →  double-croche = 0.1014 s */
+    /* â”€â”€ Tempo â”€â”€
+       BPM = 148  â†’  noire = 0.4054 s  â†’  double-croche = 0.1014 s */
     const BPM      = 148;
-    const TICK     = 60 / BPM / 4;   // durée d'une double-croche
+    const TICK     = 60 / BPM / 4;   // durÃ©e d'une double-croche
     const LOOKAHEAD = 0.10;           // s d'avance max
     const SCHEDULE_INTERVAL = 50;    // ms entre chaque appel scheduler
 
-    /* ══════════════════════════════════════════════════════
-       COMPOSITION — 32 double-croches = 2 mesures × 4/4
-       Chaque piste : tableau de 32 entrées
+    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+       COMPOSITION â€” 32 double-croches = 2 mesures Ã— 4/4
+       Chaque piste : tableau de 32 entrÃ©es
          null   = silence
-         [freq, durée_en_ticks, volume]
-       ══════════════════════════════════════════════════════ */
+         [freq, durÃ©e_en_ticks, volume]
+       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
-    // MÉLODIE — carré avec vibrato léger (voix principale)
+    // MÃ‰LODIE â€” carrÃ© avec vibrato lÃ©ger (voix principale)
     // Progression : Am  F  C  G  (pop / game classique)
     const MEL = [
       // mesure 1  (Am)
@@ -194,7 +194,7 @@
       [F.B4,2,.7], null,  [F.D5,2,.7], null,  [F.G5,2,.7], null,  [F.B4,3,.65],null,  null,
     ];
 
-    // CONTRE-MÉLODIE — triangle, octave en dessous + réponses
+    // CONTRE-MÃ‰LODIE â€” triangle, octave en dessous + rÃ©ponses
     const CTR = [
       null,  null,  [F.C5,2,.45],null,  null,  null,  [F.B4,2,.4], null,
       [F.A4,2,.45],null,  null,  null,  [F.F4,2,.4], null,  [F.E4,2,.4], null,
@@ -202,7 +202,7 @@
       [F.D4,2,.45],null,  [F.G4,2,.4], null,  [F.F4,2,.4], null,  null,  null,
     ];
 
-    // BASSE — triangle, ronde + walking bass
+    // BASSE â€” triangle, ronde + walking bass
     const BAS = [
       [F.A3,4,.75],null, null, null,  [F.E3,2,.6], null,  [F.A3,2,.6], null,
       [F.F3,4,.75],null, null, null,  [F.C4,2,.6], null,  [F.F3,2,.6], null,
@@ -210,19 +210,19 @@
       [F.G3,4,.75],null, null, null,  [F.D4,2,.6], null,  [F.B3,2,.6], null,
     ];
 
-    // BATTERIE — bruit filtré pour caisse claire, sine grave pour grosse caisse
+    // BATTERIE â€” bruit filtrÃ© pour caisse claire, sine grave pour grosse caisse
     // K=grosse caisse  S=caisse claire  H=charleston  .=silence
     const DRUM_PAT = 'K.H.S.H.K.H.S.H.K.H.S.H.K.KHS.';
     //               0               8              16              24
 
-    /* ── Synthèse d'une note ── */
+    /* â”€â”€ SynthÃ¨se d'une note â”€â”€ */
     function playNote(freq, type, vol, startT, durationTicks, dest) {
-      const dur = durationTicks * TICK * 0.88;  // légère coupure entre notes
+      const dur = durationTicks * TICK * 0.88;  // lÃ©gÃ¨re coupure entre notes
       const osc  = AC.createOscillator();
       const env  = AC.createGain();
       osc.type = type;
       osc.frequency.setValueAtTime(freq, startT);
-      // Légère modulation de pitch pour la mélodie (vibrato numérique)
+      // LÃ©gÃ¨re modulation de pitch pour la mÃ©lodie (vibrato numÃ©rique)
       if (type === 'square') {
         osc.detune.setValueAtTime(0, startT);
         osc.detune.linearRampToValueAtTime(8, startT + 0.06);
@@ -237,7 +237,7 @@
       osc.start(startT); osc.stop(startT + dur + 0.02);
     }
 
-    /* ── Synthèse batterie ── */
+    /* â”€â”€ SynthÃ¨se batterie â”€â”€ */
     function playDrum(type, startT, dest) {
       if (type === 'K') {
         // Grosse caisse : sine avec pitch descendant rapide
@@ -265,7 +265,7 @@
         src.connect(filt); filt.connect(env); env.connect(dest);
         src.start(startT);
       } else if (type === 'H') {
-        // Charleston : bruit bref très aigu
+        // Charleston : bruit bref trÃ¨s aigu
         const buf  = AC.createBuffer(1, AC.sampleRate * 0.04, AC.sampleRate);
         const data = buf.getChannelData(0);
         for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
@@ -281,15 +281,15 @@
       }
     }
 
-    /* ── Scheduler principal ── */
+    /* â”€â”€ Scheduler principal â”€â”€ */
     function scheduler() {
       while (nextNoteTime < AC.currentTime + LOOKAHEAD) {
         const beat = loopBeat % 32;
         const t    = nextNoteTime;
 
-        // Mélodie
+        // MÃ©lodie
         if (MEL[beat]) playNote(MEL[beat][0], 'square',   MEL[beat][2], t, MEL[beat][1], masterGain);
-        // Contre-mélodie
+        // Contre-mÃ©lodie
         if (CTR[beat]) playNote(CTR[beat][0], 'triangle', CTR[beat][2], t, CTR[beat][1], masterGain);
         // Basse
         if (BAS[beat]) playNote(BAS[beat][0], 'triangle', BAS[beat][2], t, BAS[beat][1], masterGain);
@@ -302,8 +302,8 @@
       }
     }
 
-    /* ── Coordination avec le lecteur de musique centralisé (../music) ──
-       Quand un morceau MP3 démarre, on coupe le chiptune ; à l'arrêt, on le reprend. */
+    /* â”€â”€ Coordination avec le lecteur de musique centralisÃ© (../music) â”€â”€
+       Quand un morceau MP3 dÃ©marre, on coupe le chiptune ; Ã  l'arrÃªt, on le reprend. */
     document.addEventListener('arcademusic:play', stopMusic);
     document.addEventListener('arcademusic:stop', () => { if (running) startMusic(); });
 
@@ -317,7 +317,7 @@
       masterGain = AC.createGain();
       masterGain.gain.setValueAtTime(muted ? 0 : 0.55, AC.currentTime);
 
-      // Compresseur pour éviter la saturation
+      // Compresseur pour Ã©viter la saturation
       const comp = AC.createDynamicsCompressor();
       comp.threshold.value = -18;
       comp.knee.value = 10;
@@ -337,7 +337,7 @@
       }
     }
 
-    /* ── Effets sonores (par-dessus la musique) ── */
+    /* â”€â”€ Effets sonores (par-dessus la musique) â”€â”€ */
     function sfxNote(freq, type, vol, when, dur) {
       const osc = AC.createOscillator();
       const env = AC.createGain();
@@ -350,7 +350,7 @@
       osc.start(when); osc.stop(when + dur + 0.05);
     }
 
-    // 🍎 Pomme mangée — ding montant
+    // ðŸŽ Pomme mangÃ©e â€” ding montant
     function sfxEat() {
       if (muted) return;
       const t = AC.currentTime;
@@ -358,14 +358,14 @@
       sfxNote(F.E6, 'sine', 0.3,  t + 0.05, 0.12);
     }
 
-    // ✂️ Bonus attrapé — arpège magique
+    // âœ‚ï¸ Bonus attrapÃ© â€” arpÃ¨ge magique
     function sfxBonus() {
       if (muted) return;
       const t = AC.currentTime;
       [F.G4, F.B4, F.E5, F.B5].forEach((f, i) => sfxNote(f, 'triangle', 0.3, t + i * 0.06, 0.3));
     }
 
-    // 🎯 Tir — pew court
+    // ðŸŽ¯ Tir â€” pew court
     function sfxShoot() {
       if (muted) return;
       const t = AC.currentTime;
@@ -373,16 +373,16 @@
       sfxNote(F.E5, 'square', 0.14, t + 0.04, 0.07);
     }
 
-    // 💀 Game over — descente dramatique
+    // ðŸ’€ Game over â€” descente dramatique
     function sfxDead() {
       if (muted) return;
       const t = AC.currentTime;
       [F.A3, F.F3, F.E3, F.C3].forEach((f, i) => sfxNote(f, 'sawtooth', 0.3, t + i * 0.13, 0.3));
     }
 
-    /* ═══════════════════════════════
+    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
        JEU
-       ═══════════════════════════════ */
+       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
     const COLS = 20, ROWS = 20;
     const CELL = 400 / COLS;
     const canvas = document.getElementById('c');
@@ -399,7 +399,7 @@
     const BONUS_SHRINK   = 3;
     const BONUS_LIFETIME = 120;   // ~14 s
     const BONUS_CHANCE   = 0.15;  // 15 % par pomme
-    const AMMO_GAIN      = 3;     // balles par bonus 🎯
+    const AMMO_GAIN      = 3;     // balles par bonus ðŸŽ¯
     const SHOT_SPEED     = 3;     // cases par tick
 
     function init() {
@@ -420,7 +420,7 @@
       overlay.style.display = 'none';
       clearInterval(loop);
       loop = setInterval(tick, 120);
-      // Musique : laisser le lecteur central reprendre sa sélection, sinon chiptune
+      // Musique : laisser le lecteur central reprendre sa sÃ©lection, sinon chiptune
       if (window.ArcadeMusic && ArcadeMusic.hasSelection()) ArcadeMusic.resume();
       else startMusic();
     }
@@ -474,14 +474,14 @@
         snake.pop();
       }
 
-      // Bonus ramassé ?
+      // Bonus ramassÃ© ?
       if (bonus && head.x === bonus.x && head.y === bonus.y) {
         sfxBonus();
         if (bonus.type === 'ammo') {
           ammo += AMMO_GAIN;
-          showFloating('🎯 +' + AMMO_GAIN, head);
+          showFloating('ðŸŽ¯ +' + AMMO_GAIN, head);
         } else {
-          showFloating('✂ -' + BONUS_SHRINK, head);
+          showFloating('âœ‚ -' + BONUS_SHRINK, head);
           const remove = Math.min(BONUS_SHRINK, snake.length - 1);
           snake.splice(snake.length - remove, remove);
         }
@@ -506,7 +506,7 @@
         for (let step = 0; step < SHOT_SPEED && !sh.dead; step++) {
           sh.x += sh.dx; sh.y += sh.dy;
           if (sh.x < 0 || sh.x >= COLS || sh.y < 0 || sh.y >= ROWS) { sh.dead = true; break; }
-          // boule rouge (pomme) touchée à distance
+          // boule rouge (pomme) touchÃ©e Ã  distance
           if (sh.x === food.x && sh.y === food.y) {
             score++;
             if (score > best) { best = score; bestEl.textContent = best; }
@@ -516,25 +516,25 @@
             if (!bonus && Math.random() < BONUS_CHANCE) placeBonus();
             sh.dead = true; break;
           }
-          // boule bonus touchée à distance
+          // boule bonus touchÃ©e Ã  distance
           if (bonus && sh.x === bonus.x && sh.y === bonus.y) {
             sfxBonus();
             if (bonus.type === 'ammo') {
               ammo += AMMO_GAIN;
-              showFloating('🎯 +' + AMMO_GAIN, { x: sh.x, y: sh.y });
+              showFloating('ðŸŽ¯ +' + AMMO_GAIN, { x: sh.x, y: sh.y });
             } else {
               const remove = Math.min(BONUS_SHRINK, snake.length - 1);
               snake.splice(snake.length - remove, remove);
-              showFloating('✂ -' + remove, { x: sh.x, y: sh.y });
+              showFloating('âœ‚ -' + remove, { x: sh.x, y: sh.y });
             }
             bonus = null; sh.dead = true; break;
           }
-          // sa propre queue : coupée à partir de l'impact
+          // sa propre queue : coupÃ©e Ã  partir de l'impact
           const idx = snake.findIndex((s, i) => i > 0 && s.x === sh.x && s.y === sh.y);
           if (idx > 0) {
             const cut = snake.length - idx;
             snake.splice(idx);
-            showFloating('✂ -' + cut, { x: sh.x, y: sh.y });
+            showFloating('âœ‚ -' + cut, { x: sh.x, y: sh.y });
             sfxBonus();
             sh.dead = true; break;
           }
@@ -607,7 +607,7 @@
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillStyle = '#fff';
-          ctx.fillText(isAmmo ? '🎯' : '✂', bx, by + 1);
+          ctx.fillText(isAmmo ? 'ðŸŽ¯' : 'âœ‚', bx, by + 1);
 
           ctx.font = 'bold 9px Arial';
           ctx.fillStyle = '#ffdd57';
@@ -638,7 +638,7 @@
         ctx.textAlign = 'left';
         ctx.textBaseline = 'top';
         ctx.fillStyle = '#ffdd57';
-        ctx.fillText('🎯 ×' + ammo + '  (Espace)', 6, 5);
+        ctx.fillText('ðŸŽ¯ Ã—' + ammo + '  (Espace)', 6, 5);
       }
 
       // Textes flottants

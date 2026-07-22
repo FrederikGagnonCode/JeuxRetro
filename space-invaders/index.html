@@ -27,7 +27,7 @@
 <body>
 <h1>SPACE INVADERS</h1>
 <canvas id="game" width="800" height="600"></canvas>
-<div class="controls">← → ou A/D : déplacer &nbsp;|&nbsp; ESPACE : tirer &nbsp;|&nbsp; P : pause &nbsp;|&nbsp; ENTRÉE : démarrer</div>
+<div class="controls">â† â†’ ou A/D : dÃ©placer &nbsp;|&nbsp; ESPACE : tirer &nbsp;|&nbsp; P : pause &nbsp;|&nbsp; ENTRÃ‰E : dÃ©marrer</div>
 
 <script>
 const canvas = document.getElementById('game');
@@ -49,7 +49,7 @@ function beep(freq, dur = 0.08, type = 'square', vol = 0.05) {
   } catch (e) {}
 }
 
-// ---------- Sprites pixel-art (1 = pixel allumé) ----------
+// ---------- Sprites pixel-art (1 = pixel allumÃ©) ----------
 const SPRITES = {
   squid: [
     ['0011000110','0001111100','0011111110','0110110110','1111111111','0011011000','0110001100','1100000011'],
@@ -74,7 +74,7 @@ function drawSprite(rows, x, y, scale, color) {
       if (rows[r][c] === '1') ctx.fillRect(x + c * scale, y + r * scale, scale, scale);
 }
 
-// ---------- État ----------
+// ---------- Ã‰tat ----------
 const STATE = { MENU: 0, PLAYING: 1, PAUSED: 2, GAMEOVER: 3, LEVELUP: 4 };
 let state = STATE.MENU;
 let score = 0, lives = 3, level = 1;
@@ -112,7 +112,7 @@ function buildShields() {
     const baseX = 90 + s * 180, baseY = H - 150;
     for (let r = 0; r < rows; r++)
       for (let c = 0; c < cols; c++) {
-        // forme de bunker : coins supérieurs coupés, creux en bas au centre
+        // forme de bunker : coins supÃ©rieurs coupÃ©s, creux en bas au centre
         if (r === 0 && (c < 2 || c > cols - 3)) continue;
         if (r >= rows - 2 && c > 2 && c < cols - 3) continue;
         shields.push({ x: baseX + c * cell, y: baseY + r * cell, size: cell, hp: 2 });
@@ -134,7 +134,7 @@ function startLevel() {
   ufo = null; ufoTimer = 600 + Math.random() * 600;
 }
 
-// ---------- Entrées ----------
+// ---------- EntrÃ©es ----------
 addEventListener('keydown', e => {
   if (['ArrowLeft','ArrowRight',' ','Enter'].includes(e.key)) e.preventDefault();
   keys[e.key.toLowerCase()] = true;
@@ -154,7 +154,7 @@ function explode(x, y, color, n = 12) {
   }
 }
 
-// ---------- Mise à jour ----------
+// ---------- Mise Ã  jour ----------
 function update() {
   if (state !== STATE.PLAYING) {
     if (state === STATE.LEVELUP && --levelUpTimer <= 0) { startLevel(); state = STATE.PLAYING; }
@@ -172,7 +172,7 @@ function update() {
     beep(880, 0.06, 'square', 0.04);
   }
 
-  // Invaders : pas de déplacement cadencé, accélère quand il en reste moins
+  // Invaders : pas de dÃ©placement cadencÃ©, accÃ©lÃ¨re quand il en reste moins
   const alive = invaders.filter(i => i.alive);
   if (alive.length === 0) {
     level++; score += 100;
@@ -198,7 +198,7 @@ function update() {
       if (hitEdge) invDropPending = true;
     }
     beep(invFrame ? 110 : 98, 0.05, 'triangle', 0.03);
-    // Défaite si les invaders atteignent le joueur
+    // DÃ©faite si les invaders atteignent le joueur
     for (const inv of alive)
       if (inv.y + inv.h >= player.y) return gameOver();
   }
@@ -233,7 +233,7 @@ function update() {
   playerBullets = playerBullets.filter(b => b.y > -20);
   enemyBullets = enemyBullets.filter(b => b.y < H + 20);
 
-  // Collisions balle joueur → invader
+  // Collisions balle joueur â†’ invader
   for (const b of playerBullets) {
     for (const inv of alive) {
       if (inv.alive && rectHit(b, inv)) {
@@ -255,7 +255,7 @@ function update() {
     }
   }
 
-  // Collisions balles → boucliers
+  // Collisions balles â†’ boucliers
   for (const b of [...playerBullets, ...enemyBullets]) {
     for (const sh of shields) {
       if (sh.hp > 0 && rectHit(b, { x: sh.x, y: sh.y, w: sh.size, h: sh.size })) {
@@ -265,13 +265,13 @@ function update() {
     }
   }
 
-  // Collisions balle ennemie → joueur
+  // Collisions balle ennemie â†’ joueur
   for (const b of enemyBullets) {
     if (rectHit(b, player)) {
       b.dead = true;
       lives--;
       const px = player.x + player.w / 2, py = player.y + player.h / 2;
-      state = 'DYING';                          // gèle pendant l'explosion (3 s)
+      state = 'DYING';                          // gÃ¨le pendant l'explosion (3 s)
       ArcadeFX.die(canvas, px, py, 'explosion', () => {
         if (lives <= 0) { gameOver(); }
         else { player.x = W / 2 - 20; enemyBullets = []; state = STATE.PLAYING; }
@@ -302,7 +302,7 @@ function gameOver() {
 function draw() {
   ctx.clearRect(0, 0, W, H);
 
-  // Étoiles de fond
+  // Ã‰toiles de fond
   ctx.fillStyle = '#222';
   for (let i = 0; i < 60; i++) {
     const x = (i * 137 + 50) % W, y = (i * 211 + Date.now() / 50 * (1 + i % 3)) % H;
@@ -325,7 +325,7 @@ function draw() {
   ctx.beginPath(); ctx.moveTo(0, H - 38); ctx.lineTo(W, H - 38); ctx.stroke();
 
   if (state === STATE.MENU) {
-    drawCenteredScreen('SPACE INVADERS', 'Appuie sur ENTRÉE pour jouer');
+    drawCenteredScreen('SPACE INVADERS', 'Appuie sur ENTRÃ‰E pour jouer');
     // tableau des points
     ctx.font = '15px Courier New'; ctx.textAlign = 'center'; ctx.fillStyle = '#fff';
     drawSprite(SPRITES.squid[0], W/2 - 80, H/2 + 30, 2, ROW_COLORS[0]);
@@ -378,12 +378,12 @@ function draw() {
   ctx.globalAlpha = 1;
 
   if (state === STATE.PAUSED) drawCenteredScreen('PAUSE', 'Appuie sur P pour continuer');
-  if (state === STATE.LEVELUP) drawCenteredScreen('NIVEAU ' + level, 'Prépare-toi…');
+  if (state === STATE.LEVELUP) drawCenteredScreen('NIVEAU ' + level, 'PrÃ©pare-toiâ€¦');
   if (state === STATE.GAMEOVER) {
-    drawCenteredScreen('GAME OVER', 'Score final : ' + score + '  —  ENTRÉE pour rejouer');
+    drawCenteredScreen('GAME OVER', 'Score final : ' + score + '  â€”  ENTRÃ‰E pour rejouer');
     if (score >= hiScore && score > 0) {
       ctx.fillStyle = '#ff0'; ctx.font = '18px Courier New'; ctx.textAlign = 'center';
-      ctx.fillText('★ NOUVEAU RECORD ! ★', W / 2, H / 2 + 60);
+      ctx.fillText('â˜… NOUVEAU RECORD ! â˜…', W / 2, H / 2 + 60);
     }
   }
 }
@@ -409,7 +409,7 @@ function loop() {
 }
 loop();
 </script>
-<script src="../music/playlist.js"></script>
-<script src="../music/player.js"></script>
+<script src="../music/playlist.js?v=2"></script>
+<script src="../music/player.js?v=2"></script>
 </body>
 </html>

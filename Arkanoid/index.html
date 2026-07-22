@@ -29,14 +29,14 @@
     <canvas id="game" width="440" height="500"></canvas>
     <div id="overlay">
       <h2 id="ovTitle">ARKANOID</h2>
-      <p>Détruis toutes les briques avec la bille d'énergie.</p>
-      <p>Souris ou ← → : déplacer le vaisseau Vaus</p>
-      <p>Capsules : E élargit · S ralentit · D triple bille · L laser (Espace)</p>
-      <p class="blink" style="margin-top:12px">▶ Cliquez ou Espace pour lancer</p>
+      <p>DÃ©truis toutes les briques avec la bille d'Ã©nergie.</p>
+      <p>Souris ou â† â†’ : dÃ©placer le vaisseau Vaus</p>
+      <p>Capsules : E Ã©largit Â· S ralentit Â· D triple bille Â· L laser (Espace)</p>
+      <p class="blink" style="margin-top:12px">â–¶ Cliquez ou Espace pour lancer</p>
     </div>
   </div>
-  <div id="hint">Souris / ← → : bouger · Espace : lancer (et tirer avec L) · P = pause</div>
-  <a class="back" href="../index.html">← Menu Arcade</a>
+  <div id="hint">Souris / â† â†’ : bouger Â· Espace : lancer (et tirer avec L) Â· P = pause</div>
+  <a class="back" href="../index.html">â† Menu Arcade</a>
 
 <script>
 const cv=document.getElementById('game'), ctx=cv.getContext('2d');
@@ -190,14 +190,14 @@ function loseLife(){
   lives--; running=false;
   ArcadeFX.die(cv, paddle.x, H-40, 'zap', ()=>{
     if(lives<=0){ over=true; if(window.ArcadeHi)ArcadeHi.submit(score);
-      showOverlay('GAME OVER','Niveau '+level+' · Score : '+score); }
+      showOverlay('GAME OVER','Niveau '+level+' Â· Score : '+score); }
     else { paddle=makePaddle(); resetBall(); running=true; }
   });
 }
 
 function draw(){
   ctx.fillStyle='#0a0a16'; ctx.fillRect(0,0,W,H);
-  // murs métalliques
+  // murs mÃ©talliques
   ctx.fillStyle='#3a3a52'; ctx.fillRect(0,0,BW,H); ctx.fillRect(W-BW,0,BW,H); ctx.fillRect(0,16,W,BW);
   ctx.fillStyle='#55557a'; ctx.fillRect(0,16,W,2); ctx.fillRect(0,0,2,H); ctx.fillRect(W-2,0,2,H);
   bricks.forEach(br=>{
@@ -231,7 +231,7 @@ function draw(){
   // HUD
   ctx.fillStyle='#fff'; ctx.font='bold 12px "Courier New",monospace'; ctx.textAlign='left';
   ctx.fillText('SCORE '+score, 12, 12);
-  ctx.textAlign='center'; ctx.fillStyle='#ff5252'; ctx.fillText('●'.repeat(Math.max(0,lives)), W/2, 12);
+  ctx.textAlign='center'; ctx.fillStyle='#ff5252'; ctx.fillText('â—'.repeat(Math.max(0,lives)), W/2, 12);
   ctx.textAlign='right'; ctx.fillStyle='#b06cff'; ctx.fillText('NIVEAU '+level, W-12, 12);
   if(paused){ ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(0,0,W,H);
     ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.font='30px "Courier New",monospace'; ctx.fillText('PAUSE',W/2,H/2); }
@@ -247,7 +247,7 @@ level=1; score=0; lives=3; sticky=0;
 paddle=makePaddle(); genBricks(); resetBall(); caps=[]; lasers=[]; parts=[];
 requestAnimationFrame(loop);
 </script>
-<script src="../music/playlist.js"></script>
-<script src="../music/player.js"></script>
+<script src="../music/playlist.js?v=2"></script>
+<script src="../music/player.js?v=2"></script>
 </body>
 </html>

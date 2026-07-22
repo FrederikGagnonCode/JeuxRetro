@@ -29,14 +29,14 @@
     <canvas id="game" width="560" height="360"></canvas>
     <div id="overlay">
       <h2 id="ovTitle">R-TYPE</h2>
-      <p>Détruis l'empire Bydo avec ton chasseur R-9.</p>
-      <p>← ↑ ↓ → : voler · Espace : tirer</p>
-      <p>MAINTIENS Espace pour CHARGER l'onde de force, relâche pour le rayon !</p>
-      <p class="blink" style="margin-top:12px">▶ Cliquez ou Espace pour décoller</p>
+      <p>DÃ©truis l'empire Bydo avec ton chasseur R-9.</p>
+      <p>â† â†‘ â†“ â†’ : voler Â· Espace : tirer</p>
+      <p>MAINTIENS Espace pour CHARGER l'onde de force, relÃ¢che pour le rayon !</p>
+      <p class="blink" style="margin-top:12px">â–¶ Cliquez ou Espace pour dÃ©coller</p>
     </div>
   </div>
-  <div id="hint">Flèches : voler · Espace : tir (maintenir = charge) · P = pause</div>
-  <a class="back" href="../index.html">← Menu Arcade</a>
+  <div id="hint">FlÃ¨ches : voler Â· Espace : tir (maintenir = charge) Â· P = pause</div>
+  <a class="back" href="../index.html">â† Menu Arcade</a>
 
 <script>
 const cv=document.getElementById('game'), ctx=cv.getContext('2d');
@@ -78,7 +78,7 @@ function spawnWave(){
   wave++;
   if(wave%4===0 && !boss){                    // boss Bydo
     boss={x:W+60,y:H/2,hp:30+wave*4,maxHp:30+wave*4,ph:0,cd:1};
-    flash('⚠ CROISEUR BYDO ⚠');
+    flash('âš  CROISEUR BYDO âš ');
     return;
   }
   const kind=rand(3), baseY=TOP+40+rand(BOT-TOP-100);
@@ -186,7 +186,7 @@ function update(dt){
       boss.hp-=s.dmg; s.dead=true; burst(s.x,s.y,'#fff',3);
       if(boss.hp<=0){ score+=2000; burst(boss.x,boss.y,'#ff8a3d',26);
         if(window.ArcadeSFX)window.ArcadeSFX.play('explosion');
-        boss=null; flash('CROISEUR DÉTRUIT ! +2000'); spawnT=2; }
+        boss=null; flash('CROISEUR DÃ‰TRUIT ! +2000'); spawnT=2; }
     }
   });
   shots=shots.filter(s=>!s.dead);
@@ -213,7 +213,7 @@ function hitPlayer(){
   lives--; p.dead=true; running=false; charging=false; charge=0;
   ArcadeFX.die(cv, p.x, p.y, 'explosion', ()=>{
     if(lives<=0){ over=true; if(window.ArcadeHi)ArcadeHi.submit(score);
-      showOverlay('GAME OVER','Vague '+wave+' · Score : '+score); }
+      showOverlay('GAME OVER','Vague '+wave+' Â· Score : '+score); }
     else { player=makePlayer(); running=true; }
   });
 }
@@ -296,7 +296,7 @@ function draw(){
   // HUD + jauge de charge
   ctx.fillStyle='#fff'; ctx.font='bold 13px "Courier New",monospace'; ctx.textAlign='left';
   ctx.fillText('SCORE '+score, 8, 14);
-  ctx.fillStyle='#ff5252'; ctx.fillText('♥'.repeat(Math.max(0,lives)), 140, 14);
+  ctx.fillStyle='#ff5252'; ctx.fillText('â™¥'.repeat(Math.max(0,lives)), 140, 14);
   ctx.textAlign='right'; ctx.fillStyle='#9cf'; ctx.fillText('VAGUE '+wave, W-8, 14);
   ctx.fillStyle='#333'; ctx.fillRect(W/2-60,5,120,9);
   ctx.fillStyle=charge>=1.4?'#fff':charge>=0.8?'#7fd6ff':'#39c6e0';
@@ -319,7 +319,7 @@ player=makePlayer(); shots=[]; ebullets=[]; enemies=[]; parts=[]; boss=null;
 score=0; lives=3; wave=0; charge=0;
 requestAnimationFrame(loop);
 </script>
-<script src="../music/playlist.js"></script>
-<script src="../music/player.js"></script>
+<script src="../music/playlist.js?v=2"></script>
+<script src="../music/player.js?v=2"></script>
 </body>
 </html>

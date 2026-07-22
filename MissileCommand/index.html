@@ -29,14 +29,14 @@
     <canvas id="game" width="560" height="400"></canvas>
     <div id="overlay">
       <h2 id="ovTitle">MISSILE COMMAND</h2>
-      <p>Défends tes 6 villes contre les missiles balistiques.</p>
-      <p>Souris : viser · Clic : tirer un antimissile depuis la batterie la plus proche</p>
-      <p>Les explosions détruisent les missiles ennemis — anticipe leur trajectoire !</p>
-      <p class="blink" style="margin-top:12px">▶ Cliquez pour prendre le commandement</p>
+      <p>DÃ©fends tes 6 villes contre les missiles balistiques.</p>
+      <p>Souris : viser Â· Clic : tirer un antimissile depuis la batterie la plus proche</p>
+      <p>Les explosions dÃ©truisent les missiles ennemis â€” anticipe leur trajectoire !</p>
+      <p class="blink" style="margin-top:12px">â–¶ Cliquez pour prendre le commandement</p>
     </div>
   </div>
-  <div id="hint">Souris : viser · clic : tir antimissile · munitions limitées par vague · P = pause</div>
-  <a class="back" href="../index.html">← Menu Arcade</a>
+  <div id="hint">Souris : viser Â· clic : tir antimissile Â· munitions limitÃ©es par vague Â· P = pause</div>
+  <a class="back" href="../index.html">â† Menu Arcade</a>
 
 <script>
 const cv=document.getElementById('game'), ctx=cv.getContext('2d');
@@ -168,14 +168,14 @@ function groundHit(x){
 function endGame(){
   over=true; running=false;
   if(window.ArcadeHi)ArcadeHi.submit(score);
-  showOverlay('FIN DU MONDE','Vague '+wave+' · Score : '+score);
+  showOverlay('FIN DU MONDE','Vague '+wave+' Â· Score : '+score);
 }
 function boomParts(x,y){ for(let i=0;i<8;i++){ const a=Math.random()*Math.PI*2,s=30+Math.random()*100;
   parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:0.4+Math.random()*0.3}); } }
 
 function draw(){
   ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H);
-  // traînées ICBM
+  // traÃ®nÃ©es ICBM
   icbms.forEach(m=>{
     ctx.strokeStyle='rgba(255,82,82,.55)'; ctx.lineWidth=1.2;
     ctx.beginPath(); ctx.moveTo(m.x0,m.y0); ctx.lineTo(m.x,m.y); ctx.stroke();
@@ -241,7 +241,7 @@ bats=[{x:28,ammo:10},{x:W/2,ammo:10},{x:W-28,ammo:10}];
 icbms=[]; amissiles=[]; blasts=[]; parts=[]; score=0; wave=0;
 requestAnimationFrame(loop);
 </script>
-<script src="../music/playlist.js"></script>
-<script src="../music/player.js"></script>
+<script src="../music/playlist.js?v=2"></script>
+<script src="../music/player.js?v=2"></script>
 </body>
 </html>
