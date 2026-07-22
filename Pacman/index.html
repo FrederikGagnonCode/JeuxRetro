@@ -15,6 +15,7 @@
 <body>
 <canvas id="cv" width="560" height="704"></canvas>
 <div id="hint">Flèches ou WASD : déplacer &nbsp;—&nbsp; P : pause &nbsp;—&nbsp; M : son &nbsp;—&nbsp; mobile : glisser le doigt</div>
+<a href="../index.html" style="color:#4ecca3;font-size:12px;margin-top:8px;text-decoration:none;letter-spacing:1px;display:inline-block">← Menu Arcade</a>
 <script>
 'use strict';
 
@@ -65,6 +66,7 @@ let grid, dotsLeft, dotsEaten;
 let score = 0, hi = +(localStorage.getItem('pacman-hi') || 0);
 let lives = 3, level = 1;
 let state = 'title';     // title | ready | play | dying | clear | over
+let over = false, running = false;        // miroirs pour le module partagé
 let stateT = 0, paused = false, muted = false, extraGiven = false;
 let mode = 'scatter', modeIdx = 0, modeT = 0;
 let frightT = 0, chain = 200;
@@ -608,6 +610,8 @@ function frame(ts) {
   last = ts;
   if (!paused) update(dt);
   draw(ts / 1000);
+  over = (state === 'over');
+  running = (state === 'play' || state === 'ready' || state === 'dying' || state === 'clear');
   if(window.ArcadeHi)ArcadeHi.submit(score);
   requestAnimationFrame(frame);
 }

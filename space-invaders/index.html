@@ -28,6 +28,7 @@
 <h1>SPACE INVADERS</h1>
 <canvas id="game" width="800" height="600"></canvas>
 <div class="controls">← → ou A/D : déplacer &nbsp;|&nbsp; ESPACE : tirer &nbsp;|&nbsp; P : pause &nbsp;|&nbsp; ENTRÉE : démarrer</div>
+<a href="../index.html" style="color:#4ecca3;font-size:12px;margin-top:8px;text-decoration:none;letter-spacing:1px">← Menu Arcade</a>
 
 <script>
 const canvas = document.getElementById('game');
@@ -77,6 +78,7 @@ function drawSprite(rows, x, y, scale, color) {
 // ---------- État ----------
 const STATE = { MENU: 0, PLAYING: 1, PAUSED: 2, GAMEOVER: 3, LEVELUP: 4 };
 let state = STATE.MENU;
+let over = false, running = false;        // miroirs pour le module partagé
 let score = 0, lives = 3, level = 1;
 let hiScore = +(localStorage.getItem('si-hiscore') || 0);
 let keys = {};
@@ -404,6 +406,9 @@ function drawCenteredScreen(title, subtitle) {
 function loop() {
   update();
   draw();
+  // miroirs globaux pour le module partagé (initiales au game over, etc.)
+  over = (state === STATE.GAMEOVER);
+  running = (state === STATE.PLAYING || state === STATE.LEVELUP);
   if(window.ArcadeHi)ArcadeHi.submit(score);
   requestAnimationFrame(loop);
 }

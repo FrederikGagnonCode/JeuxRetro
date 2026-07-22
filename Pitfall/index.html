@@ -12,6 +12,7 @@
 </head>
 <body>
 <canvas id="c" width="800" height="560"></canvas>
+<a href="../index.html" style="color:#4ecca3;font-size:12px;margin-top:8px;text-decoration:none;letter-spacing:1px;font-family:'Courier New',monospace">← Menu Arcade</a>
 <div id="help">&#8592; &#8594; bouger &nbsp;|&nbsp; ESPACE / &#8593; sauter &nbsp;|&nbsp; &#8595; descendre / l&acirc;cher la liane &nbsp;|&nbsp; P pause &nbsp;|&nbsp; ENTR&Eacute;E commencer</div>
 <script>
 'use strict';
@@ -786,11 +787,14 @@ function drawScene(){
 
 // ---------- Boucle ----------
 let last = performance.now();
+let over = false, running = false;        // miroirs pour le module partagé
 function frame(now){
   const dt = Math.min(0.033, (now - last) / 1000);
   last = now;
   update(dt);
   drawScene();
+  over = !!(st && st.over);
+  running = !!(st && st.started && !st.over);
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
