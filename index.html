@@ -943,22 +943,46 @@
       <div class="thumb">
         <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
           <rect width="80" height="60" fill="#0a0a18"/>
-          <!-- tuyaux -->
-          <g><rect x="2" y="0" width="12" height="16" fill="#1c9a3a"/><rect x="0" y="13" width="16" height="5" fill="#137a2c"/></g>
-          <g><rect x="66" y="0" width="12" height="16" fill="#1c9a3a"/><rect x="64" y="13" width="16" height="5" fill="#137a2c"/></g>
-          <!-- plateformes -->
-          <g fill="#c0641e"><rect x="6" y="18" width="26" height="4"/><rect x="48" y="18" width="26" height="4"/>
-            <rect x="22" y="34" width="36" height="4"/><rect x="0" y="52" width="80" height="4"/></g>
+          <!-- tuyaux verts avec reflet -->
+          <g><rect x="2" y="0" width="12" height="16" fill="#1c9a3a"/><rect x="3.4" y="0" width="3" height="16" fill="#2fbf52"/><rect x="0" y="12" width="16" height="6" fill="#137a2c"/><rect x="1.4" y="12" width="3" height="6" fill="#2fbf52"/></g>
+          <g><rect x="66" y="0" width="12" height="16" fill="#1c9a3a"/><rect x="67.4" y="0" width="3" height="16" fill="#2fbf52"/><rect x="64" y="12" width="16" height="6" fill="#137a2c"/><rect x="65.4" y="12" width="3" height="6" fill="#2fbf52"/></g>
+          <!-- plateformes en briques (dessus éclairé + joints) -->
+          <g>
+            <g fill="#c0641e"><rect x="6" y="18" width="26" height="5"/><rect x="48" y="18" width="26" height="5"/><rect x="22" y="34" width="36" height="5"/><rect x="0" y="52" width="80" height="8"/></g>
+            <g fill="#e0883a"><rect x="6" y="18" width="26" height="1.6"/><rect x="48" y="18" width="26" height="1.6"/><rect x="22" y="34" width="36" height="1.6"/><rect x="0" y="52" width="80" height="1.6"/></g>
+            <g fill="#7a3d12"><rect x="13" y="19.6" width="1.2" height="3.4"/><rect x="22" y="19.6" width="1.2" height="3.4"/><rect x="56" y="19.6" width="1.2" height="3.4"/><rect x="65" y="19.6" width="1.2" height="3.4"/><rect x="31" y="35.6" width="1.2" height="3.4"/><rect x="41" y="35.6" width="1.2" height="3.4"/><rect x="50" y="35.6" width="1.2" height="3.4"/><rect x="10" y="53.6" width="1.2" height="6"/><rect x="24" y="53.6" width="1.2" height="6"/><rect x="52" y="53.6" width="1.2" height="6"/><rect x="66" y="53.6" width="1.2" height="6"/></g>
+          </g>
           <!-- bloc POW -->
-          <rect x="35" y="44" width="10" height="5" fill="#2e8fe0"/>
-          <!-- ennemi tortue -->
-          <g transform="translate(30,30)"><ellipse cx="0" cy="2" rx="5" ry="3" fill="#39a83d"/><rect x="4" y="-1" width="3" height="3" fill="#d8e8b0"/></g>
-          <!-- Mario -->
-          <g transform="translate(14,46)">
-            <rect x="-3" y="-2" width="6" height="3" fill="#e0322e"/>
-            <rect x="-2" y="-5" width="4" height="3" fill="#f0c090"/>
-            <rect x="-3" y="-7" width="6" height="2" fill="#e0322e"/>
-            <rect x="-3" y="1" width="2" height="3" fill="#1565c0"/><rect x="1" y="1" width="2" height="3" fill="#1565c0"/>
+          <g><rect x="34" y="43" width="12" height="9" fill="#2e8fe0"/><rect x="34" y="49.6" width="12" height="2.4" fill="#1c5fa0"/>
+          <text x="40" y="49.4" fill="#fff" font-family="monospace" font-weight="bold" font-size="5" text-anchor="middle">POW</text></g>
+          <!-- pièce bonus -->
+          <g transform="translate(40,10)"><ellipse rx="3" ry="3.6" fill="#ffd23a"/><ellipse rx="1.4" ry="2.4" fill="#c8a020"/></g>
+          <!-- tortue détaillée (carapace bombée, tête, pattes) -->
+          <g transform="translate(30,29)">
+            <rect x="-4" y="2.6" width="2.4" height="2.4" fill="#e6c24e"/><rect x="1.6" y="2.6" width="2.4" height="2.4" fill="#e6c24e"/>
+            <ellipse rx="5.4" ry="4" fill="#39a83d"/>
+            <path d="M-5.2 -.6 A5.3 5.3 0 0 1 5.2 -.6" fill="#5fd45a"/>
+            <path d="M-3 -3.4 L-3 3 M0 -4 L0 3.4 M3 -3.4 L3 3" stroke="#1f6e26" stroke-width=".8" fill="none"/>
+            <ellipse cx="6.4" cy="-.6" rx="2.4" ry="2" fill="#bfe08a"/>
+            <circle cx="7" cy="-1.2" r=".7" fill="#111"/>
+          </g>
+          <!-- tortue retournée qui gigote -->
+          <g transform="translate(58,31)">
+            <ellipse cy="1.6" rx="4.6" ry="2.6" fill="#39a83d"/>
+            <ellipse cy="1" rx="3.4" ry="1.6" fill="#e6efc8"/>
+            <path d="M-3 -.6 L-4.4 -3 M0 -.8 L0 -3.4 M3 -.6 L4.4 -3" stroke="#39a83d" stroke-width="1"/>
+          </g>
+          <!-- Mario : casquette, moustache, salopette -->
+          <g transform="translate(13,45)">
+            <rect x="-3.4" y="2.6" width="2.6" height="4.4" fill="#1565c0"/><rect x="1" y="2.6" width="2.6" height="4.4" fill="#1565c0"/>
+            <rect x="-3.6" y="6" width="3" height="1.6" fill="#5a3a1a"/><rect x="0.8" y="6" width="3" height="1.6" fill="#5a3a1a"/>
+            <rect x="-4" y="-2.6" width="8" height="5.6" fill="#e0322e"/>
+            <rect x="-2.4" y="-.6" width="4.8" height="3.6" fill="#1565c0"/>
+            <circle cx="-1.2" cy="0" r=".7" fill="#ffd23a"/><circle cx="1.2" cy="0" r=".7" fill="#ffd23a"/>
+            <rect x="-2.6" y="-6.4" width="5.2" height="4" fill="#f0c090"/>
+            <rect x="-3.4" y="-8" width="6.8" height="2" fill="#e0322e"/><rect x="1.4" y="-6.6" width="2.6" height="1.2" fill="#e0322e"/>
+            <rect x="-2.2" y="-3.6" width="3.4" height="1" fill="#5a3a1a"/>
+            <circle cx="1.8" cy="-5" r=".5" fill="#111"/>
           </g>
         </svg>
         <div class="play"><span>▶ JOUER</span></div>
@@ -1054,24 +1078,55 @@
       <div class="year">1985</div>
       <div class="thumb">
         <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
-          <rect width="80" height="60" fill="#6b5a39"/>
-          <!-- buissons / rochers -->
-          <g><circle cx="14" cy="14" r="5" fill="#356e2c"/><circle cx="66" cy="20" r="4" fill="#356e2c"/></g>
-          <ellipse cx="20" cy="44" rx="4" ry="3" fill="#8a8478"/>
-          <!-- sacs de sable -->
-          <rect x="44" y="10" width="16" height="6" fill="#b8a062"/>
-          <!-- soldats ennemis (haut) -->
-          <g transform="translate(30,16)"><circle r="3.5" fill="#b0432f"/><circle r="2.2" fill="#7a2e22"/><rect x="1" y="-1" width="6" height="2" fill="#222"/></g>
-          <g transform="translate(52,24)"><circle r="3.5" fill="#c87a2a"/><circle r="2.2" fill="#7a2e22"/><rect x="-7" y="-1" width="6" height="2" fill="#222"/></g>
-          <!-- héros (bas) qui tire vers le haut -->
-          <g transform="translate(38,48)"><circle r="4" fill="#3f8f3a"/><circle r="2.6" fill="#2e6e2a"/><rect x="-1.4" y="-11" width="2.8" height="9" fill="#222"/></g>
-          <!-- balles -->
-          <rect x="37" y="36" width="2.5" height="2.5" fill="#fff5c0"/>
-          <rect x="37" y="28" width="2.5" height="2.5" fill="#fff5c0"/>
-          <!-- grenade + éclat -->
-          <circle cx="60" cy="42" r="3" fill="#2c3a22"/>
-          <g fill="#ffd23a" opacity=".8"><circle cx="22" cy="30" r="4"/></g>
-          <circle cx="22" cy="30" r="2.2" fill="#ff6a1a"/>
+          <rect width="80" height="60" fill="#7e6c40"/>
+          <!-- taches de terrain -->
+          <g opacity=".45"><ellipse cx="16" cy="34" rx="12" ry="6" fill="#6f8a3e"/><ellipse cx="66" cy="52" rx="10" ry="5" fill="#6b5a30"/><ellipse cx="58" cy="8" rx="9" ry="5" fill="#9d8a55"/></g>
+          <!-- arbre avec ombre -->
+          <ellipse cx="14" cy="15" rx="7" ry="4" fill="rgba(0,0,0,.25)"/>
+          <rect x="11.4" y="8" width="2.4" height="6" fill="#5a3f22"/>
+          <g fill="#2c4a22"><circle cx="12" cy="6" r="5.4"/><circle cx="8" cy="9" r="3.6"/><circle cx="16" cy="8.6" r="3.8"/></g>
+          <circle cx="11" cy="4.6" r="3" fill="#3d6030"/>
+          <!-- muret de sacs (relief) -->
+          <g><rect x="42" y="14" width="18" height="4" fill="#9c8550"/><rect x="42" y="11" width="18" height="3.4" fill="#c8b06e"/><rect x="43" y="11" width="5" height="3.4" fill="#b8a062"/><rect x="49.4" y="11" width="5" height="3.4" fill="#b8a062"/></g>
+          <!-- crevasse avec embusqué -->
+          <g transform="translate(66,32)">
+            <ellipse rx="7.4" ry="4.6" fill="#574629"/><ellipse rx="5.4" ry="3.2" fill="#241c10"/>
+            <circle cy="-1.4" r="2" fill="#caa07a"/><path d="M-2.2 -2.2 A2.2 2.2 0 0 1 2.2 -2.2" fill="#7a2e22"/>
+            <rect x="-.8" y=".4" width="1.6" height="4" fill="#15151a"/>
+          </g>
+          <!-- soldat ennemi debout -->
+          <g transform="translate(30,18)">
+            <ellipse cy="6.4" rx="4.6" ry="1.6" fill="rgba(0,0,0,.3)"/>
+            <rect x="-2.4" y="1.4" width="2" height="4.4" fill="#5e2a22"/><rect x=".6" y="1.4" width="2" height="4.4" fill="#5e2a22"/>
+            <ellipse cy="-1" rx="3.4" ry="4" fill="#b0432f"/>
+            <line x1="2" y1="-1.6" x2="7" y2="0" stroke="#b0432f" stroke-width="1.8"/>
+            <rect x="5" y="-1.2" width="6" height="1.8" fill="#15151a"/>
+            <circle cy="-6.4" r="2.4" fill="#caa07a"/><path d="M-2.5 -7 A2.5 2.5 0 0 1 2.5 -7" fill="#7a2e22"/>
+          </g>
+          <!-- moto ennemie -->
+          <g transform="translate(14,46)">
+            <ellipse cy="5.4" rx="8.6" ry="1.8" fill="rgba(0,0,0,.3)"/>
+            <circle cx="-5.4" cy="4" r="2.8" fill="#111"/><circle cx="5.4" cy="4" r="2.8" fill="#111"/>
+            <rect x="-6" y="1" width="12" height="2.4" fill="#2f2f38"/>
+            <rect x="-3.4" y="-4.4" width="4.4" height="5.4" fill="#5e2a22"/>
+            <circle cx="-1" cy="-6" r="2" fill="#2a2a30"/>
+            <circle cx="7" cy="1.4" r="1" fill="#ffd23a"/>
+          </g>
+          <!-- héros de dos qui tire -->
+          <g transform="translate(40,49)">
+            <ellipse cy="7" rx="5.4" ry="1.8" fill="rgba(0,0,0,.32)"/>
+            <rect x="-2.8" y="1.8" width="2.2" height="5" fill="#2e6e2a"/><rect x=".8" y="1.8" width="2.2" height="5" fill="#2e6e2a"/>
+            <rect x="-3.4" y="-4.4" width="2.4" height="3.8" fill="rgba(0,0,0,.35)"/>
+            <ellipse cy="-1" rx="4" ry="4.6" fill="#3f8f3a"/>
+            <rect x="-1" y="-14" width="2" height="8.4" fill="#15151a"/>
+            <circle cy="-7.4" r="2.6" fill="#caa07a"/><path d="M-2.7 -8 A2.7 2.7 0 0 1 2.7 -8" fill="#2e6e2a"/>
+          </g>
+          <!-- balles + explosion de grenade -->
+          <rect x="39" y="30" width="2.4" height="3.4" fill="#fff5c0"/>
+          <rect x="39" y="24" width="2.4" height="3.4" fill="#fff5c0"/>
+          <circle cx="24" cy="28" r="4.6" fill="#ffd23a" opacity=".85"/><circle cx="24" cy="28" r="2.4" fill="#ff6a1a"/>
+          <!-- caisse de grenades -->
+          <g transform="translate(52,52)"><rect x="-4.4" y="-3.4" width="8.8" height="6.8" fill="#8a6a34"/><rect x="-4.4" y="-3.4" width="8.8" height="1.6" fill="#a0823f"/><path d="M-4.4 -3.4 L4.4 3.4 M4.4 -3.4 L-4.4 3.4" stroke="#5a3f1c" stroke-width=".9"/></g>
         </svg>
         <div class="play"><span>▶ JOUER</span></div>
       </div>
@@ -1165,25 +1220,48 @@
           <g><rect x="2" y="4" width="16" height="12" fill="#e8e0c8"/><rect x="1" y="1" width="18" height="4" fill="#c05a3a"/><rect x="4" y="7" width="5" height="4" fill="#8fd0e8"/></g>
           <g><rect x="2" y="26" width="16" height="12" fill="#6a7a8a"/><rect x="1" y="23" width="18" height="4" fill="#3a3a44"/><rect x="4" y="29" width="5" height="4" fill="#101018"/></g>
           <g><rect x="2" y="47" width="16" height="12" fill="#e8e0c8"/><rect x="1" y="44" width="18" height="4" fill="#c05a3a"/><rect x="4" y="50" width="5" height="4" fill="#8fd0e8"/></g>
-          <!-- boîte aux lettres -->
-          <rect x="19" y="12" width="4" height="3" fill="#c0392b"/><rect x="20.5" y="15" width="1" height="4" fill="#5a5a66"/>
-          <!-- journal en vol -->
-          <rect x="27" y="10" width="5" height="3.4" fill="#f0ead0" transform="rotate(20 29 11)"/>
-          <!-- voiture -->
-          <g transform="translate(62,18)"><rect x="-7" y="-7" width="14" height="14" rx="1" fill="#b03a5a"/><rect x="-5" y="-3" width="10" height="4" fill="#101018"/></g>
-          <!-- chien -->
-          <g transform="translate(40,40)"><ellipse rx="4.4" ry="2.6" fill="#8a6a42"/><circle cx="4.4" cy="-1.4" r="2" fill="#8a6a42"/></g>
-          <!-- livreur à vélo -->
-          <g transform="translate(38,52)">
-            <ellipse cx="0" cy="-4.4" rx="0" ry="0"/>
-            <circle cy="-5" r="0" fill="none"/>
-            <ellipse cy="4" rx="2.4" ry="3" fill="none" stroke="#222" stroke-width="1.4"/>
-            <ellipse cy="-6" rx="2.4" ry="3" fill="none" stroke="#222" stroke-width="1.4"/>
-            <line x1="0" y1="-5" x2="0" y2="4" stroke="#c0392b" stroke-width="1.6"/>
-            <ellipse cy="-2" rx="3" ry="4" fill="#3a5a8f"/>
-            <rect x="-5.4" y="-4" width="3" height="4.4" fill="#e8e0c8"/>
-            <circle cy="-8.4" r="2.4" fill="#caa07a"/>
-            <path d="M-2.6 -9.4 A2.6 2.6 0 0 1 2.6 -9.4 Z" fill="#e8443a"/>
+          <!-- boîte aux lettres livrée (✓) -->
+          <rect x="19" y="11" width="5" height="4" fill="#4ecca3"/><rect x="19" y="11" width="5" height="1.2" fill="#8ff0d0"/>
+          <rect x="21" y="15" width="1.2" height="5" fill="#5a5a66"/>
+          <!-- journal en vol + trajectoire -->
+          <path d="M36 26 Q31 18 26 14" stroke="rgba(240,234,208,.5)" stroke-width="1" fill="none" stroke-dasharray="2 2"/>
+          <rect x="25" y="12" width="5" height="3.4" fill="#f0ead0" transform="rotate(25 27 13)"/>
+          <rect x="25.6" y="13.2" width="3.8" height=".8" fill="#9a8a5a" transform="rotate(25 27 13)"/>
+          <!-- voiture détaillée -->
+          <g transform="translate(64,16)">
+            <ellipse cy="8.4" rx="7.6" ry="1.6" fill="rgba(0,0,0,.3)"/>
+            <rect x="-7" y="-8" width="14" height="16" rx="2" fill="#b03a5a"/>
+            <rect x="-7" y="-8" width="14" height="3.4" fill="#d05a7a"/>
+            <rect x="-5" y="-3.4" width="10" height="5" fill="#101018"/>
+            <rect x="-6" y="-8.6" width="2.6" height="1.8" fill="#ffd23a"/><rect x="3.4" y="-8.6" width="2.6" height="1.8" fill="#ffd23a"/>
+          </g>
+          <!-- borne d'incendie -->
+          <g transform="translate(25,34)"><rect x="-1.8" y="-2.6" width="3.6" height="5.4" fill="#c0392b"/><path d="M-2 -2.6 A2 2 0 0 1 2 -2.6" fill="#c0392b"/><rect x="-2.8" y="-.6" width="5.6" height="1.4" fill="#e05a4a"/></g>
+          <!-- chien qui poursuit -->
+          <g transform="translate(46,40)">
+            <ellipse cy="4" rx="4.6" ry="1.2" fill="rgba(0,0,0,.25)"/>
+            <path d="M-3.4 2.4 L-5 4.4 M-1 2.8 L-1.6 4.8 M2 2.8 L3 4.6" stroke="#7a5a3a" stroke-width="1.2"/>
+            <ellipse rx="4.6" ry="2.6" fill="#8a6a42"/>
+            <circle cx="4.6" cy="-1.6" r="2.2" fill="#8a6a42"/>
+            <polygon points="3.4,-3.4 4.4,-5.4 5.6,-3.2" fill="#5a4226"/>
+            <circle cx="5.6" cy="-1.8" r=".6" fill="#111"/>
+            <path d="M-4.6 -.6 Q-6.6 -2.4 -6 -3.8" stroke="#8a6a42" stroke-width="1.2" fill="none"/>
+          </g>
+          <!-- livreur à vélo (roues à rayons, sacoche pleine) -->
+          <g transform="translate(37,51)">
+            <ellipse cy="7.4" rx="6.4" ry="1.4" fill="rgba(0,0,0,.3)"/>
+            <g stroke="#222" stroke-width="1.3" fill="none">
+              <ellipse cy="4" rx="2.6" ry="3.2"/><ellipse cy="-6" rx="2.6" ry="3.2"/>
+            </g>
+            <g stroke="#666" stroke-width=".6"><line x1="-1.8" y1="2" x2="1.8" y2="6"/><line x1="1.8" y1="2" x2="-1.8" y2="6"/><line x1="-1.8" y1="-8" x2="1.8" y2="-4"/><line x1="1.8" y1="-8" x2="-1.8" y2="-4"/></g>
+            <line x1="0" y1="-5" x2="0" y2="4" stroke="#c0392b" stroke-width="1.8"/>
+            <ellipse cy="-1.6" rx="3" ry="4.2" fill="#3a5a8f"/>
+            <path d="M-2 -4.4 L-4.6 -6.6 M2 -4.4 L4 -7" stroke="#3a5a8f" stroke-width="1.6"/>
+            <rect x="-6.4" y="-4.6" width="3.4" height="5" fill="#e8e0c8"/>
+            <rect x="-6" y="-4.2" width="2.6" height="1.4" fill="#c8b890"/>
+            <circle cy="-8.6" r="2.6" fill="#caa07a"/>
+            <path d="M-2.8 -9.6 A2.8 2.8 0 0 1 2.8 -9.6 Z" fill="#e8443a"/>
+            <rect x="1" y="-10.2" width="2.6" height="1" fill="#e8443a"/>
           </g>
         </svg>
         <div class="play"><span>▶ JOUER</span></div>
@@ -1288,35 +1366,48 @@
       <div class="thumb">
         <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
           <rect width="80" height="60" fill="#02030a"/>
-          <!-- plateformes -->
-          <g fill="#2e57c8">
-            <rect x="6" y="14" width="22" height="3"/><rect x="52" y="14" width="22" height="3"/>
-            <rect x="28" y="30" width="24" height="3"/>
-            <rect x="6" y="46" width="68" height="3"/>
+          <!-- plateformes en blocs décorés (motif de l'arcade) -->
+          <g>
+            <g fill="#2e57c8"><rect x="6" y="13" width="22" height="5"/><rect x="52" y="13" width="22" height="5"/><rect x="28" y="29" width="24" height="5"/><rect x="6" y="45" width="68" height="5"/></g>
+            <g fill="#5a83e8"><rect x="6" y="13" width="22" height="1.6"/><rect x="52" y="13" width="22" height="1.6"/><rect x="28" y="29" width="24" height="1.6"/><rect x="6" y="45" width="68" height="1.6"/></g>
+            <g fill="#1a3488"><rect x="12" y="14.6" width="1.4" height="3.4"/><rect x="20" y="14.6" width="1.4" height="3.4"/><rect x="58" y="14.6" width="1.4" height="3.4"/><rect x="66" y="14.6" width="1.4" height="3.4"/><rect x="35" y="30.6" width="1.4" height="3.4"/><rect x="44" y="30.6" width="1.4" height="3.4"/><rect x="14" y="46.6" width="1.4" height="3.4"/><rect x="26" y="46.6" width="1.4" height="3.4"/><rect x="38" y="46.6" width="1.4" height="3.4"/><rect x="50" y="46.6" width="1.4" height="3.4"/><rect x="62" y="46.6" width="1.4" height="3.4"/></g>
           </g>
-          <!-- Bub, le dino vert -->
-          <g transform="translate(20,40)">
+          <!-- Bub, le vrai dinosaure : museau, pics, gros yeux -->
+          <g transform="translate(19,38)">
+            <path d="M-8 -1 Q-12 1 -10 -4" stroke="#2e8b34" stroke-width="2" fill="none"/>
             <circle r="7" fill="#3fae45"/>
-            <circle cx="0" cy="2" r="4" fill="#cdeb8e"/>
-            <circle cx="3" cy="-2" r="3" fill="#fff"/><circle cx="4" cy="-2" r="1.3" fill="#000"/>
-            <polygon points="-7,-3 -9,-7 -5,-6" fill="#2e8b34"/>
-            <rect x="2" y="3" width="4" height="2" fill="#e26a2c"/>
+            <ellipse cx="6" cy="1" rx="3.6" ry="2.8" fill="#3fae45"/>
+            <ellipse cx="6" cy="2" rx="2.6" ry="1.7" fill="#cdeb8e"/>
+            <ellipse cx="0" cy="3" rx="4" ry="3" fill="#cdeb8e"/>
+            <polygon points="-6,-4 -9,-8 -4,-6" fill="#2e8b34"/>
+            <polygon points="-2,-6 -3,-10 1,-7" fill="#2e8b34"/>
+            <circle cx="1" cy="-2.6" r="2.8" fill="#fff"/><circle cx="4.6" cy="-2.6" r="2.2" fill="#fff"/>
+            <circle cx="1.8" cy="-2.4" r="1.3" fill="#173a8a"/><circle cx="5" cy="-2.4" r="1" fill="#173a8a"/>
+            <ellipse cx="-4" cy="7" rx="2.6" ry="1.7" fill="#2e8b34"/><ellipse cx="3" cy="7" rx="2.6" ry="1.7" fill="#2e8b34"/>
           </g>
-          <!-- bulle avec ennemi piégé -->
-          <g transform="translate(40,22)">
-            <circle r="8" fill="rgba(255,90,90,.18)" stroke="#ff8c8c" stroke-width="1.5"/>
+          <!-- bulle irisée avec ennemi piégé -->
+          <g transform="translate(41,21)">
+            <circle r="8.4" fill="rgba(255,90,90,.16)"/>
+            <path d="M-8.2 2 A8.4 8.4 0 0 1 6 -6" stroke="#ff8c8c" stroke-width="1.4" fill="none"/>
+            <path d="M6 -6 A8.4 8.4 0 0 1 -8.2 2" stroke="#ffd2a0" stroke-width="1.2" fill="none" opacity=".7"/>
             <circle cy="1" r="4" fill="#ffd23a"/>
             <circle cx="-1.5" cy="0" r=".8" fill="#000"/><circle cx="1.5" cy="0" r=".8" fill="#000"/>
-            <circle cx="-3" cy="-3" r="1.4" fill="#fff" opacity=".6"/>
+            <ellipse cx="-3.4" cy="-3.6" rx="2" ry="1.2" fill="#fff" opacity=".7" transform="rotate(-35 -3.4 -3.6)"/>
           </g>
-          <!-- ennemi libre -->
-          <g transform="translate(62,42)">
+          <!-- monstre libre : cornes + sourcils fâchés + croc -->
+          <g transform="translate(62,40)">
             <circle r="6" fill="#b86cff"/>
-            <circle cx="-2" cy="-1" r="2.4" fill="#fff"/><circle cx="2" cy="-1" r="2.4" fill="#fff"/>
-            <circle cx="-2" cy="-1" r="1" fill="#000"/><circle cx="2" cy="-1" r="1" fill="#000"/>
+            <ellipse cy="2.4" rx="3.4" ry="2.2" fill="#e0c8f8"/>
+            <polygon points="-5,-4 -3.6,-8.4 -2,-4.6" fill="#8a4ac0"/>
+            <polygon points="2,-4.6 3.6,-8.4 5,-4" fill="#8a4ac0"/>
+            <circle cx="-2" cy="-1" r="2.2" fill="#fff"/><circle cx="2" cy="-1" r="2.2" fill="#fff"/>
+            <circle cx="-1.4" cy="-1" r="1" fill="#000"/><circle cx="2.6" cy="-1" r="1" fill="#000"/>
+            <path d="M-4.4 -3.6 L-.6 -2.4 M4.4 -3.6 L.6 -2.4" stroke="#5a2a8a" stroke-width="1"/>
+            <polygon points="1,3.6 2,5.6 3,3.6" fill="#fff"/>
           </g>
-          <!-- bulle vide qui monte -->
-          <circle cx="32" cy="10" r="5" fill="rgba(120,200,255,.14)" stroke="#9fe" stroke-width="1.2"/>
+          <!-- bulle vide + fruit bonus -->
+          <circle cx="32" cy="9" r="5" fill="rgba(120,200,255,.14)" stroke="#9fe" stroke-width="1.2"/>
+          <g transform="translate(68,10)"><circle cx="-1.4" cy="1.4" r="2.2" fill="#e02020"/><circle cx="1.6" cy="1.8" r="2.2" fill="#e02020"/><path d="M-1 0 Q0 -3.4 2 -3.8 M1.8 .2 Q2.2 -2 2 -3.8" stroke="#3aad3d" stroke-width="1" fill="none"/></g>
         </svg>
         <div class="play"><span>▶ JOUER</span></div>
       </div>
@@ -1494,26 +1585,54 @@
           </linearGradient></defs>
           <rect width="80" height="38" fill="url(#gax)"/>
           <circle cx="40" cy="30" r="9" fill="#ffd27a"/>
+          <circle cx="40" cy="30" r="12" fill="#ffd27a" opacity=".25"/>
           <!-- montagnes -->
           <g fill="#5a2f22"><polygon points="0,38 14,20 28,38"/><polygon points="26,38 40,16 54,38"/><polygon points="52,38 66,22 80,38"/></g>
+          <g fill="#6e3c2a" opacity=".7"><polygon points="8,38 14,26 20,38"/><polygon points="58,38 66,28 74,38"/></g>
           <!-- sol -->
           <rect y="38" width="80" height="22" fill="#6b4a26"/><rect y="38" width="80" height="2" fill="#7d5a30"/>
-          <!-- barbare (joueur) -->
-          <g transform="translate(26,50)">
-            <rect x="-4" y="-10" width="8" height="9" fill="#d9a066"/>
-            <rect x="-3" y="-15" width="6" height="6" fill="#e8b888"/>
-            <rect x="-4" y="-16" width="8" height="2" fill="#b0b0c0"/>
-            <rect x="-4" y="-1" width="3" height="6" fill="#6b4a2a"/><rect x="1" y="-1" width="3" height="6" fill="#6b4a2a"/>
-            <line x1="4" y1="-9" x2="13" y2="-16" stroke="#e8e8f0" stroke-width="2"/>
+          <g fill="rgba(0,0,0,.15)"><ellipse cx="14" cy="52" rx="6" ry="1.6"/><ellipse cx="70" cy="46" rx="5" ry="1.4"/></g>
+          <!-- barbare : épée levée, torse nu, jambières de fourrure -->
+          <g transform="translate(22,49)">
+            <ellipse cy="6" rx="7" ry="1.8" fill="rgba(0,0,0,.3)"/>
+            <rect x="-4" y="-1" width="3.4" height="6" fill="#6b4a2a"/><rect x="1" y="-1" width="3.4" height="6" fill="#6b4a2a"/>
+            <rect x="-4.4" y="4" width="4" height="2.4" fill="#3a2210"/><rect x="0.8" y="4" width="4" height="2.4" fill="#3a2210"/>
+            <path d="M-4.6 -10 Q0 -13 4.6 -10 L3.6 -1 L-3.6 -1 Z" fill="#d9a066"/>
+            <path d="M-4 -7 L4 -7" stroke="#b8804a" stroke-width="1"/>
+            <rect x="-4" y="-2.4" width="8" height="2.4" fill="#8a5a1e"/>
+            <circle cx="0" cy="-1.2" r="1" fill="#ffd23a"/>
+            <line x1="4" y1="-9" x2="8" y2="-4" stroke="#d9a066" stroke-width="2.4"/>
+            <line x1="-4" y1="-9" x2="-8" y2="-14" stroke="#d9a066" stroke-width="2.4"/>
+            <line x1="-8" y1="-14" x2="-14" y2="-24" stroke="#e8e8f0" stroke-width="2.6"/>
+            <line x1="-8.6" y1="-14.6" x2="-13" y2="-22" stroke="#fff" stroke-width="1"/>
+            <rect x="-10.4" y="-15.4" width="5" height="1.8" fill="#8a5a1e" transform="rotate(-58 -8 -14.6)"/>
+            <circle cx="0" cy="-13" r="3.6" fill="#e8b888"/>
+            <path d="M-3.6 -14 A3.6 3.6 0 0 1 3.6 -14" fill="#7a4a1e"/>
           </g>
-          <!-- ennemi vert -->
-          <g transform="translate(56,52)">
-            <rect x="-4" y="-9" width="8" height="8" fill="#5a8f3a"/>
-            <rect x="-3" y="-14" width="6" height="5" fill="#a8d080"/>
-            <rect x="-3" y="0" width="2" height="5" fill="#333"/><rect x="1" y="0" width="2" height="5" fill="#333"/>
-            <circle cx="-9" cy="-12" r="2.4" fill="#8a5a2a"/>
-            <line x1="-3" y1="-8" x2="-9" y2="-12" stroke="#5a8f3a" stroke-width="2"/>
+          <!-- bizarrien rouge crachant du feu -->
+          <g transform="translate(52,50)">
+            <ellipse cy="4" rx="10" ry="2" fill="rgba(0,0,0,.3)"/>
+            <ellipse rx="9" ry="5" fill="#c03428"/>
+            <ellipse cy="-1.6" rx="6" ry="2.6" fill="#e05a3a"/>
+            <path d="M-8 -2 Q-12 -6 -10 -9" stroke="#c03428" stroke-width="2.4" fill="none"/>
+            <path d="M6 -3 Q9 -7 12 -7" stroke="#c03428" stroke-width="3.4" fill="none"/>
+            <ellipse cx="13" cy="-7.4" rx="3" ry="2.2" fill="#c03428"/>
+            <circle cx="14" cy="-8.2" r=".9" fill="#ffd23a"/>
+            <polygon points="-2,-4.6 0,-8 2,-4.6" fill="#7a1c14"/>
+            <rect x="-6" y="3" width="3" height="4" fill="#8a2018"/><rect x="3" y="3" width="3" height="4" fill="#8a2018"/>
+            <path d="M16 -8 Q21 -10 25 -8 Q21 -6 16 -8" fill="#ff9d2e"/>
+            <path d="M16 -8 Q20 -9 22.5 -8 Q20 -7 16 -8" fill="#ffd23a"/>
           </g>
+          <!-- chevalier ennemi acculé -->
+          <g transform="translate(70,51) scale(-1,1)">
+            <rect x="-2.6" y="-8" width="5.2" height="7" fill="#5a8f3a"/>
+            <circle cy="-10" r="2.6" fill="#e8b888"/>
+            <path d="M-2.6 -11 A2.6 2.6 0 0 1 2.6 -11" fill="#3d6428"/>
+            <circle cx="5" cy="-5" r="3" fill="#8a5a2a"/><circle cx="5" cy="-5" r="1.2" fill="#6e4420"/>
+            <rect x="-2" y="-1" width="1.8" height="4.4" fill="#333"/><rect x="0.6" y="-1" width="1.8" height="4.4" fill="#333"/>
+          </g>
+          <!-- gigot de soin -->
+          <g transform="translate(10,44)"><ellipse cx="0" cy="0" rx="3.4" ry="2.2" fill="#b0522a" transform="rotate(-20)"/><rect x="2.4" y="-2.6" width="3" height="1.4" fill="#e8e0c8" transform="rotate(-20)"/></g>
         </svg>
         <div class="play"><span>▶ JOUER</span></div>
       </div>
