@@ -434,20 +434,47 @@ function drawMinimap(){
 function drawPlayerCar(x,y){
   const steer = (keys['arrowleft']?-1:keys['arrowright']?1:0);
   ctx.save(); ctx.translate(x,y);
+  if(steer) ctx.transform(1,steer*0.045,0,1,0,0);          // léger roulis en virage
   // ombre
-  ctx.fillStyle='rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(0,16,34,7,0,0,Math.PI*2); ctx.fill();
-  // carrosserie rouge (vue arrière)
-  ctx.fillStyle='#d11414'; ctx.fillRect(-32,-2,64,18);
-  ctx.fillStyle='#e02020'; ctx.fillRect(-26,-14,52,14);
+  ctx.fillStyle='rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(0,17,38,7,0,0,Math.PI*2); ctx.fill();
+  // pneus arrière larges (avec creux de jante)
+  ctx.fillStyle='#0c0c0c'; ctx.fillRect(-40,4,11,15); ctx.fillRect(29,4,11,15);
+  ctx.fillStyle='#2c2c30'; ctx.fillRect(-37.5,9,6,6); ctx.fillRect(31.5,9,6,6);
+  // carrosserie basse et large (ailes évasées)
+  ctx.fillStyle='#c01010';
+  ctx.beginPath(); ctx.moveTo(-36,14); ctx.lineTo(-38,2); ctx.lineTo(-30,-3);
+  ctx.lineTo(30,-3); ctx.lineTo(38,2); ctx.lineTo(36,14); ctx.closePath(); ctx.fill();
+  // capot arrière / pont moteur avec reflet
+  ctx.fillStyle='#e02020'; ctx.fillRect(-30,-6,60,5);
+  ctx.fillStyle='#ff5a4a'; ctx.fillRect(-30,-6,60,1.6);
+  // habitacle + arceau
+  ctx.fillStyle='#d11414';
+  ctx.beginPath(); ctx.moveTo(-22,-6); ctx.lineTo(-18,-17); ctx.lineTo(18,-17); ctx.lineTo(22,-6); ctx.closePath(); ctx.fill();
   // lunette arrière
-  ctx.fillStyle='#101018'; ctx.fillRect(-20,-12,40,9);
-  // bandeau feux
-  ctx.fillStyle='#7a0c0c'; ctx.fillRect(-32,12,64,4);
-  ctx.fillStyle='#ff4d4d'; ctx.fillRect(-30,3,12,5); ctx.fillRect(18,3,12,5);
-  // roues
-  ctx.fillStyle='#111'; ctx.fillRect(-34,8,8,10); ctx.fillRect(26,8,8,10);
-  // léger braquage
-  if(steer){ ctx.fillStyle='#b00f0f'; ctx.fillRect(steer>0?20:-32,-14,12,4); }
+  ctx.fillStyle='#0e1a2c';
+  ctx.beginPath(); ctx.moveTo(-18,-7); ctx.lineTo(-15,-15); ctx.lineTo(15,-15); ctx.lineTo(18,-7); ctx.closePath(); ctx.fill();
+  // pilote et passagère (têtes dans l'habitacle)
+  ctx.fillStyle='#5a3a1a'; ctx.beginPath(); ctx.arc(-7+steer*1.5,-17,3.2,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#f0d040'; ctx.beginPath(); ctx.arc(8+steer*1.5,-17,3,0,Math.PI*2); ctx.fill();
+  // grilles latérales (strakes Testarossa)
+  ctx.strokeStyle='#7a0c0c'; ctx.lineWidth=1.2;
+  for(let i=0;i<3;i++){ ctx.beginPath(); ctx.moveTo(-36,0+i*3.4); ctx.lineTo(-25,0+i*3.4); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(25,0+i*3.4); ctx.lineTo(36,0+i*3.4); ctx.stroke(); }
+  // bandeau de feux noir pleine largeur + grille
+  ctx.fillStyle='#141418'; ctx.fillRect(-33,1,66,7);
+  ctx.strokeStyle='#000'; ctx.lineWidth=1;
+  for(let i=0;i<5;i++){ ctx.beginPath(); ctx.moveTo(-32,2.2+i*1.3); ctx.lineTo(32,2.2+i*1.3); ctx.stroke(); }
+  // feux ronds (2 par côté) allumés au freinage
+  const brake=keys['arrowdown'];
+  ctx.fillStyle=brake?'#ff2020':'#a01414';
+  [-29,-21,21,29].forEach(fx=>{ ctx.beginPath(); ctx.arc(fx,4.5,2.6,0,Math.PI*2); ctx.fill(); });
+  if(brake){ ctx.fillStyle='rgba(255,60,40,.35)';
+    [-29,-21,21,29].forEach(fx=>{ ctx.beginPath(); ctx.arc(fx,4.5,4.6,0,Math.PI*2); ctx.fill(); }); }
+  // pare-chocs + plaque + échappements
+  ctx.fillStyle='#8a0e0e'; ctx.fillRect(-36,9,72,4);
+  ctx.fillStyle='#e8e8e0'; ctx.fillRect(-8,9,16,4);
+  ctx.fillStyle='#222'; ctx.font='bold 4px monospace'; ctx.textAlign='center'; ctx.fillText('OUT RUN',0,12.4);
+  ctx.fillStyle='#3a3a40'; ctx.fillRect(-18,13.6,5,2.6); ctx.fillRect(13,13.6,5,2.6);
   ctx.restore();
 }
 
@@ -474,7 +501,7 @@ buildTrack(); spawnTraffic();
 position=0; speed=0; playerX=0; totalDist=0; timeLeft=90; stage=1; score=0; nextCP=6000; bonusScore=0;
 requestAnimationFrame(loop);
 </script>
-<script src="../music/playlist.js?v=3"></script>
-<script src="../music/player.js?v=3"></script>
+<script src="../music/playlist.js?v=4"></script>
+<script src="../music/player.js?v=4"></script>
 </body>
 </html>

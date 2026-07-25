@@ -133,6 +133,22 @@
   .title{font-size:18px;letter-spacing:1px;margin:0 0 4px}
   .tag{color:var(--muted);font-size:12px;letter-spacing:1px}
   footer{margin-top:46px;color:var(--muted);font-size:12px;letter-spacing:1px;text-align:center}
+  /* téléphone et tablette : deux vignettes par ligne, cibles tactiles confortables */
+  @media (max-width:760px){
+    body{padding:14px 10px 30px}
+    h1{font-size:26px!important;letter-spacing:3px!important}
+    .grid{grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:12px}
+    .year{font-size:15px;padding:5px 0 4px}
+    .meta{padding:8px 10px 10px}
+    .title{font-size:14px}
+    .tag{font-size:10px}
+    .play{display:none}
+    .hiscore{font-size:9px;padding:1px 6px}
+    #toolbar{gap:6px}
+    #toolbar button,#toolbar input,#toolbar select{min-height:38px;font-size:12px}
+    footer{margin-top:26px}
+  }
+  @media (hover:none){ .card:hover{transform:none;box-shadow:none} }
 </style>
 </head>
 <body>
@@ -1878,7 +1894,7 @@
       r.readAsText(f);
     });
   </script>
-  <script src="music/playlist.js?v=3"></script>
-  <script src="music/player.js?v=3"></script>
+  <script src="music/playlist.js?v=4"></script>
+  <script src="music/player.js?v=4"></script>
 </body>
 </html>

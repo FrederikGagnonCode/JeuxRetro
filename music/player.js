@@ -388,6 +388,14 @@
         text-shadow:0 0 12px #ffd23a;margin-bottom:10px;animation:blinkc 1s steps(2,start) infinite;}
       @keyframes blinkc{50%{opacity:.55}}
       #arcade-hi-init .h{color:#777;font-size:11px;}
+      #arcade-hi-init .kb{display:none;grid-template-columns:repeat(7,1fr);gap:5px;margin-top:12px;max-width:290px;}
+      body.touch-ctl #arcade-hi-init .kb{display:grid;}
+      #arcade-hi-init .kb button{font-family:inherit;font-size:15px;font-weight:bold;color:#eee;
+        background:rgba(255,255,255,.09);border:1px solid #55557a;border-radius:6px;padding:9px 0;
+        -webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+      #arcade-hi-init .kb button:active{background:#ffd23a;color:#101020;}
+      #arcade-hi-init .kb button.ok{grid-column:span 3;background:rgba(78,204,163,.22);border-color:#4ecca3;color:#4ecca3;}
+      #arcade-hi-init .kb button.del{grid-column:span 2;color:#ff8a8a;border-color:#8a4a4a;}
       #arcade-hi-table{position:absolute;top:0;right:0;z-index:9999;min-width:180px;
         background:rgba(8,8,22,.95);border:1px solid #ffd23a;border-radius:8px;padding:10px 14px;
         font-family:'Courier New',monospace;font-size:12px;color:#eee;}
@@ -449,7 +457,8 @@
     let letters = '';
     const div = document.createElement('div'); div.id = 'arcade-hi-init';
     div.innerHTML = '<div class="t">★ MEILLEUR SCORE ! ★</div><div class="s">' + s +
-      ' pts — entre tes initiales</div><div class="l"></div><div class="h">Lettres A-Z · Retour = effacer · Entrée = valider</div>';
+      ' pts — entre tes initiales</div><div class="l"></div><div class="h">Lettres A-Z · Retour = effacer · Entrée = valider</div>' +
+      '<div class="kb"></div>';
     // en plein écran, seul l'élément fullscreen est visible : on s'y accroche
     (document.fullscreenElement || document.body).appendChild(div);
     const lb = div.querySelector('.l');
@@ -471,6 +480,22 @@
       }
     };
     window.addEventListener('keydown', h, true);
+    // clavier à l'écran (téléphone / tablette) : mêmes actions que les touches
+    const kb = div.querySelector('.kb');
+    if (kb) {
+      const tap = (k) => {
+        h({ key: k, stopImmediatePropagation(){}, preventDefault(){} });
+        if (navigator.vibrate) try { navigator.vibrate(8); } catch (e) {}
+      };
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').forEach(L => {
+        const b = document.createElement('button'); b.textContent = L;
+        b.addEventListener('click', () => tap(L)); kb.appendChild(b);
+      });
+      const del = document.createElement('button'); del.className = 'del'; del.textContent = '⌫';
+      del.addEventListener('click', () => tap('Backspace')); kb.appendChild(del);
+      const ok = document.createElement('button'); ok.className = 'ok'; ok.textContent = 'OK';
+      ok.addEventListener('click', () => tap('Enter')); kb.appendChild(ok);
+    }
   }
   function refresh() { if (badge) badge.innerHTML = 'RECORD <b>' + best + '</b>'; }
   function showToast() {
@@ -578,4 +603,219 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fit);
   else fit();
+})();
+
+/* ════ Contrôles tactiles : téléphone et tablette ════
+   Croix directionnelle (8 directions) + boutons d'action, convertis en
+   véritables événements clavier : tous les jeux fonctionnent sans modification.
+   Forçable sur ordinateur avec ?touch=1 pour tester. */
+(function () {
+  const forced = /[?&]touch=1/.test(location.search);
+  const isTouch = forced || (window.matchMedia && matchMedia('(pointer:coarse)').matches)
+    || navigator.maxTouchPoints > 1 || 'ontouchstart' in window;
+  if (!isTouch) return;
+
+  function start() {
+    const cv = document.getElementById('game') || document.querySelector('canvas');
+    if (!cv) return;                                   // page menu : pas de manette
+    document.body.classList.add('touch-ctl');
+
+    // zoom/défilement désactivés pour que le jeu se comporte comme une borne
+    let vp = document.querySelector('meta[name=viewport]');
+    if (!vp) { vp = document.createElement('meta'); vp.name = 'viewport'; document.head.appendChild(vp); }
+    vp.setAttribute('content',
+      'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover');
+
+    const st = document.createElement('style');
+    st.textContent = `
+      body.touch-ctl{overflow:hidden;justify-content:flex-start!important;padding-top:34px;
+        height:auto!important;min-height:100%;touch-action:none;-webkit-user-select:none;}
+      /* le canvas est un élément flex : sans cela il serait écrasé par flex-shrink */
+      body.touch-ctl #wrap,body.touch-ctl canvas{flex:0 0 auto;}
+      body.touch-ctl h1{font-size:15px!important;margin:0 0 4px!important;}
+      body.touch-ctl #hint{display:none;}
+      body.touch-ctl canvas{width:auto!important;height:auto!important;
+        max-width:97vw!important;max-height:52vh!important;touch-action:none;}
+      @media (orientation:landscape){ body.touch-ctl canvas{max-height:74vh!important;}
+        body.touch-ctl{padding-top:24px;} }
+      #tpad{position:fixed;inset:auto 0 0 0;height:38vh;max-height:250px;z-index:9997;
+        pointer-events:none;font-family:'Courier New',monospace;}
+      @media (orientation:landscape){ #tpad{height:100vh;max-height:none;top:0;} }
+      #tpad .z{position:absolute;pointer-events:auto;-webkit-tap-highlight-color:transparent;}
+      /* croix directionnelle */
+      #tdpad{left:14px;bottom:14px;width:38vw;max-width:170px;aspect-ratio:1;border-radius:50%;
+        background:radial-gradient(circle at 50% 45%,rgba(255,255,255,.13),rgba(10,10,26,.55));
+        border:2px solid rgba(255,255,255,.28);box-shadow:0 0 18px rgba(0,0,0,.5);}
+      #tdpad .ar{position:absolute;color:rgba(255,255,255,.65);font-size:19px;font-weight:bold;
+        line-height:1;transform:translate(-50%,-50%);}
+      #tdpad .nub{position:absolute;left:50%;top:50%;width:34%;aspect-ratio:1;border-radius:50%;
+        transform:translate(-50%,-50%);background:rgba(255,210,58,.55);
+        border:2px solid rgba(255,255,255,.7);transition:background .12s;}
+      #tdpad.on .nub{background:#ffd23a;}
+      /* boutons d'action */
+      #tbtns{right:12px;bottom:14px;display:flex;flex-wrap:wrap-reverse;gap:10px;
+        justify-content:flex-end;width:44vw;max-width:210px;}
+      #tpad .b{pointer-events:auto;width:62px;height:62px;border-radius:50%;
+        display:flex;align-items:center;justify-content:center;text-align:center;
+        font-size:12px;font-weight:bold;letter-spacing:.5px;color:#fff;
+        background:rgba(255,46,136,.32);border:2px solid rgba(255,120,180,.75);
+        box-shadow:0 0 14px rgba(255,46,136,.3);-webkit-tap-highlight-color:transparent;}
+      #tpad .b.act{background:#ff2e88;transform:scale(.93);}
+      #tpad .b.sm{width:46px;height:46px;font-size:11px;
+        background:rgba(78,204,163,.24);border-color:rgba(78,204,163,.7);box-shadow:none;}
+      #tpad .b.sm.act{background:#4ecca3;color:#06202a;}
+      /* barre utilitaire en haut */
+      #ttop{position:fixed;top:6px;left:50%;transform:translateX(-50%);z-index:9997;
+        display:flex;gap:8px;pointer-events:none;}
+      #ttop .b{pointer-events:auto;width:auto;min-width:44px;height:32px;border-radius:16px;
+        padding:0 12px;font-size:12px;}
+      #textra{position:fixed;right:12px;bottom:calc(38vh + 6px);z-index:9997;display:none;
+        flex-wrap:wrap;justify-content:flex-end;gap:8px;width:60vw;max-width:250px;pointer-events:none;}
+      @media (orientation:landscape){ #textra{bottom:auto;top:44px;} }
+      #textra.open{display:flex;}`;
+    document.head.appendChild(st);
+
+    /* — envoi de vraies touches clavier — */
+    const CODES = { ArrowUp:'ArrowUp', ArrowDown:'ArrowDown', ArrowLeft:'ArrowLeft', ArrowRight:'ArrowRight',
+      ' ':'Space', Enter:'Enter' };
+    const down = {};
+    function send(key, isDown) {
+      const code = CODES[key] || (/^[a-z]$/i.test(key) ? 'Key' + key.toUpperCase() : key);
+      document.dispatchEvent(new KeyboardEvent(isDown ? 'keydown' : 'keyup',
+        { key, code, bubbles: true, cancelable: true }));
+    }
+    function press(key)   { if (down[key]) return; down[key] = 1; send(key, true);
+                            if (navigator.vibrate) try { navigator.vibrate(9); } catch (e) {} }
+    function release(key) { if (!down[key]) return; down[key] = 0; send(key, false); }
+    function releaseAll() { Object.keys(down).forEach(release); }
+    window.addEventListener('blur', releaseAll);
+
+    const pad = document.createElement('div'); pad.id = 'tpad';
+    document.body.appendChild(pad);
+
+    /* — croix directionnelle analogique (8 directions) — */
+    const dp = document.createElement('div'); dp.className = 'z'; dp.id = 'tdpad';
+    dp.innerHTML = '<div class="nub"></div>' +
+      '<span class="ar" style="left:50%;top:13%">▲</span><span class="ar" style="left:50%;top:87%">▼</span>' +
+      '<span class="ar" style="left:13%;top:50%">◀</span><span class="ar" style="left:87%;top:50%">▶</span>';
+    pad.appendChild(dp);
+    const nub = dp.querySelector('.nub');
+    const DIRS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
+    let padId = null;
+    function padMove(t) {
+      const r = dp.getBoundingClientRect();
+      const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      let dx = t.clientX - cx, dy = t.clientY - cy;
+      const d = Math.hypot(dx, dy), dead = r.width * 0.16;
+      const want = {};
+      if (d > dead) {
+        // 8 directions : au-delà de 22° d'un axe, les deux touches partent (diagonale)
+        const ang = Math.atan2(-dy, dx) * 180 / Math.PI;      // 0 = droite, 90 = haut
+        if (ang > -67 && ang < 67)             want.ArrowRight = 1;
+        if (ang > 113 || ang < -113)           want.ArrowLeft  = 1;
+        if (ang > 23  && ang < 157)            want.ArrowUp    = 1;
+        if (ang < -23 && ang > -157)           want.ArrowDown  = 1;
+      }
+      DIRS.forEach(k => want[k] ? press(k) : release(k));
+      dp.classList.toggle('on', d > dead);
+      const lim = r.width * 0.3, k2 = d > lim ? lim / d : 1;
+      nub.style.transform = 'translate(-50%,-50%) translate(' + (dx * k2) + 'px,' + (dy * k2) + 'px)';
+    }
+    function padEnd() { padId = null; DIRS.forEach(release); dp.classList.remove('on');
+      nub.style.transform = 'translate(-50%,-50%)'; }
+    dp.addEventListener('touchstart', e => { e.preventDefault();
+      if (padId === null) { padId = e.changedTouches[0].identifier; padMove(e.changedTouches[0]); } }, { passive: false });
+    dp.addEventListener('touchmove', e => { e.preventDefault();
+      for (const t of e.changedTouches) if (t.identifier === padId) padMove(t); }, { passive: false });
+    ['touchend', 'touchcancel'].forEach(ev => dp.addEventListener(ev, e => { e.preventDefault();
+      for (const t of e.changedTouches) if (t.identifier === padId) padEnd(); }, { passive: false }));
+    // souris (test sur ordinateur avec ?touch=1)
+    dp.addEventListener('mousedown', e => { padId = 'm'; padMove(e);
+      const mv = ev => padMove(ev), up = () => { padEnd();
+        removeEventListener('mousemove', mv); removeEventListener('mouseup', up); };
+      addEventListener('mousemove', mv); addEventListener('mouseup', up); });
+
+    /* — boutons d'action (maintien géré : keydown au toucher, keyup au relâché) — */
+    function mkBtn(key, label, cls) {
+      const b = document.createElement('div');
+      b.className = 'b' + (cls ? ' ' + cls : ''); b.textContent = label;
+      const on = e => { e.preventDefault(); b.classList.add('act'); if (key) press(key); };
+      const off = e => { e.preventDefault(); b.classList.remove('act'); if (key) release(key); };
+      b.addEventListener('touchstart', on, { passive: false });
+      ['touchend', 'touchcancel'].forEach(ev => b.addEventListener(ev, off, { passive: false }));
+      b.addEventListener('mousedown', on); b.addEventListener('mouseup', off);
+      b.addEventListener('mouseleave', off);
+      return b;
+    }
+
+    // jeu de boutons par défaut, avec quelques adaptations par jeu
+    const segs = location.pathname.split('/').filter(s => s && !/index\.html?$/i.test(s));
+    const game = (segs.length ? decodeURIComponent(segs[segs.length - 1]) : '').toLowerCase();
+    // boutons calqués sur les touches réellement gérées par chaque jeu
+    const SETS = {
+      nethack:   [[' ', 'ATTENTE'], ['.', 'RAMASSER'], ['i', 'SAC']],
+      tetris:    [[' ', 'CHUTE'], ['ArrowUp', 'TOURNER']],
+      outrun:    [['ArrowUp', 'GAZ'], ['ArrowDown', 'FREIN']],
+      snake:     [[' ', 'TIRER']],
+      pacman:    [[' ', 'START']],
+      frogger:   [[' ', 'START']],
+      arkanoid:  [[' ', 'LANCER']],
+      bomberman: [[' ', 'BOMBE']],
+      commando:  [[' ', 'TIR'], ['x', 'GRENADE']],
+      wolfenstein3d: [[' ', 'TIR']],
+      castlewolfenstein: [[' ', 'TIR']],
+      princeofpersia: [['ArrowUp', 'SAUT'], ['x', 'ÉPÉE']],
+      lemmings:  [['1', '🛑'], ['2', '⛏'], ['3', '🪜'], ['4', '☂']],
+      mortalkombat: [['x', 'POING'], ['c', 'PIED'], [' ', 'SAUT']],
+      doubledragon: [['x', 'POING'], ['c', 'PIED'], [' ', 'SAUT']]
+    };
+    const actions = SETS[game] || [[' ', 'ESPACE'], ['x', 'X'], ['c', 'C']];
+    const bwrap = document.createElement('div'); bwrap.className = 'z'; bwrap.id = 'tbtns';
+    actions.forEach(([k, l]) => bwrap.appendChild(mkBtn(k, l)));
+    pad.appendChild(bwrap);
+
+    // touches supplémentaires (repliables) : couvre tous les jeux
+    const extra = document.createElement('div'); extra.id = 'textra';
+    [['s', 'S'], ['z', 'Z'], ['r', 'R'], ['i', 'I'], ['.', '.'], ['Enter', '⏎'], ['5', '5']]
+      .forEach(([k, l]) => extra.appendChild(mkBtn(k, l, 'sm')));
+    document.body.appendChild(extra);
+
+    // barre du haut : pause, touches en plus, plein écran
+    const top = document.createElement('div'); top.id = 'ttop';
+    top.appendChild(mkBtn('p', '⏸'));
+    const more = mkBtn(null, '⌨');
+    more.addEventListener('click', () => extra.classList.toggle('open'));
+    top.appendChild(more);
+    const fs = mkBtn(null, '⛶');
+    fs.addEventListener('click', () => {
+      const target = document.getElementById('wrap') || cv.parentElement || cv;
+      if (document.fullscreenElement) document.exitFullscreen();
+      else if (target.requestFullscreen) target.requestFullscreen().catch(() => {});
+    });
+    top.appendChild(fs);
+    document.body.appendChild(top);
+
+    // en plein écran, la manette doit suivre dans l'élément affiché
+    document.addEventListener('fullscreenchange', () => {
+      const host = document.fullscreenElement || document.body;
+      [pad, extra, top].forEach(el => host.appendChild(el));
+    });
+
+    // Un appui sur la zone de jeu vaut Espace, mais SEULEMENT quand la partie
+    // n'est pas en cours : sinon on volerait le clic aux jeux qui visent à la
+    // souris (Lemmings, Missile Command…) ou on déclencherait une action.
+    // (les globaux `let running/over` des jeux sont visibles depuis ici)
+    function idle() {
+      try {
+        if (typeof running !== 'undefined' && !running) return true;
+        if (typeof over !== 'undefined' && over) return true;
+      } catch (e) {}
+      return false;
+    }
+    cv.addEventListener('touchstart', () => {
+      if (idle()) { press(' '); setTimeout(() => release(' '), 60); }
+    }, { passive: true });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
 })();
