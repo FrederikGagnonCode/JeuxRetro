@@ -653,8 +653,8 @@
         pointer-events:none;font-family:'Courier New',monospace;}
       @media (orientation:landscape){ #tpad{height:100vh;max-height:none;top:0;} }
       #tpad .z{position:absolute;pointer-events:auto;-webkit-tap-highlight-color:transparent;}
-      /* remontées du bord bas : barre du navigateur mobile + encoche */
-      #tpad{--tlift:calc(env(safe-area-inset-bottom,0px) + 30px);}
+      /* remontée du bord bas : encoche + barre du navigateur (ajustée en JS) */
+      #tpad{--tlift:calc(env(safe-area-inset-bottom,0px) + 44px);}
       /* croix directionnelle */
       #tdpad{left:14px;bottom:var(--tlift);width:38vw;max-width:170px;aspect-ratio:1;border-radius:50%;
         background:radial-gradient(circle at 50% 45%,rgba(255,255,255,.13),rgba(10,10,26,.55));
@@ -706,6 +706,26 @@
 
     const pad = document.createElement('div'); pad.id = 'tpad';
     document.body.appendChild(pad);
+
+    /* Sur iPhone, un élément `fixed` est placé par rapport au viewport de mise
+       en page, qui continue SOUS la barre d'outils de Safari : les commandes
+       débordent du bas. On mesure la hauteur réellement masquée et on remonte
+       la manette d'autant. */
+    function liftFix() {
+      const vv = window.visualViewport;
+      const hidden = vv
+        ? Math.max(0, Math.round(document.documentElement.clientHeight - (vv.height + vv.offsetTop)))
+        : 0;
+      pad.style.setProperty('--tlift',
+        'calc(env(safe-area-inset-bottom,0px) + ' + (44 + hidden) + 'px)');
+      const ex = document.getElementById('textra');       // créé plus bas
+      if (ex) ex.style.bottom = 'calc(38vh + ' + (24 + hidden) + 'px)';
+    }
+    if (window.visualViewport) {
+      ['resize', 'scroll'].forEach(e => visualViewport.addEventListener(e, liftFix));
+    }
+    addEventListener('orientationchange', () => setTimeout(liftFix, 250));
+    addEventListener('resize', liftFix);
 
     /* — croix directionnelle analogique (8 directions) — */
     const dp = document.createElement('div'); dp.className = 'z'; dp.id = 'tdpad';
@@ -836,6 +856,8 @@
     cv.addEventListener('touchstart', () => {
       if (idle()) { press(' '); setTimeout(() => release(' '), 60); }
     }, { passive: true });
+
+    liftFix();                                   // position initiale des commandes
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
   else start();
