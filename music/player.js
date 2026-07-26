@@ -616,6 +616,7 @@
   if (!isTouch) return;
 
   function start() {
+    if (window.__arcadeTouch) return; window.__arcadeTouch = 1;
     const cv = document.getElementById('game') || document.querySelector('canvas');
     if (!cv) return;                                   // page menu : pas de manette
     document.body.classList.add('touch-ctl');
@@ -628,8 +629,18 @@
 
     const st = document.createElement('style');
     st.textContent = `
-      body.touch-ctl{overflow:hidden;justify-content:flex-start!important;padding-top:34px;
+      body.touch-ctl{overflow:hidden;justify-content:flex-start!important;padding-top:44px;
         height:auto!important;min-height:100%;touch-action:none;-webkit-user-select:none;}
+      /* la barre de musique est fixée en bas : sur mobile elle recouvrirait la
+         manette, on la remonte en haut à gauche, en format compact */
+      body.touch-ctl #arcade-music{bottom:auto!important;top:calc(env(safe-area-inset-top,0px) + 5px)!important;
+        left:6px!important;transform:none!important;max-width:40vw!important;}
+      /* le badge RECORD passe SOUS la zone de jeu : au-dessus il buterait
+         contre la barre de musique et les boutons utilitaires */
+      body.touch-ctl #arcade-hi.on-wrap{top:auto;bottom:-26px;right:4px;}
+      body.touch-ctl #arcade-hi:not(.on-wrap){top:46px;}
+      body.touch-ctl #arcade-music .am-head{padding:4px 8px;gap:6px;}
+      body.touch-ctl #arcade-music .am-title{font-size:11px;}
       /* le canvas est un élément flex : sans cela il serait écrasé par flex-shrink */
       body.touch-ctl #wrap,body.touch-ctl canvas{flex:0 0 auto;}
       body.touch-ctl h1{font-size:15px!important;margin:0 0 4px!important;}
@@ -642,8 +653,10 @@
         pointer-events:none;font-family:'Courier New',monospace;}
       @media (orientation:landscape){ #tpad{height:100vh;max-height:none;top:0;} }
       #tpad .z{position:absolute;pointer-events:auto;-webkit-tap-highlight-color:transparent;}
+      /* remontées du bord bas : barre du navigateur mobile + encoche */
+      #tpad{--tlift:calc(env(safe-area-inset-bottom,0px) + 30px);}
       /* croix directionnelle */
-      #tdpad{left:14px;bottom:14px;width:38vw;max-width:170px;aspect-ratio:1;border-radius:50%;
+      #tdpad{left:14px;bottom:var(--tlift);width:38vw;max-width:170px;aspect-ratio:1;border-radius:50%;
         background:radial-gradient(circle at 50% 45%,rgba(255,255,255,.13),rgba(10,10,26,.55));
         border:2px solid rgba(255,255,255,.28);box-shadow:0 0 18px rgba(0,0,0,.5);}
       #tdpad .ar{position:absolute;color:rgba(255,255,255,.65);font-size:19px;font-weight:bold;
@@ -653,7 +666,7 @@
         border:2px solid rgba(255,255,255,.7);transition:background .12s;}
       #tdpad.on .nub{background:#ffd23a;}
       /* boutons d'action */
-      #tbtns{right:12px;bottom:14px;display:flex;flex-wrap:wrap-reverse;gap:10px;
+      #tbtns{right:12px;bottom:var(--tlift);display:flex;flex-wrap:wrap-reverse;gap:10px;
         justify-content:flex-end;width:44vw;max-width:210px;}
       #tpad .b{pointer-events:auto;width:62px;height:62px;border-radius:50%;
         display:flex;align-items:center;justify-content:center;text-align:center;
@@ -665,11 +678,12 @@
         background:rgba(78,204,163,.24);border-color:rgba(78,204,163,.7);box-shadow:none;}
       #tpad .b.sm.act{background:#4ecca3;color:#06202a;}
       /* barre utilitaire en haut */
-      #ttop{position:fixed;top:6px;left:50%;transform:translateX(-50%);z-index:9997;
-        display:flex;gap:8px;pointer-events:none;}
-      #ttop .b{pointer-events:auto;width:auto;min-width:44px;height:32px;border-radius:16px;
-        padding:0 12px;font-size:12px;}
-      #textra{position:fixed;right:12px;bottom:calc(38vh + 6px);z-index:9997;display:none;
+      /* barre utilitaire : à droite, la barre de musique occupe la gauche */
+      #ttop{position:fixed;top:calc(env(safe-area-inset-top,0px) + 5px);right:8px;left:auto;
+        transform:none;z-index:9997;display:flex;gap:8px;pointer-events:none;}
+      #ttop .b{pointer-events:auto;width:auto;min-width:34px;height:32px;border-radius:16px;
+        padding:0 7px;font-size:12px;}
+      #textra{position:fixed;right:12px;bottom:calc(38vh + 24px);z-index:9997;display:none;
         flex-wrap:wrap;justify-content:flex-end;gap:8px;width:60vw;max-width:250px;pointer-events:none;}
       @media (orientation:landscape){ #textra{bottom:auto;top:44px;} }
       #textra.open{display:flex;}`;
@@ -793,6 +807,13 @@
       else if (target.requestFullscreen) target.requestFullscreen().catch(() => {});
     });
     top.appendChild(fs);
+    // retour au menu : en paysage le lien sous la zone de jeu peut être hors écran
+    const home = mkBtn(null, '⌂');
+    home.addEventListener('click', () => {
+      const a = document.querySelector('a.back') || document.querySelector('a[href*="index.html"]');
+      location.href = a ? a.getAttribute('href') : '../index.html';
+    });
+    top.appendChild(home);
     document.body.appendChild(top);
 
     // en plein écran, la manette doit suivre dans l'élément affiché
