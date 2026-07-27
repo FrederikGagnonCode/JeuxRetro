@@ -90,7 +90,7 @@ function makeShip(){ return {x:0, alt:34, roll:0, inv:2, dead:false}; }
 function newGame(){
   ship=makeShip(); obs=[]; bullets=[]; ebullets=[]; parts=[];
   stars=[]; for(let i=0;i<70;i++) stars.push({x:rand(W), y:rand(H*0.7), s:rand(1.6)+0.4});
-  score=0; lives=3; fuel=100; level=1; section='fort'; secLeft=2600; speed=200;
+  score=0; lives=3; fuel=100; level=1; section='fort'; secLeft=2200; speed=145;
   bossUp=false; spawnZ=ZFAR; fireCd=0;
   over=false; paused=false; running=true; msg=''; msgT=0;
   overlay.style.display='none';
@@ -154,7 +154,7 @@ function update(dt){
   secLeft-=speed*dt;
   if(secLeft<=0 && !bossUp){
     if(section==='fort'){ addBoss(ZFAR+120); secLeft=1e9; flash('★ ROBOT ZAXXON ★'); }
-    else { section='fort'; secLeft=2600+level*160; flash('FORTERESSE — NIVEAU '+level); }
+    else { section='fort'; secLeft=2200+level*140; flash('FORTERESSE — NIVEAU '+level); }
   }
 
   if(!s.dead){
@@ -172,7 +172,7 @@ function update(dt){
     if(keys[' '] && fireCd<=0){ fireCd=0.16; sfxShot();
       bullets.push({x:s.x, z:6, alt:s.alt, v:640}); }
     // carburant : plus on vole bas, plus on consomme (comme la version arcade)
-    fuel-=dt*(section==='fort'?2.4:1.6);
+    fuel-=dt*(section==='fort'?1.9:1.3);
     if(fuel<=0){ fuel=0; crash('PANNE DE CARBURANT'); }
   }
 
@@ -195,8 +195,8 @@ function update(dt){
       if(o.cd<=0){ o.cd = o.t==='boss' ? 0.55 : 1.4+rand(1.4);
         const oa=(o.t==='boss'?46:10);
         const d=Math.max(60,o.z);
-        ebullets.push({x:o.x, z:o.z, alt:oa, v:260,
-          vx:(s.x-o.x)/(d/260), va:(s.alt-oa)/(d/260), boss:o.t==='boss'});
+        ebullets.push({x:o.x, z:o.z, alt:oa, v:225,
+          vx:(s.x-o.x)/(d/225), va:(s.alt-oa)/(d/225), boss:o.t==='boss'});
         if(o.t==='boss') sfxHit();
       }
     }
@@ -218,7 +218,7 @@ function update(dt){
           else if(o.t==='turret') score+=500;
           else if(o.t==='plane')  score+=800;
           else if(o.t==='boss'){ score+=5000; bossUp=false; shake=0.6;
-            section='space'; secLeft=1500; level++; speed=Math.min(340,speed+22);
+            section='space'; secLeft=1500; level++; speed=Math.min(250,speed+15);
             flash('ROBOT DÉTRUIT ! +5000'); }
         }
       }
@@ -251,7 +251,7 @@ function update(dt){
       if(Math.abs(s.x-o.x)<o.r+9 && Math.abs(s.alt-o.alt)<14) crash('COLLISION !');
     }else if(o.t==='boss'){
       bossUp=false; section='space'; secLeft=1500; level++;
-      speed=Math.min(340,speed+22); flash('LE ROBOT S\'ÉCHAPPE…');
+      speed=Math.min(250,speed+15); flash('LE ROBOT S\'ÉCHAPPE…');
     }
   });
   obs=obs.filter(o=> o.z>-90 && !(o.done && (o.t==='fuel'||o.t==='turret'||o.t==='plane'||o.t==='boss')));
@@ -527,7 +527,7 @@ function loop(now){
 }
 ship=makeShip(); obs=[]; bullets=[]; ebullets=[]; parts=[];
 stars=[]; for(let i=0;i<70;i++) stars.push({x:rand(W), y:rand(H*0.7), s:rand(1.6)+0.4});
-score=0; lives=3; fuel=100; level=1; section='fort'; secLeft=2600; speed=200;
+score=0; lives=3; fuel=100; level=1; section='fort'; secLeft=2200; speed=145;
 requestAnimationFrame(loop);
 </script>
 <script src="../music/playlist.js?v=7"></script>
