@@ -756,6 +756,64 @@
       </div>
     </a>
 
+    <!-- MOON PATROL -->
+    <a class="card" href="./MoonPatrol/index.html">
+      <div class="year">1982</div>
+      <div class="thumb">
+        <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
+          <defs><linearGradient id="mpSky" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#05060f"/><stop offset="1" stop-color="#141031"/>
+          </linearGradient></defs>
+          <rect width="80" height="60" fill="url(#mpSky)"/>
+          <!-- étoiles + Terre -->
+          <g fill="#fff"><circle cx="10" cy="7" r=".7"/><circle cx="30" cy="5" r=".5"/>
+            <circle cx="48" cy="10" r=".6"/><circle cx="20" cy="16" r=".5"/><circle cx="70" cy="20" r=".5"/></g>
+          <circle cx="66" cy="9" r="5" fill="#3f8fd0"/>
+          <circle cx="64.4" cy="7.6" r="2" fill="#5fb35f"/><circle cx="68" cy="11" r="1.5" fill="#5fb35f"/>
+          <!-- montagnes en parallaxe -->
+          <polygon points="0,34 12,24 26,32 42,22 58,31 70,26 80,32 80,44 0,44" fill="#232447"/>
+          <polygon points="0,40 16,31 30,38 50,30 64,37 80,33 80,46 0,46" fill="#37325e"/>
+          <!-- ovni et bombe -->
+          <g transform="translate(52,17)">
+            <ellipse rx="7" ry="2.6" fill="#8a5ad0"/>
+            <path d="M-3.4 -1.2 A3.7 3.7 0 0 1 3.4 -1.2" fill="#b88af0"/>
+            <circle cx="-3.4" cy=".4" r=".8" fill="#ffd23a"/><circle cx="3.4" cy=".4" r=".8" fill="#ffd23a"/>
+          </g>
+          <ellipse cx="53" cy="27" rx="1.2" ry="2" fill="#ff5252"/>
+          <!-- sol lunaire + cratère + rocher -->
+          <rect y="46" width="80" height="14" fill="#6e4a2f"/>
+          <rect y="46" width="80" height="2" fill="#8a5f3d"/>
+          <polygon points="42,46 45,53 55,53 58,46" fill="#05060f"/>
+          <polygon points="66,46 68,39 73,38 76,46" fill="#9a8a72"/>
+          <g fill="rgba(0,0,0,.3)"><rect x="4" y="52" width="5" height="1.4"/>
+            <rect x="16" y="52" width="5" height="1.4"/><rect x="30" y="52" width="5" height="1.4"/></g>
+          <!-- tirs : avant + vertical -->
+          <rect x="30" y="36.4" width="4" height="1.6" fill="#ffd23a"/>
+          <rect x="17.4" y="26" width="1.6" height="4" fill="#ffd23a"/>
+          <!-- buggy rose à 6 roues -->
+          <g transform="translate(14,44)">
+            <circle cx="-5" cy="0" r="2.6" fill="#222"/><circle cy="0" r="2.6" fill="#222"/><circle cx="5" cy="0" r="2.6" fill="#222"/>
+            <circle cx="-5" cy="0" r="1.1" fill="#888"/><circle cy="0" r="1.1" fill="#888"/><circle cx="5" cy="0" r="1.1" fill="#888"/>
+            <path d="M-9 -1.4 L-7.4 -6 L6 -6 L10.4 -2.6 L10.4 -1.4 Z" fill="#e8447a"/>
+            <rect x="-7.4" y="-6" width="13.4" height="1.4" fill="#ff7aa8"/>
+            <rect x="-1.4" y="-9" width="6" height="3.4" fill="#7ad0ff" stroke="#e8447a" stroke-width=".8"/>
+            <rect x="1" y="-12" width="1.6" height="3" fill="#c8c8d8"/>
+            <rect x="9" y="-4.6" width="4" height="1.6" fill="#c8c8d8"/>
+            <line x1="-6.6" y1="-6" x2="-8.8" y2="-11" stroke="#ddd" stroke-width=".7"/>
+            <circle cx="-8.8" cy="-11.4" r=".9" fill="#ffd23a"/>
+          </g>
+          <!-- fanion de point de contrôle -->
+          <line x1="63" y1="46" x2="63" y2="34" stroke="#ddd" stroke-width=".8"/>
+          <polygon points="63,34 70,36.4 63,39" fill="#4ecca3"/>
+        </svg>
+        <div class="play"><span>▶ JOUER</span></div>
+      </div>
+      <div class="meta">
+        <p class="title">Moon Patrol</p>
+        <p class="tag">Course lunaire · Irem</p>
+      </div>
+    </a>
+
     <!-- JOUST -->
     <a class="card" href="./Joust/index.html">
       <div class="year">1982</div>
@@ -1957,7 +2015,7 @@
       r.readAsText(f);
     });
   </script>
-  <script src="music/playlist.js?v=7"></script>
-  <script src="music/player.js?v=7"></script>
+  <script src="music/playlist.js?v=8"></script>
+  <script src="music/player.js?v=8"></script>
 </body>
 </html>

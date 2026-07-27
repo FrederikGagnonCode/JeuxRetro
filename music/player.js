@@ -796,6 +796,7 @@
       arkanoid:  [[' ', 'LANCER']],
       bomberman: [[' ', 'BOMBE']],
       zaxxon:    [[' ', 'TIR']],
+      moonpatrol:[[' ', 'SAUT'], ['x', 'TIR']],
       commando:  [[' ', 'TIR'], ['x', 'GRENADE']],
       wolfenstein3d: [[' ', 'TIR']],
       castlewolfenstein: [[' ', 'TIR']],
