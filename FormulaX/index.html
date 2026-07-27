@@ -46,17 +46,53 @@ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const rand=n=>Math.random()*n;
 const LAPS=5, ROAD=27;                       // demi-largeur de piste
 
-/* ── circuit (boucle de points, chicane sur la ligne du haut) ── */
-const WP=[
-  [150,395],[250,395],[350,395],[450,395],   // ligne droite du bas →
-  [520,375],[562,325],[570,250],[562,170],   // virage et montée à droite
-  [520,95],[445,62],                          // haut-droite
-  [380,72],[330,105],[275,72],[205,60],       // chicane
-  [115,72],[62,130],[50,210],[58,290],        // gauche
-  [82,350],[112,382]                          // retour vers la ligne
-];
-const N=WP.length;
+/* ── circuit procédural : NOUVEAU tracé à chaque course ──
+   Boucle radiale autour du centre (rayon variable lissé) : jamais
+   auto-croisée par construction. Une chicane est parfois creusée, et la
+   grille de départ se pose sur le segment le plus long. */
+let WP=[], N=0, SL={x:0,y:0,ang:0};          // points, nombre, ligne de départ
 const seg=i=>{ const a=WP[i%N], b=WP[(i+1)%N]; return [a,b]; };
+
+function buildTrack(){
+  const cx=W/2, cy=H/2+14, rx=(W-105)/2, ry=(H-125)/2;
+  const n=14+Math.floor(rand(6));            // 14 à 19 sommets
+  let radii=[];
+  for(let i=0;i<n;i++) radii.push(0.6+Math.random()*0.4);
+  for(let s=0;s<2;s++)                       // lissage : virages praticables
+    radii=radii.map((r,i)=>(radii[(i-1+n)%n]+2*r+radii[(i+1)%n])/4);
+  const mx=Math.max(...radii);
+  radii=radii.map(r=>r/mx);                  // au moins un point touche le bord
+  WP=[];
+  for(let i=0;i<n;i++){
+    const a=i/n*2*Math.PI;
+    WP.push([cx+Math.cos(a)*rx*radii[i], cy+Math.sin(a)*ry*radii[i]]);
+  }
+  // chicane : un sommet tiré vers l'intérieur (7 fois sur 10)
+  if(Math.random()<0.7){
+    const i=Math.floor(rand(n));
+    WP[i]=[cx+(WP[i][0]-cx)*0.55, cy+(WP[i][1]-cy)*0.55];
+  }
+  N=WP.length;
+  // le segment le plus long devient le n°0 : ligne de départ et grille
+  let bi=0, bl=0;
+  for(let i=0;i<N;i++){ const [a,b]=seg(i);
+    const l=Math.hypot(b[0]-a[0],b[1]-a[1]); if(l>bl){ bl=l; bi=i; } }
+  WP=WP.slice(bi).concat(WP.slice(0,bi));
+  const [a,b]=seg(0);
+  SL.ang=Math.atan2(b[1]-a[1],b[0]-a[0]);
+  SL.x=a[0]+Math.cos(SL.ang)*Math.min(90,bl*0.55);
+  SL.y=a[1]+Math.sin(SL.ang)*Math.min(90,bl*0.55);
+}
+function gridCars(){
+  // grille 2x2 derrière la ligne, orientée dans le sens de la course
+  const ux=Math.cos(SL.ang), uy=Math.sin(SL.ang), px=-uy, py=ux;
+  cars.forEach((c,i)=>{
+    const back=16+i*20, side=(i%2?9:-9);
+    c.x=SL.x-ux*back+px*side;
+    c.y=SL.y-uy*back+py*side;
+    c.a=SL.ang;
+  });
+}
 
 // distance d'un point au segment [a,b] + paramètre t
 function distSeg(p,a,b){
@@ -112,15 +148,17 @@ function engine(on){
 /* ── mise en place ── */
 const COLORS=['#ffd23a','#e03030','#3f8fd0','#4ecca3'];
 function makeCar(i){
-  // grille de départ décalée sur la droite du bas, orientée vers la droite
-  return { x:158-i*24, y:381+(i%2)*16, a:0, v:0, col:COLORS[i],
+  // la position et l'angle sont posés par gridCars() après buildTrack()
+  return { x:0, y:0, a:0, v:0, col:COLORS[i],
     ai:i>0, skill:0.86+i*0.05+race*0.05, spin:0, lap:0, q:[false,false,false],
     prog:0, total:0, done:false, hitT:0 };
 }
 function newGame(){
   race=(over&&finished)?race:0;                // suite de courses tant qu'on finit
   if(!running||over&&!finished) { race=0; score=0; }
+  buildTrack();                                // nouveau circuit à chaque course
   cars=[makeCar(0),makeCar(1),makeCar(2),makeCar(3)];
+  gridCars();
   oils=[]; parts=[];
   for(let i=0;i<3;i++){                        // plaques d'huile sur la piste
     const wi=3+Math.floor(rand(N-4)); const [a,b]=seg(wi);
@@ -288,11 +326,9 @@ function render(){
   // pointillés centraux
   ctx.setLineDash([8,14]); ctx.strokeStyle='rgba(255,255,255,.25)'; ctx.lineWidth=2;
   roadPath(); ctx.stroke(); ctx.setLineDash([]);
-  // ligne de départ (damier)
-  const a=WP[0], b=WP[1];
-  const ang=Math.atan2(b[1]-a[1],b[0]-a[0]);
+  // ligne de départ (damier) sur le segment le plus long
   ctx.save();
-  ctx.translate(200,395); ctx.rotate(ang+Math.PI/2);
+  ctx.translate(SL.x,SL.y); ctx.rotate(SL.ang+Math.PI/2);
   for(let r=0;r<2;r++) for(let k=-ROAD;k<ROAD;k+=9)
     { ctx.fillStyle=((k/9+r)%2===0)?'#fff':'#111'; ctx.fillRect(k,r*6-6,9,6); }
   ctx.restore();
@@ -360,7 +396,8 @@ function loop(now){
   requestAnimationFrame(loop);
 }
 race=0; score=0; countdown=0; raceT=0; lapT=0; bestLap=null; finished=false;
-cars=[makeCar(0),makeCar(1),makeCar(2),makeCar(3)]; oils=[]; parts=[];
+buildTrack();
+cars=[makeCar(0),makeCar(1),makeCar(2),makeCar(3)]; gridCars(); oils=[]; parts=[];
 requestAnimationFrame(loop);
 </script>
 <script src="../music/playlist.js?v=10"></script>
