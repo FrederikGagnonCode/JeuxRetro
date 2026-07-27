@@ -693,6 +693,69 @@
       </div>
     </a>
 
+    <!-- ZAXXON -->
+    <a class="card" href="./Zaxxon/index.html">
+      <div class="year">1982</div>
+      <div class="thumb">
+        <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
+          <defs><linearGradient id="zxSky" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#0a1030"/><stop offset="1" stop-color="#1c1040"/>
+          </linearGradient></defs>
+          <rect width="80" height="60" fill="url(#zxSky)"/>
+          <!-- étoiles -->
+          <g fill="#fff"><circle cx="9" cy="8" r=".7"/><circle cx="70" cy="6" r=".6"/>
+            <circle cx="60" cy="16" r=".5"/><circle cx="16" cy="24" r=".5"/><circle cx="74" cy="34" r=".6"/></g>
+          <!-- plateforme de la forteresse en vue isométrique -->
+          <polygon points="4,50 30,38 76,38 50,50" fill="#2b2b46"/>
+          <polygon points="4,50 30,38 76,38 50,50" fill="none" stroke="#3d3d63" stroke-width="1"/>
+          <g stroke="rgba(120,130,190,.4)" stroke-width=".6">
+            <line x1="12" y1="46" x2="58" y2="46"/><line x1="20" y1="42" x2="66" y2="42"/>
+            <line x1="17" y1="50" x2="43" y2="38"/><line x1="34" y1="50" x2="60" y2="38"/>
+          </g>
+          <!-- paroi percée : maçonnerie + barreaux + ouverture -->
+          <g>
+            <polygon points="30,38 44,38 44,25 30,25" fill="#6a4c86"/>
+            <polygon points="56,38 76,38 76,25 56,25" fill="#6a4c86"/>
+            <polygon points="30,25 76,25 76,22 30,22" fill="#9a7ab0"/>
+            <g stroke="#9a7ab0" stroke-width="1.1">
+              <line x1="33" y1="22" x2="33" y2="14"/><line x1="40" y1="22" x2="40" y2="14"/>
+              <line x1="47" y1="22" x2="47" y2="14"/><line x1="54" y1="22" x2="54" y2="14"/>
+              <line x1="61" y1="22" x2="61" y2="14"/><line x1="68" y1="22" x2="68" y2="14"/>
+              <line x1="75" y1="22" x2="75" y2="14"/></g>
+            <line x1="30" y1="14" x2="76" y2="14" stroke="#7a5c96" stroke-width="1.4"/>
+            <rect x="44" y="27" width="12" height="11" fill="#12102a"/>
+            <rect x="44" y="27" width="12" height="11" fill="none" stroke="#4ecca3" stroke-width="1"/>
+          </g>
+          <!-- réservoir de carburant -->
+          <g><polygon points="14,47 20,44 20,38 14,41" fill="#c03428"/>
+            <polygon points="20,44 26,44 26,38 20,38" fill="#8e2018"/>
+            <polygon points="14,41 20,38 26,38 20,41" fill="#e8e8f0"/></g>
+          <!-- tourelle -->
+          <g><rect x="60" y="44" width="6" height="4" fill="#48586a"/>
+            <polygon points="60,44 63,42.5 69,42.5 66,44" fill="#6a7a8a"/>
+            <circle cx="63" cy="42.6" r="1" fill="#ff5252"/></g>
+          <!-- ombre au sol puis vaisseau du joueur -->
+          <ellipse cx="33" cy="47" rx="4" ry="1.6" fill="rgba(0,0,0,.45)"/>
+          <line x1="33" y1="47" x2="33" y2="35" stroke="rgba(120,220,255,.3)" stroke-width=".6" stroke-dasharray="1.5 2"/>
+          <g transform="translate(33,32)">
+            <polygon points="0,4 -2,7 2,7" fill="#ff9d2e"/>
+            <rect x="-7" y="-1" width="14" height="2.4" fill="#3f8fd0"/>
+            <polygon points="0,-6 3,4 -3,4" fill="#7ad0ff"/>
+            <circle cy="-2" r="1.2" fill="#eaf6ff"/>
+          </g>
+          <!-- tir + jauge d'altitude -->
+          <rect x="32.2" y="24" width="1.6" height="4" fill="#ffd23a"/>
+          <g><rect x="2" y="14" width="5" height="26" fill="rgba(10,10,30,.75)" stroke="#4a5a8a" stroke-width=".6"/>
+            <polygon points="2,28 7,26 7,30" fill="#7ad0ff"/></g>
+        </svg>
+        <div class="play"><span>▶ JOUER</span></div>
+      </div>
+      <div class="meta">
+        <p class="title">Zaxxon</p>
+        <p class="tag">Tir isométrique · Sega</p>
+      </div>
+    </a>
+
     <!-- JOUST -->
     <a class="card" href="./Joust/index.html">
       <div class="year">1982</div>
@@ -1894,7 +1957,7 @@
       r.readAsText(f);
     });
   </script>
-  <script src="music/playlist.js?v=6"></script>
-  <script src="music/player.js?v=6"></script>
+  <script src="music/playlist.js?v=7"></script>
+  <script src="music/player.js?v=7"></script>
 </body>
 </html>

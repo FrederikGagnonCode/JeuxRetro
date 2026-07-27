@@ -795,6 +795,7 @@
       frogger:   [[' ', 'START']],
       arkanoid:  [[' ', 'LANCER']],
       bomberman: [[' ', 'BOMBE']],
+      zaxxon:    [[' ', 'TIR']],
       commando:  [[' ', 'TIR'], ['x', 'GRENADE']],
       wolfenstein3d: [[' ', 'TIR']],
       castlewolfenstein: [[' ', 'TIR']],
