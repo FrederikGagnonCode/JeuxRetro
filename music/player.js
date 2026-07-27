@@ -792,6 +792,7 @@
       bomberman: [[' ', 'BOMBE']],
       zaxxon:    [[' ', 'TIR']],
       moonpatrol:[[' ', 'SAUT'], ['x', 'TIR']],
+      formulax:  [['ArrowUp', 'GAZ'], ['ArrowDown', 'FREIN']],
       commando:  [[' ', 'TIR'], ['x', 'GRENADE']],
       wolfenstein3d: [[' ', 'TIR']],
       castlewolfenstein: [[' ', 'TIR']],
