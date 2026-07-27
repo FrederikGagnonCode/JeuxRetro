@@ -15,17 +15,17 @@
 
   const LS = { song: 'arcadeMusicSong', shuffle: 'arcadeMusicShuffle',
                time: 'arcadeMusicTime', on: 'arcadeMusicOn', vol: 'arcadeMusicVol' };
-  const AUDIO_EXTS = ['.mp3', '.m4a', '.wav', '.ogg', '.flac'];
 
   // PLAYLIST / LIBRE_PLAYLIST sont des `const` globaux (playlist.js) : accessibles
   // par référence directe, mais PAS via window.*. D'où les typeof.
   // Partout : la musique libre (CC0) incluse dans le dépôt.
   // En local seulement : la bibliothèque OneDrive s'ajoute à la suite
   // (jamais poussée en ligne — droits d'auteur).
-  // Et le bouton 📁 permet toujours de charger un dossier local de MP3.
   const HOSTED = /\.github\.io$/i.test(location.hostname);
   const libre  = (typeof LIBRE_PLAYLIST !== 'undefined' ? LIBRE_PLAYLIST : []);
   let playlist = libre.concat(!HOSTED && typeof PLAYLIST !== 'undefined' ? PLAYLIST : []);
+  // page d'accueil (pas de zone de jeu) : ambiance douce ; jeux : tout le répertoire
+  const IS_MENU = !document.querySelector('canvas');
   let shuffleMode = localStorage.getItem(LS.shuffle) === '1';
   let current     = -1;                       // index du morceau courant
   // choix auto d'un morceau au 1er geste (désactivable : window.ARCADE_MUSIC_AUTOSTART = false)
@@ -84,9 +84,7 @@
         <button class="am-btn" id="am-prev" title="Précédent">⏮</button>
         <button class="am-btn" id="am-next" title="Suivant">⏭</button>
         <button class="am-btn off" id="am-stop" title="Arrêter">⏹</button>
-        <button class="am-btn" id="am-folder" title="Choisir un dossier de musique">📁</button>
         <input id="am-vol" type="range" min="0" max="1" step="0.05" title="Volume">
-        <input id="am-folder-input" type="file" webkitdirectory multiple style="display:none">
       </div>
     </div>`;
 
@@ -127,7 +125,15 @@
     localStorage.setItem(LS.on, '1');
     return audio.play().then(() => emit('play', { name: song.name, index }));
   }
-  function playRandom() { return play(Math.floor(Math.random() * playlist.length)); }
+  function playRandom() {
+    // sur l'accueil : uniquement les morceaux doux ; dans les jeux : tout
+    let pool = playlist.map((s, i) => i);
+    if (IS_MENU) {
+      const douce = pool.filter(i => playlist[i].douce);
+      if (douce.length) pool = douce;
+    }
+    return play(pool[Math.floor(Math.random() * pool.length)]);
+  }
 
   function step(delta) {
     if (!playlist.length) return;
@@ -165,12 +171,9 @@
     const elHead   = root.querySelector('.am-head');
     const elPrev   = root.querySelector('#am-prev');
     const elNext   = root.querySelector('#am-next');
-    const elFolder = root.querySelector('#am-folder');
-    const elFolderInput = root.querySelector('#am-folder-input');
 
     fillSelect();
     elVol.value = audio.volume;
-    if (HOSTED && !playlist.length) elNow.textContent = '🎵 Musique : bouton 📁 pour choisir un dossier';
 
     // déplier / replier
     const toggle = () => {
@@ -184,9 +187,13 @@
     const updatePauseIcon = () => { elPause.textContent = (!audio.paused && audio.src) ? '⏸' : '▶'; };
     elPause.addEventListener('click', (e) => {
       e.stopPropagation();                       // ne pas déplier/replier la barre
-      if (!audio.paused && audio.src) audio.pause();
-      else if (current >= 0 && audio.src) audio.play().catch(()=>{});
-      else playRandom().catch(()=>{});           // rien en cours → démarre un morceau
+      if (!audio.paused && audio.src) {
+        audio.pause();
+        localStorage.setItem(LS.on, '0');        // choix retenu : silence sur tout le site
+      } else if (current >= 0 && audio.src) {
+        audio.play().catch(()=>{});
+        localStorage.setItem(LS.on, '1');
+      } else playRandom().catch(()=>{});         // rien en cours → démarre un morceau
       elPause.blur();
     });
     audio.addEventListener('play', updatePauseIcon);
@@ -213,21 +220,6 @@
       localStorage.setItem(LS.vol, elVol.value);
     });
 
-    elFolder.addEventListener('click', () => elFolderInput.click());
-    elFolderInput.addEventListener('change', () => {
-      const files = Array.from(elFolderInput.files).filter(f =>
-        AUDIO_EXTS.some(ext => f.name.toLowerCase().endsWith(ext)));
-      if (!files.length) { elNow.textContent = '⚠ Aucun audio dans ce dossier'; elFolderInput.value=''; return; }
-      files.sort((a, b) => a.name.localeCompare(b.name, 'fr'));
-      playlist = files.map(f => ({ name: f.name.replace(/\.[^.]+$/, ''), url: URL.createObjectURL(f) }));
-      current = -1;
-      fillSelect();
-      localStorage.removeItem(LS.song); localStorage.removeItem(LS.time);
-      const folder = files[0].webkitRelativePath.split('/')[0];
-      elNow.textContent = `📁 ${folder} — ${playlist.length} titres`;
-      elFolderInput.value = '';
-    });
-
     // avance auto à la fin d'un morceau
     audio.addEventListener('ended', () => step(1));
     // signaler un fichier introuvable (aide au diagnostic des chemins)
@@ -239,7 +231,10 @@
     //    (chaque page = nouveau hasard → une autre chanson à chaque jeu lancé)
     //    On tente tout de suite ; si l'autoplay est bloqué par le navigateur,
     //    on démarre au tout premier clic/touche de la page.
-    if (AUTOSTART && playlist.length) {
+    //    SAUF si l'utilisateur a mis en pause ou arrêté : son choix est retenu
+    //    sur tout le site tant qu'il ne relance pas lui-même la lecture.
+    const wantMusic = localStorage.getItem(LS.on) !== '0';
+    if (AUTOSTART && playlist.length && wantMusic) {
       playRandom().catch(() => {
         const go = () => {
           window.removeEventListener('pointerdown', go);
