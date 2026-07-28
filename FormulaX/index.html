@@ -150,7 +150,7 @@ const COLORS=['#ffd23a','#e03030','#3f8fd0','#4ecca3'];
 function makeCar(i){
   // la position et l'angle sont posés par gridCars() après buildTrack()
   return { x:0, y:0, a:0, v:0, col:COLORS[i],
-    ai:i>0, skill:0.86+i*0.05+race*0.05, spin:0, lap:0, q:[false,false,false],
+    ai:i>0, skill:0.86+i*0.05+race*0.05, spin:0, oilCd:0, lap:0, q:[false,false,false],
     prog:0, total:0, done:false, hitT:0 };
 }
 function newGame(){
@@ -209,9 +209,12 @@ function update(dt){
       steer=(keys['arrowleft']?-1:0)+(keys['arrowright']?1:0);
       gas=keys['arrowup']?1:0; brake=keys['arrowdown']?1:0;
     }else{
-      // IA : viser un point deux segments plus loin
+      // IA : viser deux segments plus loin — mais si elle est dans l'herbe,
+      // revenir DROIT vers la piste (sinon elle tournait en rond dehors)
       const n=nearest(c);
-      const tgt=WP[(n.i+2)%N];
+      const tgt = n.d>ROAD+4
+        ? [c.x-n.nx, c.y-n.ny]                    // projection sur l'axe de la piste
+        : WP[(n.i+2)%N];
       const want=Math.atan2(tgt[1]-c.y, tgt[0]-c.x);
       let da=want-c.a;
       while(da>Math.PI) da-=2*Math.PI; while(da<-Math.PI) da+=2*Math.PI;
@@ -233,19 +236,24 @@ function update(dt){
 
     /* piste : herbe puis mur */
     const n2=nearest(c);
-    if(n2.d>ROAD){                                 // herbe : ça broute
-      c.v=Math.min(c.v,55);
-      if(n2.d>ROAD+13){                            // mur invisible : recentre
-        const k=(n2.d-(ROAD+13))/n2.d;
+    if(n2.d>ROAD){
+      // herbe : freinage progressif selon la profondeur (on garde de quoi ressortir)
+      const over=n2.d-ROAD;
+      c.v=Math.min(c.v, Math.max(62, 150-over*6));
+      if(over>13){                                 // mur invisible : on GLISSE le long
+        const k=(over-13)/n2.d;
         c.x-=n2.nx*k; c.y-=n2.ny*k;
-        if(c.v>40 && c.hitT<=0){ c.hitT=0.4; if(!c.ai) noise(0.2,600,0.08); }
-        c.v*=0.6;
+        if(c.hitT<=0){ c.hitT=0.5; c.v*=0.65;      // pénalité UNE fois, pas en continu
+          if(!c.ai) noise(0.2,600,0.08); }
       }
     }
-    /* huile */
+    /* huile : tête-à-queue seulement lancé vite, puis immunité le temps
+       de traverser la tache (sinon la voiture y re-glissait sans fin) */
+    if(c.oilCd>0) c.oilCd-=dt;
     oils.forEach(o=>{
-      if(c.spin<=0 && Math.hypot(c.x-o.x,c.y-o.y)<o.r+6){
-        c.spin=0.65; if(!c.ai){ noise(0.3,900,0.06); flash('HUILE !'); } }
+      if(c.spin<=0 && c.oilCd<=0 && c.v>45 && Math.hypot(c.x-o.x,c.y-o.y)<o.r+6){
+        c.spin=0.6; c.oilCd=2;
+        if(!c.ai){ noise(0.3,900,0.06); flash('HUILE !'); } }
     });
 
     /* comptage des tours : quarts dans l'ordre puis ligne */
@@ -275,8 +283,11 @@ function update(dt){
     if(d>0 && d<15){
       const push=(15-d)/2, ux=dx/d, uy=dy/d;
       a.x-=ux*push; a.y-=uy*push; b.x+=ux*push; b.y+=uy*push;
-      a.v*=0.9; b.v*=0.9;
-      if((i===0||j===0) && cars[0].hitT<=0){ cars[0].hitT=0.3; noise(0.12,500,0.05); }
+      // pénalité de vitesse au premier contact seulement : on se frotte sans coller
+      if(a.hitT<=0 && b.hitT<=0){
+        a.hitT=0.35; b.hitT=0.35; a.v*=0.88; b.v*=0.88;
+        if(i===0||j===0) noise(0.12,500,0.05);
+      }
     }
   }
 
