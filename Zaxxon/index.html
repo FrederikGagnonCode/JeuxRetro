@@ -122,6 +122,8 @@ function addWall(z){
 function addFuel(z,x){ obs.push({t:'fuel', x, z, r:13, h:26, hp:1, done:false}); }
 function addTurret(z,x){ obs.push({t:'turret', x, z, r:12, h:16, hp:2, cd:0.7+rand(1.2), done:false}); }
 function addPlane(z,x,alt){ obs.push({t:'plane', x, z, alt, r:13, h:12, hp:1, vx:(Math.random()*2-1)*40, done:false}); }
+function addMissile(z,x){ obs.push({t:'missile', x, z, alt:0, r:8, h:14, hp:1,
+  up:false, trig:90+rand(120), done:false}); }        // seuil de tir variable
 function addBoss(z){ obs.push({t:'boss', x:0, z, r:56, h:80, hp:14, cd:1.2, done:false}); bossUp=true; }
 
 function spawn(dz){
@@ -134,8 +136,9 @@ function spawn(dz){
       else if(r<0.22) addWall(z);
       else if(r<0.52){ const x=(Math.random()*2-1)*(FW-26);
         addFuel(z,x); if(Math.random()<0.5) addFuel(z+34,x+(Math.random()<0.5?-40:40)); }
-      else if(r<0.74) addTurret(z,(Math.random()*2-1)*(FW-24));
-      else if(r<0.86) addPlane(z,(Math.random()*2-1)*FW, 20+rand(60));
+      else if(r<0.68) addTurret(z,(Math.random()*2-1)*(FW-24));
+      else if(r<0.80) addPlane(z,(Math.random()*2-1)*FW, 20+rand(60));
+      else if(r<0.92) addMissile(z,(Math.random()*2-1)*(FW-30));
     }else{
       if(Math.random()<0.8) addPlane(z,(Math.random()*2-1)*150, 10+rand(80));
     }
@@ -190,6 +193,15 @@ function update(dt){
   // comportement des objets
   obs.forEach(o=>{
     if(o.t==='plane'){ o.x+=o.vx*dt; if(Math.abs(o.x)>190) o.vx*=-1; }
+    // missile : dormant dans son silo, il DÉCOLLE quand le vaisseau approche.
+    // Le seuil varie : tiré tôt il passera au-dessus, tiré tard il croise
+    // pile la zone de vol — il faut le détruire ou s'écarter.
+    if(o.t==='missile' && !o.done){
+      if(!o.up && o.z<o.trig && o.z>16){ o.up=true;
+        if(!s.dead) noise(0.3,1200,0.07); }
+      if(o.up){ o.alt+=(40+o.alt*0.9)*dt;              // il accélère en montant
+        if(o.alt>150) o.done=true; }                    // parti dans le ciel
+    }
     if((o.t==='turret'||o.t==='boss') && o.z>10 && o.z<420 && !s.dead){
       o.cd-=dt;
       if(o.cd<=0){ o.cd = o.t==='boss' ? 0.55 : 1.4+rand(1.4);
@@ -226,6 +238,7 @@ function update(dt){
           o.done=true; sfxBoom();
           if(o.t==='fuel'){ fuel=Math.min(100,fuel+16); score+=300; sfxFuel(); }
           else if(o.t==='turret') score+=500;
+          else if(o.t==='missile') score+= o.up?400:200;   // en vol = plus dur = plus payant
           else if(o.t==='plane')  score+=800;
           else if(o.t==='boss'){ score+=5000; bossUp=false; shake=0.6;
             section='space'; secLeft=1500; level++; speed=Math.min(250,speed+15);
@@ -259,12 +272,14 @@ function update(dt){
       if(Math.abs(s.x-o.x)<o.r+9 && s.alt<o.h+8) crash('COLLISION !');
     }else if(o.t==='plane'){
       if(Math.abs(s.x-o.x)<o.r+9 && Math.abs(s.alt-o.alt)<14) crash('COLLISION !');
+    }else if(o.t==='missile'){
+      if(Math.abs(s.x-o.x)<o.r+9 && Math.abs(s.alt-o.alt)<15) crash('MISSILE !');
     }else if(o.t==='boss'){
       bossUp=false; section='space'; secLeft=1500; level++;
       speed=Math.min(250,speed+15); flash('LE ROBOT S\'ÉCHAPPE…');
     }
   });
-  obs=obs.filter(o=> o.z>-90 && !(o.done && (o.t==='fuel'||o.t==='turret'||o.t==='plane'||o.t==='boss')));
+  obs=obs.filter(o=> o.z>-90 && !(o.done && (o.t==='fuel'||o.t==='turret'||o.t==='plane'||o.t==='missile'||o.t==='boss')));
 
   // particules
   parts.forEach(p=>{ p.z-=dz; p.x+=p.vx*dt; p.alt+=p.va*dt; p.va-=90*dt; p.life-=dt; });
@@ -389,6 +404,25 @@ function drawObj(o){
     ctx.lineTo(sx(o.x,o.z-24),sy(o.z-24,o.h-2)); ctx.stroke();
     ctx.fillStyle='#ff5252';
     ctx.beginPath(); ctx.arc(sx(o.x,o.z),sy(o.z,o.h+5),2.6,0,Math.PI*2); ctx.fill();
+  }else if(o.t==='missile'){
+    // silo : trappe sombre au sol
+    ctx.fillStyle='#1c1c30';
+    ctx.beginPath(); ctx.ellipse(sx(o.x,o.z),sy(o.z,0),10,4.4,0,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle='#4a4a6a'; ctx.lineWidth=1.4;
+    ctx.beginPath(); ctx.ellipse(sx(o.x,o.z),sy(o.z,0),10,4.4,0,0,Math.PI*2); ctx.stroke();
+    if(o.alt>0.5) shadow(o.x,o.z,7);
+    // fusée : corps blanc, coiffe rouge, ailerons — flamme dès le décollage
+    const X=sx(o.x,o.z), Y=sy(o.z,o.alt);
+    ctx.save(); ctx.translate(X,Y);
+    if(o.up){ ctx.fillStyle='#ff9d2e';
+      ctx.beginPath(); ctx.moveTo(-2.6,2); ctx.lineTo(2.6,2);
+      ctx.lineTo(0,10+Math.random()*6); ctx.closePath(); ctx.fill(); }
+    ctx.fillStyle='#e8e8f0'; ctx.fillRect(-3,-12,6,14);
+    ctx.fillStyle='#d02818';
+    ctx.beginPath(); ctx.moveTo(-3,-12); ctx.lineTo(0,-19); ctx.lineTo(3,-12); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-3,2); ctx.lineTo(-7,5); ctx.lineTo(-3,-3); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(3,2); ctx.lineTo(7,5); ctx.lineTo(3,-3); ctx.closePath(); ctx.fill();
+    ctx.restore();
   }else if(o.t==='plane'){
     drawPlane(o.x,o.z,o.alt);
   }else if(o.t==='boss'){
