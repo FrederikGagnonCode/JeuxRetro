@@ -106,7 +106,8 @@ function newGame(){
 }
 function showOverlay(t2,s){ ovTitle.textContent=t2; overlay.querySelector('p:nth-of-type(1)').textContent=s; overlay.style.display='flex'; }
 
-const SKINFO=[['block','🛑'],['dig','⛏'],['build','🪜'],['float','☂']];
+const SKINFO=[['block','🛑','BLOQUEUR'],['dig','⛏','CREUSEUR'],
+              ['build','🪜','BÂTISSEUR'],['float','☂','PARACHUTE']];
 document.addEventListener('keydown',e=>{
   const k=e.key.toLowerCase();
   if(paused && k!=='p'){ paused=false; return; }
@@ -122,7 +123,7 @@ cv.addEventListener('mousedown',e=>{
   const r=cv.getBoundingClientRect();
   const mx=(e.clientX-r.left)*(W/r.width), my=(e.clientY-r.top)*(H/r.height);
   if(my>PH){                                    // barre d'outils
-    const bi=Math.floor((mx-8)/64);
+    const bi=Math.floor((mx-8)/96);
     if(bi>=0&&bi<4) sel=SKINFO[bi][0];
     return;
   }
@@ -258,13 +259,17 @@ function draw(){
   }
   // barre d'outils
   ctx.fillStyle='#1c1c30'; ctx.fillRect(0,PH,W,TB);
-  SKINFO.forEach(([key,icon],i)=>{
-    const bx=8+i*64;
-    ctx.fillStyle=sel===key?'#3a5a8a':'#26263e'; ctx.fillRect(bx,PH+4,58,TB-8);
-    ctx.strokeStyle=sel===key?'#9fd6ff':'#3a3a52'; ctx.lineWidth=1.4; ctx.strokeRect(bx,PH+4,58,TB-8);
-    ctx.font='14px Arial'; ctx.textAlign='left'; ctx.fillText(icon,bx+5,PH+23);
-    ctx.font='bold 13px "Courier New",monospace'; ctx.fillStyle='#ffd23a';
-    ctx.fillText('×'+skills[key],bx+28,PH+23);
+  SKINFO.forEach(([key,icon,label],i)=>{
+    const bx=8+i*96;
+    ctx.fillStyle=sel===key?'#3a5a8a':'#26263e'; ctx.fillRect(bx,PH+4,90,TB-8);
+    ctx.strokeStyle=sel===key?'#9fd6ff':'#3a3a52'; ctx.lineWidth=1.4; ctx.strokeRect(bx,PH+4,90,TB-8);
+    ctx.font='13px Arial'; ctx.textAlign='left'; ctx.fillText(icon,bx+4,PH+22);
+    // légende de la compétence + stock restant
+    ctx.font='bold 9px "Courier New",monospace';
+    ctx.fillStyle=sel===key?'#e8f4ff':'#aab0d0';
+    ctx.fillText(label,bx+22,PH+15);
+    ctx.font='bold 11px "Courier New",monospace'; ctx.fillStyle='#ffd23a';
+    ctx.fillText('×'+skills[key]+'  ('+(i+1)+')',bx+22,PH+27);
   });
   // stats
   ctx.font='bold 12px "Courier New",monospace'; ctx.textAlign='right';
