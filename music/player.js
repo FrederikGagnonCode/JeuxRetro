@@ -820,6 +820,7 @@
       zaxxon:    [[' ', 'TIR']],
       moonpatrol:[[' ', 'SAUT'], ['x', 'TIR']],
       formulak:  [['ArrowUp', 'GAZ'], ['ArrowDown', 'FREIN']],
+      alleycat:  [[' ', 'SAUT']],
       commando:  [[' ', 'TIR'], ['x', 'GRENADE']],
       wolfenstein3d: [[' ', 'TIR']],
       castlewolfenstein: [[' ', 'TIR']],
