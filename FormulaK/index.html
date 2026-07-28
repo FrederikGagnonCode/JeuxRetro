@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Formula X</title>
+<title>Formula K</title>
 <style>
   html,body{margin:0;padding:0;height:100%;background:#000;color:#fff;
     font-family:'Courier New',monospace;display:flex;flex-direction:column;
@@ -24,13 +24,14 @@
 </style>
 </head>
 <body>
-  <h1>F O R M U L A &nbsp; X</h1>
+  <h1>F O R M U L A &nbsp; K</h1>
   <div id="wrap">
     <canvas id="game" width="620" height="440"></canvas>
     <div id="overlay">
-      <h2 id="ovTitle">FORMULA X</h2>
-      <p>5 tours de circuit contre 3 rivaux — vue du ciel, comme à l'arcade !</p>
+      <h2 id="ovTitle">FORMULA K</h2>
+      <p>5 tours contre 3 rivaux — nouveau circuit à chaque course !</p>
       <p>← → braquer · ↑ accélérer · ↓ freiner</p>
+      <p>Termine dans le TOP 3 pour te qualifier : la course suivante s'enchaîne, rivaux plus rapides</p>
       <p>Évitez l'herbe, les murs et les plaques d'huile 🛢</p>
       <p class="blink" style="margin-top:12px">▶ Cliquez ou Espace pour prendre le départ</p>
     </div>
@@ -153,9 +154,8 @@ function makeCar(i){
     ai:i>0, skill:0.86+i*0.05+race*0.05, spin:0, oilCd:0, lap:0, q:[false,false,false],
     prog:0, total:0, done:false, hitT:0 };
 }
-function newGame(){
-  race=(over&&finished)?race:0;                // suite de courses tant qu'on finit
-  if(!running||over&&!finished) { race=0; score=0; }
+function newGame(fresh){
+  if(fresh){ race=0; score=0; }                // vraie nouvelle partie
   buildTrack();                                // nouveau circuit à chaque course
   cars=[makeCar(0),makeCar(1),makeCar(2),makeCar(3)];
   gridCars();
@@ -177,11 +177,11 @@ document.addEventListener('keydown',e=>{
   const k=e.key.toLowerCase(); keys[k]=true;
   if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)) e.preventDefault();
   if(paused && k!=='p'){ paused=false; engine(true); return; }
-  if((k===' '||k==='enter') && (!running||over)){ newGame(); return; }
+  if((k===' '||k==='enter') && (!running||over)){ newGame(true); return; }
   if(k==='p' && running && !over){ paused=!paused; engine(!paused); }
 });
 document.addEventListener('keyup',e=>{ keys[e.key.toLowerCase()]=false; });
-overlay.addEventListener('click',()=>{ if(!running||over) newGame(); });
+overlay.addEventListener('click',()=>{ if(!running||over) newGame(true); });
 addEventListener('blur',()=>engine(false));
 
 /* ── boucle ── */
@@ -294,21 +294,27 @@ function update(dt){
   /* régime moteur */
   if(engOsc){ try{ engOsc.frequency.value=50+player.v*1.1+(player.spin>0?60:0); }catch(e){} }
 
-  /* fin de course pour le joueur */
+  /* fin de course : on CONTINUE tant qu'on se qualifie (top 3),
+     dernier = fin de partie — la règle des bornes d'arcade */
   if(cars[0].done && !finished){
     finished=true;
     const pos=1+cars.filter(c=>c.ai&&c.done&&c.finishT<cars[0].finishT).length;
     const bonus=[5000,3000,1500,600][pos-1]*(race+1);
     score+=bonus;
     race++;
-    setTimeout(()=>{
-      over=true; running=false; engine(false);
-      const m=Math.floor(cars[0].finishT/60), s=(cars[0].finishT%60).toFixed(1);
-      showOverlay(pos===1?'🏆 VICTOIRE !':'ARRIVÉE : P'+pos,
-        'Position '+pos+'/4 · +'+bonus+' pts · chrono '+m+':'+(s<10?'0':'')+s+
-        ' · meilleur tour '+(bestLap?bestLap.toFixed(1)+' s':'—'));
-      overlay.querySelector('p.blink').textContent='▶ Course suivante : rivaux plus rapides — Espace';
-    },1600);
+    if(pos<=3){
+      flash((pos===1?'🏆 VICTOIRE':'P'+pos+' — QUALIFIÉ')+' ! +'+bonus+' — COURSE '+(race+1)+'…');
+      msgT=3;
+      setTimeout(()=>{ if(running && finished && !over) newGame(false); },3000);
+    }else{
+      setTimeout(()=>{
+        over=true; running=false; engine(false);
+        showOverlay('NON QUALIFIÉ…',
+          'Dernier de la course '+race+' · score final '+score+
+          ' · meilleur tour '+(bestLap?bestLap.toFixed(1)+' s':'—'));
+        overlay.querySelector('p.blink').textContent='▶ Espace : repartir de la course 1';
+      },1600);
+    }
   }
 
   parts.forEach(p=>{ p.x+=p.vx*dt; p.y+=p.vy*dt; p.life-=dt; });
@@ -411,7 +417,7 @@ buildTrack();
 cars=[makeCar(0),makeCar(1),makeCar(2),makeCar(3)]; gridCars(); oils=[]; parts=[];
 requestAnimationFrame(loop);
 </script>
-<script src="../music/playlist.js?v=10"></script>
-<script src="../music/player.js?v=10"></script>
+<script src="../music/playlist.js?v=11"></script>
+<script src="../music/player.js?v=11"></script>
 </body>
 </html>
