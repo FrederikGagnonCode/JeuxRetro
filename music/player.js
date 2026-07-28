@@ -600,6 +600,33 @@
   else fit();
 })();
 
+/* ════ Retour au menu : l'accueil se replace sur la vignette du jeu quitté ════ */
+(function () {
+  const segs = location.pathname.split('/').filter(s => s && !/index\.html?$/i.test(s));
+  const game = segs.length ? decodeURIComponent(segs[segs.length - 1]) : '';
+  if (document.querySelector('canvas')) {
+    // page de jeu : on retient le dernier jeu visité
+    try { sessionStorage.setItem('arcadeLastGame', game); } catch (e) {}
+    return;
+  }
+  function go() {
+    let last = ''; try { last = sessionStorage.getItem('arcadeLastGame') || ''; } catch (e) {}
+    if (!last) return;
+    const card = document.querySelector('a.card[href*="/' + last + '/"]');
+    if (!card) return;
+    card.scrollIntoView({ block: 'center' });
+    // petit halo pour retrouver la vignette du premier coup d'œil
+    card.style.transition = 'box-shadow .4s, border-color .4s';
+    card.style.borderColor = '#ffd23a';
+    card.style.boxShadow = '0 0 0 2px #ffd23a, 0 0 30px rgba(255,210,58,.45)';
+    setTimeout(() => { card.style.borderColor = ''; card.style.boxShadow = ''; }, 1600);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);
+  else go();
+  // aussi au retour via le cache navigateur (bouton précédent)
+  addEventListener('pageshow', e => { if (e.persisted) go(); });
+})();
+
 /* ════ Contrôles tactiles : téléphone et tablette ════
    Croix directionnelle (8 directions) + boutons d'action, convertis en
    véritables événements clavier : tous les jeux fonctionnent sans modification.
