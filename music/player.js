@@ -144,6 +144,20 @@
     set('#btnExport', t('records'));   set('#btnImport', t('importBtn'));
     const sr=document.querySelector('#search'); if(sr) sr.placeholder=t('search');
     document.querySelectorAll('.play span').forEach(s=>{ s.textContent=t('play'); });
+    // pages de jeux : consignes de l'écran d'accueil + ligne d'aide
+    // (dictionnaire GAME_I18N fourni par music/i18n-games.js)
+    if (lang !== 'fr' && typeof GAME_I18N !== 'undefined') {
+      const segs = location.pathname.split('/').filter(s2 => s2 && !/index\.html?$/i.test(s2));
+      const game = segs.length ? decodeURIComponent(segs[segs.length - 1]) : '';
+      const g = (GAME_I18N[game] || {})[lang];
+      if (g) {
+        if (g.p) {
+          const ps = document.querySelectorAll('#overlay p');
+          g.p.forEach((txt, i) => { if (ps[i]) ps[i].innerHTML = txt; });
+        }
+        if (g.hint) { const h = document.getElementById('hint'); if (h) h.innerHTML = g.hint; }
+      }
+    }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
   else mount();
