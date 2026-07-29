@@ -148,9 +148,17 @@ function update(dt){
   balls=balls.filter(b=>!b.dead);
   if(balls.length===0){ loseLife(); return; }
 
-  lasers.forEach(l=>{ l.y-=460*dt;
+  lasers.forEach(l=>{
+    // collision BALAYÉE : on teste tout le trajet de la frame, sinon un tir
+    // rapide traversait une brique entière sans jamais la toucher
+    const py=l.y; l.y-=460*dt;
+    let hit=null;
     for(const br of bricks){ if(br.dead) continue;
-      if(l.x>br.x && l.x<br.x+BRW && l.y>br.y && l.y<br.y+BRH){ l.dead=true; hitBrick(br); break; } } });
+      if(l.x>=br.x && l.x<=br.x+BRW && l.y<=br.y+BRH && py>=br.y){
+        if(!hit || br.y>hit.y) hit=br;         // la plus basse = croisée en premier
+      } }
+    if(hit){ l.dead=true; hitBrick(hit); }
+  });
   lasers=lasers.filter(l=>!l.dead && l.y>16);
 
   caps.forEach(c=>{ c.y+=110*dt;
