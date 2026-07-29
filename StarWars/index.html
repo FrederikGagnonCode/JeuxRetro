@@ -217,11 +217,13 @@ function draw(){
   fires.forEach(f=>drawFire(f));
   ctx.restore();
 
-  // lasers du joueur (canons convergents)
+  // les 4 canons de l'aile en X, visibles aux coins comme sur la borne
+  drawCannons();
+  // lasers du joueur : faisceaux convergents depuis les 4 canons
   lasers.forEach(l=>{
     const a=l.t/6;
     ctx.strokeStyle='rgba(90,210,255,'+a+')'; ctx.lineWidth=2; ctx.shadowColor='#5ad1ff'; ctx.shadowBlur=8;
-    [[8,H-2],[W-8,H-2]].forEach(c=>{ ctx.beginPath(); ctx.moveTo(c[0],c[1]); ctx.lineTo(l.x,l.y); ctx.stroke(); });
+    cannonTips().forEach(c=>{ ctx.beginPath(); ctx.moveTo(c[0],c[1]); ctx.lineTo(l.x,l.y); ctx.stroke(); });
     ctx.shadowBlur=0;
   });
 
@@ -241,6 +243,41 @@ function draw(){
     ctx.fillStyle='#ffe81f'; ctx.textAlign='center'; ctx.font='30px "Courier New",monospace'; ctx.fillText('PAUSE',CX,CY); }
 }
 
+/* — les 4 canons du chasseur : bouts visibles aux coins de l'écran.
+   Légère parallaxe opposée au réticule = sensation de cockpit. — */
+function cannonTips(){
+  const px=(aim.x-CX)*-0.035, py=(aim.y-CY)*-0.035;
+  return [[16+px,H-10+py],[W-16+px,H-10+py],[24+px,44+py],[W-24+px,44+py]];
+}
+function drawCannons(){
+  const tips=cannonTips();
+  const corners=[[-26,H+26],[W+26,H+26],[-26,-26],[W+26,-26]];
+  const firing=lasers.length>0;
+  ctx.strokeStyle='#cfd8ff'; ctx.lineWidth=1.6;
+  tips.forEach((tp,i)=>{
+    const c=corners[i];
+    const dx=tp[0]-c[0], dy=tp[1]-c[1], L=Math.hypot(dx,dy);
+    const nx=-dy/L, ny=dx/L;                     // normale au fût
+    const bw=8, tw=3;                            // largeur base → bout (fuselé)
+    ctx.beginPath();
+    ctx.moveTo(c[0]+nx*bw, c[1]+ny*bw); ctx.lineTo(tp[0]+nx*tw, tp[1]+ny*tw);
+    ctx.moveTo(c[0]-nx*bw, c[1]-ny*bw); ctx.lineTo(tp[0]-nx*tw, tp[1]-ny*tw);
+    ctx.stroke();
+    // bouche du canon + bague
+    ctx.beginPath(); ctx.arc(tp[0],tp[1],tw+1.2,0,Math.PI*2); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(tp[0]+nx*(tw+3)-dx/L*7, tp[1]+ny*(tw+3)-dy/L*7);
+    ctx.lineTo(tp[0]-nx*(tw+3)-dx/L*7, tp[1]-ny*(tw+3)-dy/L*7);
+    ctx.stroke();
+    // lueur de tir à la bouche
+    if(firing){
+      ctx.fillStyle='rgba(90,210,255,'+(lasers[0].t/6*0.85)+')';
+      ctx.shadowColor='#5ad1ff'; ctx.shadowBlur=10;
+      ctx.beginPath(); ctx.arc(tp[0],tp[1],5,0,Math.PI*2); ctx.fill();
+      ctx.shadowBlur=0;
+    }
+  });
+}
 function drawTie(x,y,sc){
   const wing=18*sc, ball=6*sc, gap=14*sc;
   ctx.strokeStyle='#46d846'; ctx.lineWidth=Math.max(1,1.4*Math.min(sc,2));
