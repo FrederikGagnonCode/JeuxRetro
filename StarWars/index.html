@@ -67,7 +67,28 @@ function laserSfx(freq, dur, vol, type){
   o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t+dur+0.03);
 }
 function sfxEnemyFire(){ laserSfx(440, 0.20, 0.18, 'sawtooth'); }   // tir ennemi (grave)
-function sfxPlayerFire(){ laserSfx(950, 0.12, 0.13, 'square'); }    // ton tir (aigu)
+// ton tir : vrai « PIOU » de blaster — double oscillateur désaccordé qui
+// plonge dans l'aigu + claquement de bruit à l'attaque
+function sfxPlayerFire(){
+  const ac=actx(); if(!ac) return; const t=ac.currentTime, dur=0.16;
+  const g=ac.createGain();
+  g.gain.setValueAtTime(0.34,t);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  const bp=ac.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=1400; bp.Q.value=0.8;
+  g.connect(bp); bp.connect(ac.destination);
+  [1,1.014].forEach(k=>{                       // léger désaccord = son plus épais
+    const o=ac.createOscillator(); o.type='sawtooth';
+    o.frequency.setValueAtTime(2400*k,t);
+    o.frequency.exponentialRampToValueAtTime(320*k,t+dur);
+    o.connect(g); o.start(t); o.stop(t+dur+0.03);
+  });
+  // claquement d'attaque (2 centièmes de bruit)
+  const n=Math.floor(ac.sampleRate*0.02), b=ac.createBuffer(1,n,ac.sampleRate), d=b.getChannelData(0);
+  for(let i=0;i<n;i++) d[i]=(Math.random()*2-1)*(1-i/n);
+  const s=ac.createBufferSource(); s.buffer=b;
+  const ng=ac.createGain(); ng.gain.value=0.22;
+  s.connect(ng); ng.connect(ac.destination); s.start(t);
+}
 
 function newGame(){
   stars=[]; for(let i=0;i<120;i++) stars.push(rndStar(Math.random()*900+50));
