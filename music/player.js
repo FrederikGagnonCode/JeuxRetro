@@ -821,6 +821,7 @@
       moonpatrol:[[' ', 'SAUT'], ['x', 'TIR']],
       formulak:  [['ArrowUp', 'GAZ'], ['ArrowDown', 'FREIN']],
       alleycat:  [[' ', 'SAUT']],
+      punchout:  [['x', 'GAUCHE'], ['c', 'DROITE'], [' ', 'UPPER ★']],
       commando:  [[' ', 'TIR'], ['x', 'GRENADE']],
       wolfenstein3d: [[' ', 'TIR']],
       castlewolfenstein: [[' ', 'TIR']],
