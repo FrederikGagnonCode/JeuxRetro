@@ -10,6 +10,145 @@
    pour que le jeu coordonne sa propre bande-son (ex. chiptune de Snake).
    API : window.ArcadeMusic = { isPlaying, hasSelection, resume, stop, play }
    ════════════════════════════════════════════════════════════════ */
+/* ════ Thème (sombre / clair) + Langue (FR EN JA CS ZH KO) ════
+   Mémorisés dans localStorage, appliqués sur tout le site.
+   API : window.ArcadeI18n.t('cle') — utilisée par les autres modules. */
+(function () {
+  if (window.ArcadeI18n) return;
+  const LST = 'arcadeTheme', LSL = 'arcadeLang';
+  const LANGS = [['fr','FR'],['en','EN'],['ja','日本語'],['cs','ČEŠ'],['zh','中文'],['ko','한국어']];
+  const T = {
+    fr:{ sub:'Choisis ton jeu — Insert Coin', games:'JEUX', random:'🎲 Jeu au hasard',
+      all:'Tous', y70:'Années 70', y80:'Années 80', y90:'1990 +', search:'🔍 Rechercher…',
+      records:'💾 Records', importBtn:'📥 Importer', play:'▶ JOUER', back:'← Menu Arcade',
+      record:'RECORD', bestTitle:'★ MEILLEURS SCORES ★', newRecord:'★ NOUVEAU RECORD ! ★',
+      promptTitle:'★ MEILLEUR SCORE ! ★', enterInit:'pts — entre tes initiales',
+      initHelp:'Lettres A-Z · Retour = effacer · Entrée = valider',
+      noScore:'Aucun score encore…', music:'Musique', silence:'— Aucune (silence) —' },
+    en:{ sub:'Pick your game — Insert Coin', games:'GAMES', random:'🎲 Random game',
+      all:'All', y70:'The 70s', y80:'The 80s', y90:'1990 +', search:'🔍 Search…',
+      records:'💾 Scores', importBtn:'📥 Import', play:'▶ PLAY', back:'← Arcade Menu',
+      record:'RECORD', bestTitle:'★ HIGH SCORES ★', newRecord:'★ NEW RECORD! ★',
+      promptTitle:'★ HIGH SCORE! ★', enterInit:'pts — enter your initials',
+      initHelp:'Letters A-Z · Backspace = erase · Enter = OK',
+      noScore:'No scores yet…', music:'Music', silence:'— None (silence) —' },
+    ja:{ sub:'ゲームをえらんでね — INSERT COIN', games:'ゲーム', random:'🎲 ランダム',
+      all:'すべて', y70:'70年代', y80:'80年代', y90:'1990+', search:'🔍 検索…',
+      records:'💾 スコア', importBtn:'📥 インポート', play:'▶ プレイ', back:'← メニューへ',
+      record:'記録', bestTitle:'★ ハイスコア ★', newRecord:'★ 新記録！ ★',
+      promptTitle:'★ ハイスコア！ ★', enterInit:'pts — イニシャルを入力',
+      initHelp:'A-Z · Backspace=消す · Enter=決定',
+      noScore:'まだスコアがありません…', music:'音楽', silence:'— なし —' },
+    cs:{ sub:'Vyber si hru — Insert Coin', games:'HER', random:'🎲 Náhodná hra',
+      all:'Vše', y70:'70. léta', y80:'80. léta', y90:'1990 +', search:'🔍 Hledat…',
+      records:'💾 Skóre', importBtn:'📥 Import', play:'▶ HRÁT', back:'← Zpět do menu',
+      record:'REKORD', bestTitle:'★ NEJLEPŠÍ SKÓRE ★', newRecord:'★ NOVÝ REKORD! ★',
+      promptTitle:'★ NEJLEPŠÍ SKÓRE! ★', enterInit:'b. — zadej iniciály',
+      initHelp:'Písmena A-Z · Backspace = smazat · Enter = OK',
+      noScore:'Zatím žádné skóre…', music:'Hudba', silence:'— Žádná (ticho) —' },
+    zh:{ sub:'选择你的游戏 — INSERT COIN', games:'个游戏', random:'🎲 随机游戏',
+      all:'全部', y70:'70年代', y80:'80年代', y90:'1990+', search:'🔍 搜索…',
+      records:'💾 记录', importBtn:'📥 导入', play:'▶ 开始', back:'← 返回菜单',
+      record:'纪录', bestTitle:'★ 最高分 ★', newRecord:'★ 新纪录！ ★',
+      promptTitle:'★ 最高分！ ★', enterInit:'分 — 输入名字缩写',
+      initHelp:'字母A-Z · 退格=删除 · 回车=确认',
+      noScore:'暂无记录…', music:'音乐', silence:'— 无（静音）—' },
+    ko:{ sub:'게임을 선택하세요 — Insert Coin', games:'게임', random:'🎲 랜덤 게임',
+      all:'전체', y70:'70년대', y80:'80년대', y90:'1990 +', search:'🔍 검색…',
+      records:'💾 기록', importBtn:'📥 가져오기', play:'▶ 플레이', back:'← 메뉴로',
+      record:'기록', bestTitle:'★ 최고 기록 ★', newRecord:'★ 신기록! ★',
+      promptTitle:'★ 최고 기록! ★', enterInit:'점 — 이니셜 입력',
+      initHelp:'A-Z · Backspace=지우기 · Enter=확인',
+      noScore:'아직 기록이 없습니다…', music:'음악', silence:'— 없음 —' }
+  };
+  let lang = localStorage.getItem(LSL) || 'fr'; if (!T[lang]) lang = 'fr';
+  let theme = localStorage.getItem(LST) || 'dark';
+  const t = k => (T[lang] && T[lang][k]) || T.fr[k] || k;
+  window.ArcadeI18n = { t, get lang(){ return lang; } };
+
+  document.documentElement.dataset.theme = theme;
+
+  /* — thème clair : surcharges génériques (menu + pages de jeux + modules) — */
+  const st = document.createElement('style');
+  st.textContent = `
+  [data-theme=light] body{background:#e9e7f2 !important;color:#1c1c28 !important;}
+  [data-theme=light] #psych,[data-theme=light] #veil{opacity:.14 !important;}
+  [data-theme=light] h1{color:#241f3a;text-shadow:0 1px 0 #fff !important;}
+  [data-theme=light] .sub,[data-theme=light] #hint{color:#5a5a6e !important;}
+  [data-theme=light] canvas{border-color:#241f3a !important;}
+  [data-theme=light] a.back{color:#0a7a5a !important;}
+  [data-theme=light] .card{background:#fdfdff !important;border-color:#c9c6da !important;}
+  [data-theme=light] .year{background:#f0eefa !important;color:#0a7a5a !important;
+    border-color:#dcd8ec !important;text-shadow:none !important;}
+  [data-theme=light] .title{color:#241f3a !important;}
+  [data-theme=light] .tag,[data-theme=light] footer{color:#77748c !important;}
+  [data-theme=light] .count{color:#241f3a !important;}
+  [data-theme=light] #toolbar .tbtn,[data-theme=light] #toolbar input{
+    background:#fdfdff !important;color:#33304a !important;border-color:#c9c6da !important;}
+  [data-theme=light] #toolbar .tbtn.on{background:#0a7a5a !important;color:#fff !important;}
+  [data-theme=light] #arcade-music{background:#fdfdff !important;color:#241f3a !important;
+    border-color:#c9c6da !important;}
+  [data-theme=light] #arcade-music .am-title{color:#0a7a5a !important;}
+  [data-theme=light] #arcade-music select{background:#f0eefa !important;color:#241f3a !important;
+    border-color:#c9c6da !important;}
+  [data-theme=light] #arcade-hi{background:#fdfdff !important;color:#8a6d00 !important;
+    border-color:#dcd8ec !important;text-shadow:none !important;}
+  [data-theme=light] #arcade-hi b{color:#241f3a !important;}
+  [data-theme=light] #arcade-hi-table{background:#fdfdff !important;color:#241f3a !important;}
+  [data-theme=light] #arcade-hi-table .row b{color:#0a7a5a !important;}
+  [data-theme=light] #arcade-pref button,[data-theme=light] #arcade-pref select{
+    background:#fdfdff !important;color:#241f3a !important;border-color:#c9c6da !important;}
+  #arcade-pref{position:fixed;left:10px;bottom:10px;z-index:9999;display:flex;gap:6px;
+    font-family:'Courier New',monospace;}
+  #arcade-pref button,#arcade-pref select{background:rgba(8,8,20,.85);color:#eee;
+    border:1px solid #3a3a52;border-radius:8px;font-family:inherit;font-size:13px;
+    padding:4px 8px;cursor:pointer;outline:none;}
+  body.touch-ctl #arcade-pref{display:none;}`;
+  document.head.appendChild(st);
+
+  /* — petite barre de préférences : 🌙/☀️ + langue — */
+  function mount() {
+    const bar = document.createElement('div'); bar.id = 'arcade-pref';
+    const bt = document.createElement('button');
+    bt.textContent = theme === 'dark' ? '☀️' : '🌙';
+    bt.title = 'Thème clair / sombre';
+    bt.addEventListener('click', () => {
+      theme = theme === 'dark' ? 'light' : 'dark';
+      localStorage.setItem(LST, theme);
+      document.documentElement.dataset.theme = theme;
+      bt.textContent = theme === 'dark' ? '☀️' : '🌙';
+    });
+    const sel = document.createElement('select');
+    sel.title = 'Langue';
+    sel.innerHTML = LANGS.map(([c, n]) => `<option value="${c}"${c===lang?' selected':''}>${n}</option>`).join('');
+    sel.addEventListener('change', () => {
+      localStorage.setItem(LSL, sel.value);
+      location.reload();                       // retraduit toute la page proprement
+    });
+    bar.appendChild(bt); bar.appendChild(sel);
+    document.body.appendChild(bar);
+    translate();
+  }
+
+  /* — traduction des éléments partagés + du menu — */
+  function translate() {
+    const set=(cs,txt)=>{ const el=document.querySelector(cs); if(el) el.textContent=txt; };
+    const back=document.querySelector('a.back'); if(back) back.textContent=t('back');
+    // menu d'accueil
+    set('.sub', t('sub'));
+    const cnt=document.querySelector('.count');
+    if(cnt && cnt.lastChild && cnt.lastChild.nodeType===3) cnt.lastChild.textContent=' '+t('games');
+    set('#btnRandom', t('random'));
+    set('[data-dec="all"]', t('all')); set('[data-dec="70"]', t('y70'));
+    set('[data-dec="80"]', t('y80'));  set('[data-dec="90"]', t('y90'));
+    set('#btnExport', t('records'));   set('#btnImport', t('importBtn'));
+    const sr=document.querySelector('#search'); if(sr) sr.placeholder=t('search');
+    document.querySelectorAll('.play span').forEach(s=>{ s.textContent=t('play'); });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
+  else mount();
+})();
+
 (function () {
   if (window.ArcadeMusic) return;            // déjà chargé
 
@@ -104,8 +243,9 @@
   /* ── éléments ── */
   let elSelect, elNow, elShuffle, elStop, elVol;
 
+  const TR = k => (window.ArcadeI18n ? ArcadeI18n.t(k) : k);
   function fillSelect() {
-    elSelect.innerHTML = '<option value="">— Aucune (silence) —</option>' +
+    elSelect.innerHTML = '<option value="">' + TR('silence') + '</option>' +
       playlist.map((s, i) => `<option value="${i}">${s.name}</option>`).join('');
   }
 
@@ -152,7 +292,7 @@
     audio.pause(); audio.removeAttribute('src'); audio.load();
     current = -1;
     if (elSelect) elSelect.value = '';
-    if (elNow) elNow.textContent = 'Musique';
+    if (elNow) elNow.textContent = TR('music');
     if (elStop) elStop.classList.add('off');
     localStorage.setItem(LS.on, '0');
     localStorage.removeItem(LS.song);
@@ -346,6 +486,7 @@
     repart à la baisse). Affiche un badge « RECORD » et un message si battu.   */
 (function () {
   if (window.ArcadeHi) return;
+  const TR2 = k => (window.ArcadeI18n ? ArcadeI18n.t(k) : k);
   // clé stable basée sur le dossier du jeu
   const segs = location.pathname.split('/').filter(s => s && !/index\.html?$/i.test(s));
   const name = segs.length ? decodeURIComponent(segs[segs.length - 1]) : (document.title || 'jeu');
@@ -407,7 +548,7 @@
     badge.title = 'Voir le tableau des scores';
     badge.addEventListener('click', () => toggleTable());
     toast = document.createElement('div'); toast.id = 'arcade-hi-toast';
-    toast.textContent = '★ NOUVEAU RECORD ! ★'; document.body.appendChild(toast);
+    toast.textContent = TR2('newRecord'); document.body.appendChild(toast);
     refresh();
     // guetteur de fin de partie : l'invite d'initiales s'ouvre SUR l'écran de
     // game over (avant la relance), en lisant les globaux over/running du jeu
@@ -434,8 +575,8 @@
   function toggleTable(autoMs) {
     if (tablePop) { tablePop.remove(); tablePop = null; clearTimeout(tableT); if (!autoMs) return; }
     tablePop = document.createElement('div'); tablePop.id = 'arcade-hi-table';
-    let html = '<div class="tt">★ MEILLEURS SCORES ★</div>';
-    if (!tab.length) html += '<div class="row">Aucun score encore…</div>';
+    let html = '<div class="tt">' + TR2('bestTitle') + '</div>';
+    if (!tab.length) html += '<div class="row">' + TR2('noScore') + '</div>';
     tab.forEach((e2, i) => { html += '<div class="row"><span>' + (i + 1) + '. <b>' + e2.n + '</b></span><span>' + e2.s + '</span></div>'; });
     tablePop.innerHTML = html;
     const wrap = document.getElementById('wrap');
@@ -451,8 +592,8 @@
     pauseGame();                                            // la partie s'arrête pendant la saisie
     let letters = '';
     const div = document.createElement('div'); div.id = 'arcade-hi-init';
-    div.innerHTML = '<div class="t">★ MEILLEUR SCORE ! ★</div><div class="s">' + s +
-      ' pts — entre tes initiales</div><div class="l"></div><div class="h">Lettres A-Z · Retour = effacer · Entrée = valider</div>' +
+    div.innerHTML = '<div class="t">' + TR2('promptTitle') + '</div><div class="s">' + s +
+      ' ' + TR2('enterInit') + '</div><div class="l"></div><div class="h">' + TR2('initHelp') + '</div>' +
       '<div class="kb"></div>';
     // en plein écran, seul l'élément fullscreen est visible : on s'y accroche
     (document.fullscreenElement || document.body).appendChild(div);
@@ -492,7 +633,7 @@
       ok.addEventListener('click', () => tap('Enter')); kb.appendChild(ok);
     }
   }
-  function refresh() { if (badge) badge.innerHTML = 'RECORD <b>' + best + '</b>'; }
+  function refresh() { if (badge) badge.innerHTML = TR2('record') + ' <b>' + best + '</b>'; }
   function showToast() {
     if (!toast) return;
     (document.fullscreenElement || document.body).appendChild(toast);   // visible aussi en plein écran
