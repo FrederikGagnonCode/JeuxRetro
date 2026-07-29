@@ -53,6 +53,8 @@ const lerp=(a,b,t)=>a+(b-a)*t;
 
 let stars, ties, fires, lasers, parts, towers, aim;
 let score=0, shield=6, wave=1, toSpawn=0, spawnT=0, fireCd=0, flashT=0, msgT=0;
+let phase='space', kills=0, turrets=[], turretsDone=0, turretsNeed=8, turSpawnT=0, trenchOff=0, banner='';
+const KILLN=10, TW=250;                      // victoires avant la tranchee ; demi-largeur tranchee
 let running=false, paused=false, over=false;
 const keys={};
 
@@ -96,6 +98,8 @@ function newGame(){
   for(let i=0;i<6;i++) towers.push({side:i%2?1:-1, z:150+i*150});
   aim={x:CX, y:CY};
   score=0; shield=6; wave=1; toSpawn=4; spawnT=40; fireCd=0; flashT=0; msgT=180;
+  phase='space'; kills=0; turrets=[]; turretsDone=0; turretsNeed=8; turSpawnT=0; trenchOff=0;
+  banner='';
   over=false; paused=false; running=true;
   hideOverlay();
 }
@@ -132,12 +136,19 @@ function fire(){
     if(p && Math.hypot(p.x-aim.x,p.y-aim.y)<28+p.k*8 && t.z<bestZ){ best={kind:'tie',o:t}; bestZ=t.z; } }
   for(const f of fires){ const r=fireR(f);
     if(Math.hypot(f.sx-aim.x,f.sy-aim.y)<r+10 && f.z<bestZ){ best={kind:'fire',o:f}; bestZ=f.z; } }
+  for(const u of turrets){ if(!u.alive) continue; const p=projTurret(u);
+    if(p && Math.hypot(p.x-aim.x,p.y-aim.y)<24+p.sc*7 && u.z<bestZ){ best={kind:'turret',o:u}; bestZ=u.z; } }
   if(best){
-    if(best.kind==='tie'){ best.o.alive=false; score+=100; boom(projTie(best.o).x, projTie(best.o).y, '#46d846', 16); }
+    if(best.kind==='tie'){ best.o.alive=false; score+=100; kills++;
+      boom(projTie(best.o).x, projTie(best.o).y, '#46d846', 16); }
+    else if(best.kind==='turret'){ best.o.alive=false; turretsDone++; score+=200;
+      const p=projTurret(best.o); boom(p.x, p.y, '#ff6a6a', 18); }
     else { best.o.dead=true; score+=50; boom(best.o.sx, best.o.sy, '#ff8a2a', 12); }
   }
 }
 
+function projTurret(u){ if(u.z<=1) return null; const k=300/u.z;
+  return { x:CX+u.side*TW*k, y:CY+u.y*k, sc:clamp(FOV/u.z,0.25,6) }; }
 function projTie(t){ if(t.z<=1) return null; const k=FOV/t.z; return { x:CX+t.x*k/ (FOV/300), y:CY+t.y*k/(FOV/300), k:FOV/t.z*1 , sc:clamp(FOV/t.z,0.25,6) }; }
 function fireR(f){ return clamp(lerp(28,3, f.z/f.z0), 3, 30); }
 
@@ -154,12 +165,47 @@ function update(){
 
   // étoiles
   stars.forEach(s=>{ s.z-=8; if(s.z<10){ const n=rndStar(900); s.x=n.x; s.y=n.y; s.z=n.z; } });
-  // tours (surface étoile noire) qui défilent
-  towers.forEach(t=>{ t.z-=6; if(t.z<10){ t.z=900; t.side=Math.random()<.5?-1:1; } });
+  // tours (surface étoile noire) qui défilent — seulement en espace ouvert
+  if(phase==='space') towers.forEach(t=>{ t.z-=6; if(t.z<10){ t.z=900; t.side=Math.random()<.5?-1:1; } });
+
+  // assez de victoires : plongée dans la TRANCHÉE
+  if(phase==='space' && kills>=KILLN){
+    phase='trench'; kills=0; turrets=[]; turretsDone=0; turretsNeed=8+wave;
+    turSpawnT=30; ties=[]; fires=[]; msgT=200; banner='LA TRANCHÉE ! DÉTRUIS LES '+turretsNeed+' CANONS';
+    laserSfx(200,0.6,0.12,'sawtooth');
+  }
+  if(phase==='trench'){
+    trenchOff=(trenchOff+7+wave*0.4)%84;
+    // canons sur les parois
+    turSpawnT--;
+    if(turSpawnT<=0 && turrets.filter(u=>u.alive).length<4){
+      turrets.push({ side:Math.random()<.5?-1:1, y:-60+Math.random()*170, z:900,
+        alive:true, shootCd:60+Math.random()*50 });
+      turSpawnT=50+Math.random()*40;
+    }
+    turrets.forEach(u=>{
+      if(!u.alive) return;
+      u.z-=6+wave*0.4;
+      u.shootCd--;
+      if(u.shootCd<=0 && u.z>150 && u.z<800){
+        const p=projTurret(u);
+        if(p){ fires.push({ sx:p.x, sy:p.y, z:u.z, z0:u.z, dead:false }); sfxEnemyFire(); }
+        u.shootCd=80+Math.random()*60-wave*3;
+      }
+    });
+    turrets=turrets.filter(u=>u.alive && u.z>40);
+    // tranchée nettoyée : remontée dans l'espace
+    if(turretsDone>=turretsNeed){
+      phase='space'; wave++; score+=2000; kills=0; turrets=[]; fires=[];
+      toSpawn=3+wave; msgT=200; banner='TRANCHÉE NETTOYÉE ! +2000';
+      laserSfx(700,0.5,0.1,'triangle');
+    }
+  }
 
   // apparition des TIE
   if(toSpawn>0){ spawnT--; if(spawnT<=0 && ties.filter(t=>t.alive).length<5){
-    ties.push({ x:(Math.random()*2-1)*420, y:(Math.random()*2-1)*200, z:900,
+    ties.push({ x:(Math.random()*2-1)*(phase==='trench'?170:420),
+      y:(phase==='trench'? -40+Math.random()*150 : (Math.random()*2-1)*200), z:900,
       sway:Math.random()*Math.PI*2, alive:true, shootCd:50+Math.random()*60 });
     toSpawn--; spawnT=35+Math.random()*30;
   }}
@@ -208,9 +254,13 @@ function draw(){
   stars.forEach(s=>{ const k=FOV/s.z; const x=CX+s.x*k/ (FOV/300), y=CY+s.y*k/(FOV/300);
     if(x>=0&&x<W&&y>=0&&y<H){ const b=clamp(1-s.z/900,0.1,1); ctx.fillStyle='rgba(255,255,255,'+b+')'; ctx.fillRect(x,y,b>0.6?2:1,b>0.6?2:1); } });
 
+  if(phase==='space') drawDeathStar();
+  else drawTrench();
+
   ctx.save(); ctx.shadowBlur=6;
   // tours de la surface (rouge/bleu) sur les côtés
-  towers.forEach(t=>drawTower(t));
+  if(phase==='space') towers.forEach(t=>drawTower(t));
+  turrets.forEach(u=>{ if(u.alive) drawTurret(u); });
   // TIE fighters
   ties.forEach(t=>{ if(t.alive){ const p=projTie(t); if(p) drawTie(p.x,p.y,p.sc); } });
   // boules de feu
@@ -241,6 +291,59 @@ function draw(){
 
   if(paused){ ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(0,0,W,H);
     ctx.fillStyle='#ffe81f'; ctx.textAlign='center'; ctx.font='30px "Courier New",monospace'; ctx.fillText('PAUSE',CX,CY); }
+}
+
+/* — l'Étoile de la Mort, au loin dans l'espace — */
+function drawDeathStar(){
+  const x=W-118, y=104, r=66;
+  ctx.save();
+  ctx.fillStyle='#14141e'; ctx.strokeStyle='#8a8aa8'; ctx.lineWidth=1.4;
+  ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  // tranchée équatoriale
+  ctx.beginPath(); ctx.moveTo(x-r,y+6); ctx.quadraticCurveTo(x,y+14,x+r,y+6); ctx.stroke();
+  ctx.globalAlpha=.5;
+  ctx.beginPath(); ctx.moveTo(x-r+2,y+11); ctx.quadraticCurveTo(x,y+19,x+r-2,y+11); ctx.stroke();
+  ctx.globalAlpha=1;
+  // parabole du superlaser
+  ctx.beginPath(); ctx.arc(x-r*0.38,y-r*0.38,r*0.3,0,Math.PI*2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(x-r*0.38,y-r*0.38,r*0.12,0,Math.PI*2); ctx.stroke();
+  // détails de surface
+  ctx.globalAlpha=.35;
+  const dets=[[18,-30,9],[34,10,6],[-6,28,7],[30,-46,5],[-28,44,5]];
+  dets.forEach(function(d){ ctx.strokeRect(x+d[0],y+d[1],d[2],d[2]*0.7); });
+  ctx.globalAlpha=1; ctx.restore();
+}
+/* — la tranchée : parois convergentes + traverses qui défilent — */
+function drawTrench(){
+  const vp={x:CX,y:CY+12};
+  const P=(wx,wy,z)=>{ const k=300/z; return [CX+wx*k, CY+wy*k]; };
+  ctx.strokeStyle='#8a8aa8'; ctx.lineWidth=1.2;
+  [[-TW,-150],[TW,-150],[-TW,150],[TW,150]].forEach(function(e){
+    const a=P(e[0],e[1],64);
+    ctx.beginPath(); ctx.moveTo(a[0],a[1]); ctx.lineTo(vp.x,vp.y); ctx.stroke();
+  });
+  ctx.globalAlpha=.55;
+  for(let i=0;i<10;i++){
+    const z=64+((i*84+(84-trenchOff))%840);
+    const tl=P(-TW,-150,z), bl=P(-TW,150,z), tr=P(TW,-150,z), br=P(TW,150,z);
+    ctx.beginPath(); ctx.moveTo(tl[0],tl[1]); ctx.lineTo(bl[0],bl[1]); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(tr[0],tr[1]); ctx.lineTo(br[0],br[1]); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(bl[0],bl[1]); ctx.lineTo(br[0],br[1]); ctx.stroke();
+  }
+  ctx.globalAlpha=1;
+}
+/* — canon de la tranchée, accroché à une paroi — */
+function drawTurret(u){
+  const p=projTurret(u); if(!p) return;
+  const sc=clamp(p.sc,0.25,4), w=14*sc, h=16*sc;
+  ctx.strokeStyle='#ff6a6a'; ctx.lineWidth=Math.max(1,1.3*Math.min(sc,2));
+  ctx.shadowColor='#ff5252'; ctx.shadowBlur=6;
+  ctx.strokeRect(p.x-w/2, p.y-h/4, w, h/2);
+  ctx.beginPath(); ctx.arc(p.x, p.y-h/4, w/2.4, Math.PI, 0); ctx.stroke();
+  const ang=Math.atan2(CY-p.y, CX-p.x);
+  ctx.beginPath(); ctx.moveTo(p.x, p.y-h/4);
+  ctx.lineTo(p.x+Math.cos(ang)*w*0.9, p.y-h/4+Math.sin(ang)*w*0.9); ctx.stroke();
+  ctx.shadowBlur=0;
 }
 
 /* — les 4 canons du chasseur : bouts visibles aux coins de l'écran.
@@ -341,9 +444,13 @@ function drawHUD(){
   ctx.globalAlpha=1; ctx.shadowBlur=0;
   ctx.fillStyle='#46d846'; ctx.textAlign='center'; ctx.font='bold 13px "Courier New",monospace';
   ctx.fillText('SHIELD', CX, 44);
+  // progression de phase (sous WAVE)
+  ctx.textAlign='right'; ctx.font='bold 12px "Courier New",monospace';
+  if(phase==='space'){ ctx.fillStyle='#46d846'; ctx.fillText('CIBLES '+kills+'/'+KILLN, W-12, 36); }
+  else { ctx.fillStyle='#ff6a6a'; ctx.fillText('CANONS '+turretsDone+'/'+turretsNeed, W-12, 36); }
   // message
-  if(msgT>0){ ctx.fillStyle='#d23b3b'; ctx.font='bold 16px "Courier New",monospace';
-    ctx.fillText('SHOOT TIE FIGHTERS', CX, 64); }
+  if(msgT>0){ ctx.fillStyle='#d23b3b'; ctx.font='bold 16px "Courier New",monospace'; ctx.textAlign='center';
+    ctx.fillText(banner||'SHOOT TIE FIGHTERS', CX, 64); }
 }
 
 function loop(){ update(); draw(); if(window.ArcadeHi)ArcadeHi.submit(score); requestAnimationFrame(loop); }
