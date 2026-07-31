@@ -54,6 +54,7 @@ const lerp=(a,b,t)=>a+(b-a)*t;
 let stars, ties, fires, lasers, parts, towers, aim;
 let score=0, shield=6, wave=1, toSpawn=0, spawnT=0, fireCd=0, flashT=0, msgT=0;
 let phase='space', kills=0, turrets=[], turretsDone=0, turretsNeed=8, turSpawnT=0, trenchOff=0, banner='';
+let port=null, portT=0, boomT=0;             // bouche d'aération + explosion finale
 const KILLN=10, TW=250;                      // victoires avant la tranchee ; demi-largeur tranchee
 let running=false, paused=false, over=false;
 const keys={};
@@ -99,7 +100,7 @@ function newGame(){
   aim={x:CX, y:CY};
   score=0; shield=6; wave=1; toSpawn=4; spawnT=40; fireCd=0; flashT=0; msgT=180;
   phase='space'; kills=0; turrets=[]; turretsDone=0; turretsNeed=8; turSpawnT=0; trenchOff=0;
-  banner='';
+  banner=''; port=null; portT=0; boomT=0;
   over=false; paused=false; running=true;
   hideOverlay();
 }
@@ -138,15 +139,26 @@ function fire(){
     if(Math.hypot(f.sx-aim.x,f.sy-aim.y)<r+10 && f.z<bestZ){ best={kind:'fire',o:f}; bestZ=f.z; } }
   for(const u of turrets){ if(!u.alive) continue; const p=projTurret(u);
     if(p && Math.hypot(p.x-aim.x,p.y-aim.y)<24+p.sc*7 && u.z<bestZ){ best={kind:'turret',o:u}; bestZ=u.z; } }
+  if(phase==='port' && port){ const pp=projPort();
+    if(pp && Math.hypot(pp.x-aim.x,pp.y-aim.y)<14+pp.sc*10 && port.z<bestZ){ best={kind:'port'}; bestZ=port.z; } }
   if(best){
     if(best.kind==='tie'){ best.o.alive=false; score+=100; kills++;
       boom(projTie(best.o).x, projTie(best.o).y, '#46d846', 16); }
     else if(best.kind==='turret'){ best.o.alive=false; turretsDone++; score+=200;
       const p=projTurret(best.o); boom(p.x, p.y, '#ff6a6a', 18); }
+    else if(best.kind==='port'){ destroyPort(); }
     else { best.o.dead=true; score+=50; boom(best.o.sx, best.o.sy, '#ff8a2a', 12); }
   }
 }
 
+function projPort(){ if(!port||port.z<=1) return null; const k=300/port.z;
+  return { x:CX, y:CY+150*k, sc:clamp(FOV/port.z,0.25,6) }; }
+function destroyPort(){
+  score+=10000; phase='boom'; boomT=170; port=null; turrets=[]; fires=[]; ties=[];
+  msgT=170; banner='DANS LE MILLE ! L\'ÉTOILE EXPLOSE ! +10000';
+  laserSfx(90,1.2,0.2,'sawtooth'); laserSfx(180,1.0,0.14,'square');
+  for(let i=0;i<8;i++) boom(CX+(Math.random()*2-1)*150, CY+(Math.random()*2-1)*100, '#ffd23a', 20);
+}
 function projTurret(u){ if(u.z<=1) return null; const k=300/u.z;
   return { x:CX+u.side*TW*k, y:CY+u.y*k, sc:clamp(FOV/u.z,0.25,6) }; }
 function projTie(t){ if(t.z<=1) return null; const k=FOV/t.z; return { x:CX+t.x*k/ (FOV/300), y:CY+t.y*k/(FOV/300), k:FOV/t.z*1 , sc:clamp(FOV/t.z,0.25,6) }; }
@@ -174,11 +186,11 @@ function update(){
     turSpawnT=30; ties=[]; fires=[]; msgT=200; banner='LA TRANCHÉE ! DÉTRUIS LES '+turretsNeed+' CANONS';
     laserSfx(200,0.6,0.12,'sawtooth');
   }
-  if(phase==='trench'){
+  if(phase==='trench'||phase==='port'){
     trenchOff=(trenchOff+7+wave*0.4)%84;
     // canons sur les parois
     turSpawnT--;
-    if(turSpawnT<=0 && turrets.filter(u=>u.alive).length<4){
+    if(turSpawnT<=0 && turrets.filter(u=>u.alive).length<(phase==='trench'?4:2)){
       turrets.push({ side:Math.random()<.5?-1:1, y:-60+Math.random()*170, z:900,
         alive:true, shootCd:60+Math.random()*50 });
       turSpawnT=50+Math.random()*40;
@@ -194,11 +206,29 @@ function update(){
       }
     });
     turrets=turrets.filter(u=>u.alive && u.z>40);
-    // tranchée nettoyée : remontée dans l'espace
-    if(turretsDone>=turretsNeed){
-      phase='space'; wave++; score+=2000; kills=0; turrets=[]; fires=[];
-      toSpawn=3+wave; msgT=200; banner='TRANCHÉE NETTOYÉE ! +2000';
+    // tranchée nettoyée : place au COUP DE GRÂCE
+    if(phase==='trench' && turretsDone>=turretsNeed){
+      phase='port'; score+=2000; port=null; portT=90;
+      msgT=220; banner='LA BOUCHE D\'AÉRATION ! TIR PRÉCIS !';
       laserSfx(700,0.5,0.1,'triangle');
+    }
+  }
+  // l'évent d'aération approche sur le plancher : un seul tir bien placé
+  if(phase==='port'){
+    if(!port){ portT--; if(portT<=0) port={z:900}; }
+    else{
+      port.z-=6+wave*0.4;
+      if(port.z<52){ port=null; portT=110; msgT=150; banner='RATÉ ! UN AUTRE ÉVENT APPROCHE…'; }
+    }
+  }
+  // l'Étoile de la Mort explose
+  if(phase==='boom'){
+    boomT--;
+    if(boomT%6===0) boom(CX+(Math.random()*2-1)*190, CY+(Math.random()*2-1)*130,
+      ['#ffd23a','#ff8a2a','#fff'][Math.floor(Math.random()*3)], 14);
+    if(boomT<=0){
+      phase='space'; wave++; kills=0; toSpawn=3+wave; ties=[]; fires=[]; turrets=[];
+      msgT=220; banner='UNE NOUVELLE ÉTOILE DE LA MORT APPROCHE…';
     }
   }
 
@@ -256,6 +286,7 @@ function draw(){
 
   if(phase==='space') drawDeathStar();
   else drawTrench();
+  if(phase==='port' && port) drawPort();
 
   ctx.save(); ctx.shadowBlur=6;
   // tours de la surface (rouge/bleu) sur les côtés
@@ -283,6 +314,17 @@ function draw(){
 
   // réticule
   drawReticle(aim.x, aim.y);
+
+  // explosion finale de l'Étoile de la Mort
+  if(phase==='boom'){
+    const t=1-boomT/170;
+    if(boomT>150){ ctx.fillStyle='rgba(255,255,255,'+((boomT-150)/20*0.9)+')'; ctx.fillRect(0,0,W,H); }
+    ctx.strokeStyle='rgba(255,180,60,'+Math.max(0,1-t)+')'; ctx.lineWidth=3;
+    ctx.shadowColor='#ff8a2a'; ctx.shadowBlur=14;
+    for(let i=0;i<3;i++){ const r=t*540-i*95;
+      if(r>0){ ctx.beginPath(); ctx.arc(CX,CY,r,0,Math.PI*2); ctx.stroke(); } }
+    ctx.shadowBlur=0;
+  }
 
   // flash de dégât
   if(flashT>0){ ctx.fillStyle='rgba(255,40,40,'+(flashT/10*0.35)+')'; ctx.fillRect(0,0,W,H); }
@@ -331,6 +373,23 @@ function drawTrench(){
     ctx.beginPath(); ctx.moveTo(bl[0],bl[1]); ctx.lineTo(br[0],br[1]); ctx.stroke();
   }
   ctx.globalAlpha=1;
+}
+/* — la bouche d'aération, sur le plancher de la tranchée — */
+function drawPort(){
+  const pp=projPort(); if(!pp) return;
+  const k=300/port.z, w=100*k, h=26*k;
+  ctx.strokeStyle='#7be06a'; ctx.lineWidth=Math.max(1,1.5*Math.min(pp.sc,2));
+  ctx.shadowColor='#7be06a'; ctx.shadowBlur=8;
+  ctx.strokeRect(pp.x-w/2, pp.y-h/2, w, h);
+  ctx.globalAlpha=.7;
+  for(let i=1;i<4;i++){ const xx=pp.x-w/2+w*i/4;
+    ctx.beginPath(); ctx.moveTo(xx,pp.y-h/2); ctx.lineTo(xx,pp.y+h/2); ctx.stroke(); }
+  ctx.globalAlpha=1;
+  // anneau de visée pulsant
+  const pr=(performance.now()%600)/600;
+  ctx.globalAlpha=1-pr;
+  ctx.beginPath(); ctx.arc(pp.x,pp.y,(10+pr*26)*Math.min(pp.sc,3),0,Math.PI*2); ctx.stroke();
+  ctx.globalAlpha=1; ctx.shadowBlur=0;
 }
 /* — canon de la tranchée, accroché à une paroi — */
 function drawTurret(u){
@@ -447,7 +506,9 @@ function drawHUD(){
   // progression de phase (sous WAVE)
   ctx.textAlign='right'; ctx.font='bold 12px "Courier New",monospace';
   if(phase==='space'){ ctx.fillStyle='#46d846'; ctx.fillText('CIBLES '+kills+'/'+KILLN, W-12, 36); }
-  else { ctx.fillStyle='#ff6a6a'; ctx.fillText('CANONS '+turretsDone+'/'+turretsNeed, W-12, 36); }
+  else if(phase==='trench'){ ctx.fillStyle='#ff6a6a'; ctx.fillText('CANONS '+turretsDone+'/'+turretsNeed, W-12, 36); }
+  else if(phase==='port'){ ctx.fillStyle='#7be06a';
+    if(Math.floor(performance.now()/300)%2) ctx.fillText("VISE L'ÉVENT !", W-12, 36); }
   // message
   if(msgT>0){ ctx.fillStyle='#d23b3b'; ctx.font='bold 16px "Courier New",monospace'; ctx.textAlign='center';
     ctx.fillText(banner||'SHOOT TIE FIGHTERS', CX, 64); }
