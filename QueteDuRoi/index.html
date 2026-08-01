@@ -182,8 +182,10 @@ function act(){
   }
 }
 function die(t){
-  deaths++; score=Math.max(0,score-50); sfxDie();
-  say('☠ '+t+'  (-50)');
+  // pas de retrait de points : une baisse de score ferait croire au module
+  // de records que la partie est finie (invite d'initiales + pause = gel)
+  deaths++; sfxDie();
+  say('☠ '+t);
   // réapparition à un endroit SÛR de l'écran (au lac, le centre est dans
   // l'eau : on y re-mourait chaque frame → jeu apparemment gelé)
   const r=ROOMS[room.x+','+room.y];
@@ -484,8 +486,8 @@ inv=[]; score=0; deaths=0; msg=''; msgT=0; invOpen=false; cine=null;
 wolf={x:120,y:200,vx:60,vy:30};
 requestAnimationFrame(loop);
 </script>
-<script src="../music/i18n-games.js?v=17"></script>
-<script src="../music/playlist.js?v=17"></script>
-<script src="../music/player.js?v=17"></script>
+<script src="../music/i18n-games.js?v=18"></script>
+<script src="../music/playlist.js?v=18"></script>
+<script src="../music/player.js?v=18"></script>
 </body>
 </html>

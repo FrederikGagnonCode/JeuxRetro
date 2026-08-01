@@ -661,10 +661,18 @@
     submit(score) {
       score = Math.floor(score) || 0;
       if (score < last - 1) {                                  // score reparti à la baisse = nouvelle partie
-        // secours (jeux sans over/running) : invite si pas déjà faite au game over
-        if (promptedScore !== last && qualifies(last) && badge) openPrompt(last);
-        promptedScore = -1;
-        prev = best; beaten = false;
+        // …sauf si le jeu expose running/over et que la partie est ENCORE EN
+        // COURS (ex. aventure où mourir coûte des points) : ne pas ouvrir
+        // l'invite ni geler le jeu en pleine partie
+        let live = false;
+        try { live = (typeof running !== 'undefined' && running &&
+                      typeof over !== 'undefined' && !over); } catch (e) {}
+        if (!live) {
+          // secours (jeux sans over/running) : invite si pas déjà faite au game over
+          if (promptedScore !== last && qualifies(last) && badge) openPrompt(last);
+          promptedScore = -1;
+          prev = best; beaten = false;
+        }
       }
       last = score;
       if (!beaten && prev > 0 && score > prev) { beaten = true; showToast(); }
