@@ -977,6 +977,7 @@
       formulak:  [['ArrowUp', 'GAZ'], ['ArrowDown', 'FREIN']],
       alleycat:  [[' ', 'SAUT']],
       punchout:  [['x', 'GAUCHE'], ['c', 'DROITE'], [' ', 'UPPER ★']],
+      queteduroi:[[' ', 'AGIR'], ['i', 'SAC']],
       commando:  [[' ', 'TIR'], ['x', 'GRENADE']],
       wolfenstein3d: [[' ', 'TIR']],
       castlewolfenstein: [[' ', 'TIR']],
