@@ -184,8 +184,12 @@ function act(){
 function die(t){
   deaths++; score=Math.max(0,score-50); sfxDie();
   say('☠ '+t+'  (-50)');
-  hero.x=W/2; hero.y=PH-50;
-  if(room.x===0&&room.y===0){ room={x:0,y:1}; }        // on ressort de la grotte
+  // réapparition à un endroit SÛR de l'écran (au lac, le centre est dans
+  // l'eau : on y re-mourait chaque frame → jeu apparemment gelé)
+  const r=ROOMS[room.x+','+room.y];
+  if(r.type==='cave'){ room={x:0,y:1}; hero.x=W/2; hero.y=PH-50; }  // on ressort de la grotte
+  else if(r.type==='lake'){ hero.x=470; hero.y=PH-30; }             // rive droite, au sec
+  else { hero.x=W/2; hero.y=PH-40; }
 }
 
 /* ── boucle ── */
