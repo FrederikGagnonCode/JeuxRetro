@@ -441,8 +441,33 @@ function heroSprite(){
   if(flags.goat && !flags.troll) goatSprite(h.x-38*h.dir, h.y+2);
 }
 
+/* — flèches de sortie : là où la carte continue —
+   Mêmes règles que le déplacement : la flèche nord du pont n'apparaît
+   qu'une fois le troll chassé, pas de nord depuis le château/la
+   sorcière/la grotte. Un indice qui ne ment jamais. */
+function drawExits(){
+  const r=ROOMS[room.x+','+room.y];
+  const minY = r.type==='castle'?150 : r.type==='bridge'?40 : 120;
+  const midY=(minY+PH)/2;
+  const pulse=0.35+0.3*Math.sin(performance.now()/280);
+  ctx.save();
+  ctx.fillStyle='rgba(255,220,80,'+pulse+')';
+  ctx.strokeStyle='rgba(90,60,0,'+pulse+')'; ctx.lineWidth=1.4;
+  const tri=(x,y,ang)=>{ ctx.save(); ctx.translate(x,y); ctx.rotate(ang);
+    ctx.beginPath(); ctx.moveTo(8,0); ctx.lineTo(-6,-8); ctx.lineTo(-6,8);
+    ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore(); };
+  if(room.x>0) tri(12,midY,Math.PI);                          // ← ouest
+  if(room.x<2) tri(W-12,midY,0);                              // → est
+  const upOK = room.y>0 && r.type!=='castle' && r.type!=='witch' && r.type!=='cave'
+               && !(r.type==='bridge' && !flags.troll);
+  if(upOK) tri(W/2,minY+12,-Math.PI/2);                       // ↑ nord
+  if(room.y<2) tri(W/2,PH-10,Math.PI/2);                      // ↓ sud
+  ctx.restore();
+}
+
 function draw(){
   scene();
+  drawExits();
   heroSprite();
   // bande de texte
   ctx.fillStyle='#101024'; ctx.fillRect(0,PH,W,TXH);
