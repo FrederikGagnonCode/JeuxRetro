@@ -1329,42 +1329,92 @@
             <stop offset="0" stop-color="#2b6dff"/><stop offset="1" stop-color="#7ab8ff"/>
           </linearGradient></defs>
           <rect width="80" height="60" fill="url(#qrSky)"/>
-          <!-- château au fond -->
+          <circle cx="12" cy="7" r="3.4" fill="#fff8e0" opacity=".9"/>
+          <!-- château : pierres, créneaux, fanions, porte ogivale -->
           <g fill="#b8a0c8">
             <rect x="26" y="10" width="28" height="18"/>
             <rect x="20" y="6" width="8" height="22"/><rect x="52" y="6" width="8" height="22"/>
-            <rect x="20" y="3" width="2.4" height="4"/><rect x="23" y="3" width="2.4" height="4"/><rect x="26" y="3" width="2.4" height="4"/>
-            <rect x="52" y="3" width="2.4" height="4"/><rect x="55" y="3" width="2.4" height="4"/><rect x="58" y="3" width="2.4" height="4"/>
           </g>
-          <rect x="36" y="18" width="8" height="10" fill="#5a3f22"/>
-          <polygon points="24,3 24,-2 30,1" fill="#a01818"/><polygon points="56,3 56,-2 62,1" fill="#a01818"/>
-          <!-- prairie + rivière -->
+          <g fill="#9a82ae">
+            <rect x="20" y="3" width="2.6" height="4"/><rect x="23.4" y="3" width="2.6" height="4"/><rect x="26.8" y="3" width="2.6" height="4"/>
+            <rect x="50.6" y="3" width="2.6" height="4"/><rect x="54" y="3" width="2.6" height="4"/><rect x="57.4" y="3" width="2.6" height="4"/>
+            <rect x="30" y="8" width="2.4" height="3"/><rect x="35" y="8" width="2.4" height="3"/>
+            <rect x="40" y="8" width="2.4" height="3"/><rect x="45" y="8" width="2.4" height="3"/>
+          </g>
+          <g stroke="rgba(0,0,0,.14)" stroke-width=".5">
+            <line x1="26" y1="15" x2="54" y2="15"/><line x1="26" y1="20" x2="54" y2="20"/><line x1="26" y1="25" x2="54" y2="25"/>
+            <line x1="20" y1="11" x2="28" y2="11"/><line x1="52" y1="11" x2="60" y2="11"/>
+          </g>
+          <path d="M36 28 L36 20 A4 4 0 0 1 44 20 L44 28 Z" fill="#5a3f22"/>
+          <rect x="21.5" y="12" width="2.4" height="3.6" fill="#2b1e3a"/>
+          <rect x="56" y="12" width="2.4" height="3.6" fill="#2b1e3a"/>
+          <line x1="24" y1="3" x2="24" y2="-2" stroke="#5a3f22" stroke-width=".7"/>
+          <line x1="56" y1="3" x2="56" y2="-2" stroke="#5a3f22" stroke-width=".7"/>
+          <polygon points="24,-2 30,0 24,2" fill="#a01818"/><polygon points="56,-2 62,0 56,2" fill="#a01818"/>
+          <!-- prairie + rivière + pont -->
           <rect y="28" width="80" height="32" fill="#2fa036"/>
+          <g fill="#ffd23a"><circle cx="12" cy="38" r=".8"/><circle cx="30" cy="34" r=".8"/><circle cx="58" cy="36" r=".8"/></g>
           <path d="M0 44 Q20 40 40 44 T80 44 L80 52 Q60 48 40 52 T0 52 Z" fill="#2b6dff"/>
-          <!-- pont -->
-          <rect x="34" y="41" width="12" height="13" fill="#7a5c3a"/>
-          <line x1="34" y1="45" x2="46" y2="45" stroke="#5a3f22" stroke-width="1"/>
-          <line x1="34" y1="49" x2="46" y2="49" stroke="#5a3f22" stroke-width="1"/>
-          <!-- arbres -->
-          <g><rect x="8" y="34" width="3" height="6" fill="#6e4a2a"/><circle cx="9.5" cy="31" r="6" fill="#1d6e26"/><circle cx="7" cy="29" r="3.4" fill="#2fa036"/></g>
-          <g><rect x="68" y="32" width="3" height="6" fill="#6e4a2a"/><circle cx="69.5" cy="29" r="6" fill="#1d6e26"/></g>
-          <!-- dragon rouge qui pointe -->
-          <g transform="translate(63,50)">
-            <ellipse rx="7" ry="3.4" fill="#a02818"/>
-            <ellipse cx="-7.6" cy="-2.4" rx="2.6" ry="1.8" fill="#a02818"/>
-            <polygon points="-10.6,-2.6 -14.5,-1.8 -10.6,-1" fill="#ff8a2a"/>
-            <circle cx="-8.4" cy="-3" r=".5" fill="#ffd23a"/>
+          <path d="M6 46 Q10 45 14 46 M52 49 Q56 48 60 49" stroke="rgba(255,255,255,.5)" stroke-width=".7" fill="none"/>
+          <rect x="33" y="41" width="14" height="13" fill="#7a5c3a"/>
+          <g stroke="#5a3f22" stroke-width=".9">
+            <line x1="33" y1="44" x2="47" y2="44"/><line x1="33" y1="47.5" x2="47" y2="47.5"/><line x1="33" y1="51" x2="47" y2="51"/>
           </g>
-          <!-- trésors -->
-          <g transform="translate(14,52)"><rect x="-3.4" y="-2.6" width="6.8" height="5" fill="#8a5a1e"/>
-            <rect x="-3.4" y="-2.6" width="6.8" height="1.6" fill="#c8a020"/><rect x="-.7" y="-1" width="1.4" height="2" fill="#ffd23a"/></g>
-          <!-- héros à la plume -->
-          <g transform="translate(40,36)">
-            <rect x="-2.4" y="-4" width="4.8" height="6" fill="#a01818"/>
-            <rect x="-2.4" y="2" width="1.6" height="3.4" fill="#1a3a8a"/><rect x=".8" y="2" width="1.6" height="3.4" fill="#1a3a8a"/>
-            <circle cy="-6.4" r="2.4" fill="#e8c8a0"/>
-            <polygon points="-2.6,-7.6 2.6,-7.6 1,-10.4" fill="#3f6ecc"/>
-            <path d="M1.4 -10 Q3.4 -12 4.6 -10" stroke="#ff5252" stroke-width=".8" fill="none"/>
+          <!-- arbres feuillus -->
+          <g><rect x="8" y="34" width="3" height="6" fill="#6e4a2a"/><circle cx="9.5" cy="31" r="6" fill="#1d6e26"/><circle cx="7" cy="29" r="3.4" fill="#2fa036"/></g>
+          <g><rect x="68" y="32" width="3" height="6" fill="#6e4a2a"/><circle cx="69.5" cy="29" r="6" fill="#1d6e26"/><circle cx="67.4" cy="27.4" r="3" fill="#2fa036"/></g>
+          <!-- troll ventru sur le pont -->
+          <g transform="translate(40,44)">
+            <line x1="3.4" y1="-4" x2="6.6" y2="-9" stroke="#6e4a2a" stroke-width="1.2" stroke-linecap="round"/>
+            <ellipse cx="7.2" cy="-9.6" rx="1.8" ry="2.4" fill="#8a6a42"/>
+            <rect x="-3.6" y="-5" width="7.2" height="6" fill="#5e7e3c"/>
+            <ellipse cy="-1.4" rx="2.2" ry="2.4" fill="#7a9a52"/>
+            <rect x="-3.6" y="1" width="7.2" height="2" fill="#8a6a42"/>
+            <circle cy="-7.4" r="2.8" fill="#5e7e3c"/>
+            <polygon points="-2.6,-8.2 -4.4,-9.2 -2.6,-6.8" fill="#5e7e3c"/>
+            <polygon points="2.6,-8.2 4.4,-9.2 2.6,-6.8" fill="#5e7e3c"/>
+            <circle cx="-1" cy="-7.8" r=".7" fill="#ffd23a"/><circle cx="1" cy="-7.8" r=".7" fill="#ffd23a"/>
+            <rect x=".4" y="-5.6" width=".9" height="1.2" fill="#fff"/>
+          </g>
+          <!-- dragon : aile, épines, souffle -->
+          <g transform="translate(64,50)">
+            <polygon points="-1,-4 4,-11 6,-4" fill="#7a1c10"/>
+            <ellipse rx="8" ry="3.6" fill="#a02818"/>
+            <ellipse cy="1.2" rx="6" ry="1.8" fill="#c84828"/>
+            <polygon points="-5,-3 -3.6,-6 -2.2,-3" fill="#d84828"/>
+            <polygon points="-1.4,-3.2 0,-6.2 1.4,-3.2" fill="#d84828"/>
+            <path d="M7.6 0 Q11 -2 10.4 -5" stroke="#a02818" stroke-width="1.3" fill="none"/>
+            <ellipse cx="-8.6" cy="-2.6" rx="2.8" ry="2" fill="#a02818"/>
+            <polygon points="-11.4,-3 -16.5,-1.9 -11.4,-1" fill="#ff8a2a"/>
+            <polygon points="-11.4,-2.7 -14.6,-1.9 -11.4,-1.3" fill="#ffd23a"/>
+            <ellipse cx="-9.2" cy="-3.2" rx=".8" ry=".6" fill="#ffd23a"/>
+          </g>
+          <!-- coffre d'or rayonnant + clé -->
+          <g transform="translate(13,52)">
+            <circle r="5.4" fill="#ffd23a" opacity=".18"/>
+            <rect x="-3.6" y="-2.8" width="7.2" height="5.2" fill="#8a5a1e"/>
+            <path d="M-3.6 -2.8 A3.6 2.2 0 0 1 3.6 -2.8 Z" fill="#c8a020"/>
+            <rect x="-3.6" y="-1" width="7.2" height="1" fill="#c8a020"/>
+            <rect x="-.8" y="-1.4" width="1.6" height="2.4" fill="#ffd23a"/>
+          </g>
+          <g transform="translate(23,55)"><rect x="0" y="-.5" width="3.4" height="1" fill="#ffd23a"/>
+            <circle cx="-1" r="1.1" fill="none" stroke="#ffd23a" stroke-width=".8"/></g>
+          <!-- héros raffiné : bottes, ceinture, plume -->
+          <g transform="translate(26,37)">
+            <ellipse cy="6" rx="3" ry=".9" fill="rgba(0,0,0,.25)"/>
+            <rect x="-2.4" y="2" width="1.7" height="3" fill="#1a3a8a"/><rect x=".7" y="2" width="1.7" height="3" fill="#1a3a8a"/>
+            <rect x="-2.8" y="4.6" width="2.4" height="1.4" fill="#6e4a2a"/><rect x=".5" y="4.6" width="2.4" height="1.4" fill="#6e4a2a"/>
+            <rect x="-2.6" y="-4.4" width="5.2" height="6.6" fill="#a01818"/>
+            <rect x="1" y="-4.4" width="1.6" height="6.6" fill="#7c1010"/>
+            <rect x="-2.6" y="-.4" width="5.2" height="1.1" fill="#c8a020"/>
+            <rect x="-.6" y="-.7" width="1.2" height="1.6" fill="#ffd23a"/>
+            <line x1="-2.6" y1="-3" x2="-4.2" y2="0" stroke="#a01818" stroke-width="1.1"/>
+            <line x1="2.6" y1="-3" x2="4.2" y2="0" stroke="#a01818" stroke-width="1.1"/>
+            <circle cy="-6.6" r="2.5" fill="#e8c8a0"/>
+            <circle cx=".9" cy="-6.9" r=".5" fill="#111"/>
+            <polygon points="-2.9,-8 2.9,-8 1.2,-10.8" fill="#3f6ecc"/>
+            <rect x="-2.9" y="-8.5" width="5.8" height=".9" fill="#2c50a0"/>
+            <path d="M1.6 -10.4 Q3.8 -12.6 5.2 -10.2" stroke="#ff5252" stroke-width=".9" fill="none"/>
           </g>
         </svg>
         <div class="play"><span>▶ JOUER</span></div>
