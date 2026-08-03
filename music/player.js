@@ -24,42 +24,48 @@
       record:'RECORD', bestTitle:'★ MEILLEURS SCORES ★', newRecord:'★ NOUVEAU RECORD ! ★',
       promptTitle:'★ MEILLEUR SCORE ! ★', enterInit:'pts — entre tes initiales',
       initHelp:'Lettres A-Z · Retour = effacer · Entrée = valider',
-      noScore:'Aucun score encore…', music:'Musique', silence:'— Aucune (silence) —' },
+      noScore:'Aucun score encore…', music:'Musique', silence:'— Aucune (silence) —',
+      notice:"Ce site est un hommage amateur à l'âge d'or du jeu vidéo. Chaque jeu est une réinterprétation originale écrite de zéro, qui ne cherche en aucun cas à reproduire les jeux originaux ni à s'y substituer. Les titres évoqués appartiennent à leurs ayants droit respectifs." },
     en:{ sub:'Pick your game — Insert Coin', games:'GAMES', random:'🎲 Random game',
       all:'All', y70:'The 70s', y80:'The 80s', y90:'1990 +', search:'🔍 Search…',
       records:'💾 Scores', importBtn:'📥 Import', play:'▶ PLAY', back:'← Arcade Menu',
       record:'RECORD', bestTitle:'★ HIGH SCORES ★', newRecord:'★ NEW RECORD! ★',
       promptTitle:'★ HIGH SCORE! ★', enterInit:'pts — enter your initials',
       initHelp:'Letters A-Z · Backspace = erase · Enter = OK',
-      noScore:'No scores yet…', music:'Music', silence:'— None (silence) —' },
+      noScore:'No scores yet…', music:'Music', silence:'— None (silence) —',
+      notice:'This site is an amateur tribute to the golden age of video games. Every game is an original reinterpretation written from scratch — in no way does it attempt to reproduce or replace the original games. All referenced titles belong to their respective rights holders.' },
     ja:{ sub:'ゲームをえらんでね — INSERT COIN', games:'ゲーム', random:'🎲 ランダム',
       all:'すべて', y70:'70年代', y80:'80年代', y90:'1990+', search:'🔍 検索…',
       records:'💾 スコア', importBtn:'📥 インポート', play:'▶ プレイ', back:'← メニューへ',
       record:'記録', bestTitle:'★ ハイスコア ★', newRecord:'★ 新記録！ ★',
       promptTitle:'★ ハイスコア！ ★', enterInit:'pts — イニシャルを入力',
       initHelp:'A-Z · Backspace=消す · Enter=決定',
-      noScore:'まだスコアがありません…', music:'音楽', silence:'— なし —' },
+      noScore:'まだスコアがありません…', music:'音楽', silence:'— なし —',
+      notice:'当サイトはレトロゲーム黄金期へのファンメイドのオマージュです。各ゲームはゼロから書かれたオリジナルの再解釈であり、原作の再現や代替を意図するものではありません。言及されるタイトルは各権利者に帰属します。' },
     cs:{ sub:'Vyber si hru — Insert Coin', games:'HER', random:'🎲 Náhodná hra',
       all:'Vše', y70:'70. léta', y80:'80. léta', y90:'1990 +', search:'🔍 Hledat…',
       records:'💾 Skóre', importBtn:'📥 Import', play:'▶ HRÁT', back:'← Zpět do menu',
       record:'REKORD', bestTitle:'★ NEJLEPŠÍ SKÓRE ★', newRecord:'★ NOVÝ REKORD! ★',
       promptTitle:'★ NEJLEPŠÍ SKÓRE! ★', enterInit:'b. — zadej iniciály',
       initHelp:'Písmena A-Z · Backspace = smazat · Enter = OK',
-      noScore:'Zatím žádné skóre…', music:'Hudba', silence:'— Žádná (ticho) —' },
+      noScore:'Zatím žádné skóre…', music:'Hudba', silence:'— Žádná (ticho) —',
+      notice:'Tento web je amatérská pocta zlaté éře videoher. Každá hra je originální reinterpretace napsaná od nuly — v žádném případě se nesnaží reprodukovat původní hry ani je nahradit. Zmiňované tituly patří jejich vlastníkům práv.' },
     zh:{ sub:'选择你的游戏 — INSERT COIN', games:'个游戏', random:'🎲 随机游戏',
       all:'全部', y70:'70年代', y80:'80年代', y90:'1990+', search:'🔍 搜索…',
       records:'💾 记录', importBtn:'📥 导入', play:'▶ 开始', back:'← 返回菜单',
       record:'纪录', bestTitle:'★ 最高分 ★', newRecord:'★ 新纪录！ ★',
       promptTitle:'★ 最高分！ ★', enterInit:'分 — 输入名字缩写',
       initHelp:'字母A-Z · 退格=删除 · 回车=确认',
-      noScore:'暂无记录…', music:'音乐', silence:'— 无（静音）—' },
+      noScore:'暂无记录…', music:'音乐', silence:'— 无（静音）—',
+      notice:'本站是对电子游戏黄金时代的业余致敬之作。每个游戏都是从零编写的原创重新演绎，绝非试图复制或替代原作。所提及的作品归各自版权方所有。' },
     ko:{ sub:'게임을 선택하세요 — Insert Coin', games:'게임', random:'🎲 랜덤 게임',
       all:'전체', y70:'70년대', y80:'80년대', y90:'1990 +', search:'🔍 검색…',
       records:'💾 기록', importBtn:'📥 가져오기', play:'▶ 플레이', back:'← 메뉴로',
       record:'기록', bestTitle:'★ 최고 기록 ★', newRecord:'★ 신기록! ★',
       promptTitle:'★ 최고 기록! ★', enterInit:'점 — 이니셜 입력',
       initHelp:'A-Z · Backspace=지우기 · Enter=확인',
-      noScore:'아직 기록이 없습니다…', music:'음악', silence:'— 없음 —' }
+      noScore:'아직 기록이 없습니다…', music:'음악', silence:'— 없음 —',
+      notice:'이 사이트는 비디오 게임 황금기에 바치는 아마추어 헌사입니다. 모든 게임은 처음부터 새로 작성된 독창적 재해석으로, 원작 게임을 재현하거나 대체하려는 것이 아닙니다. 언급된 타이틀은 각 권리자의 소유입니다.' }
   };
   let lang = localStorage.getItem(LSL) || 'fr'; if (!T[lang]) lang = 'fr';
   let theme = localStorage.getItem(LST) || 'dark';
@@ -136,6 +142,7 @@
     const back=document.querySelector('a.back'); if(back) back.textContent=t('back');
     // menu d'accueil
     set('.sub', t('sub'));
+    set('.notice', t('notice'));
     const cnt=document.querySelector('.count');
     if(cnt && cnt.lastChild && cnt.lastChild.nodeType===3) cnt.lastChild.textContent=' '+t('games');
     set('#btnRandom', t('random'));

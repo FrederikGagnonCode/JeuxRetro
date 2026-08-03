@@ -63,6 +63,11 @@
     animation:flicker 4s infinite;
   }
   .sub{color:var(--muted);letter-spacing:3px;margin-bottom:16px;font-size:13px;text-transform:uppercase}
+  .notice{max-width:640px;margin:0 14px 18px;text-align:center;color:var(--muted);
+    font-size:12px;line-height:1.55;background:rgba(78,204,163,.06);
+    border:1px solid rgba(78,204,163,.25);border-radius:10px;padding:9px 16px}
+  [data-theme=light] .notice{background:rgba(10,122,90,.06)!important;
+    border-color:rgba(10,122,90,.3)!important;color:#5a5a6e!important}
   .count{display:inline-flex;align-items:center;gap:9px;margin:0 0 34px;
     padding:7px 18px;border:2px solid var(--neon);border-radius:30px;
     background:rgba(19,19,43,.6);color:var(--neon);font-weight:bold;letter-spacing:2px;
@@ -156,6 +161,9 @@
   <div id="veil"></div>
   <h1>★ ARCADE RÉTRO ★</h1>
   <div class="sub">Choisis ton jeu — Insert Coin</div>
+  <p class="notice">Ce site est un hommage amateur à l'âge d'or du jeu vidéo. Chaque jeu est une
+    réinterprétation originale écrite de zéro, qui ne cherche en aucun cas à reproduire les jeux
+    originaux ni à s'y substituer. Les titres évoqués appartiennent à leurs ayants droit respectifs.</p>
   <div class="count"><span>🕹️</span><b id="gameCount">0</b> JEUX</div>
   <div id="toolbar">
     <button class="tbtn lucky" id="btnRandom">🎲 Jeu au hasard</button>
@@ -2343,7 +2351,7 @@
       r.readAsText(f);
     });
   </script>
-  <script src="music/playlist.js?v=20"></script>
-  <script src="music/player.js?v=20"></script>
+  <script src="music/playlist.js?v=21"></script>
+  <script src="music/player.js?v=21"></script>
 </body>
 </html>
