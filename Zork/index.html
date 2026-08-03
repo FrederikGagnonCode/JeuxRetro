@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zork</title>
+<style>
+  html,body{margin:0;padding:0;height:100%;background:#000;color:#fff;
+    font-family:'Courier New',monospace;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;user-select:none;overflow:hidden}
+  h1{letter-spacing:6px;margin:0 0 8px;font-size:22px;text-shadow:0 0 8px #fff,0 0 18px #33ff66}
+  #wrap{position:relative;width:min(660px,94vw)}
+  #term{height:380px;overflow-y:auto;background:#061006;border:2px solid #fff;
+    box-shadow:0 0 24px rgba(51,255,102,.3), inset 0 0 60px rgba(0,40,0,.5);
+    padding:14px 16px;color:#33ff66;font-size:14px;line-height:1.5;
+    text-shadow:0 0 4px rgba(51,255,102,.5);user-select:text;position:relative}
+  #term::after{content:"";position:absolute;inset:0;pointer-events:none;
+    background:repeating-linear-gradient(0deg, rgba(0,0,0,.16) 0 1px, transparent 1px 3px)}
+  #term .echo{color:#b8ffd0}
+  #term .titre{color:#7dffab;font-weight:bold}
+  #term .mort{color:#ff5252}
+  #term .tresor{color:#ffd23a}
+  #status{display:flex;justify-content:space-between;background:#0d2410;color:#7dffab;
+    font-size:12px;letter-spacing:1px;padding:4px 10px;border:2px solid #fff;border-top:0}
+  #cmdrow{display:flex;border:2px solid #fff;border-top:0;background:#061006}
+  #cmdrow .p{color:#33ff66;padding:8px 4px 8px 10px;font-size:14px}
+  #cmd{flex:1;background:transparent;border:0;outline:none;color:#b8ffd0;
+    font-family:inherit;font-size:14px;padding:8px 8px 8px 0;text-shadow:0 0 4px rgba(51,255,102,.5)}
+  #chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;justify-content:center}
+  #chips button{background:#0d2410;color:#7dffab;border:1px solid #2a5a34;border-radius:6px;
+    font-family:inherit;font-size:12px;padding:5px 10px;cursor:pointer}
+  #chips button:hover{background:#1a3a20}
+  #hint{color:#777;font-size:12px;margin-top:10px;text-align:center;line-height:1.6}
+  a.back{color:#4ecca3;font-size:12px;margin-top:8px;text-decoration:none;letter-spacing:1px}
+  a.back:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+  <h1>Z O R K</h1>
+  <div id="wrap">
+    <div id="term"></div>
+    <div id="status"><span id="stLieu">…</span><span id="stScore">Score : 0 · Tours : 0</span></div>
+    <div id="cmdrow"><span class="p">&gt;</span><input id="cmd" autocomplete="off" spellcheck="false" placeholder="tape une commande… (aide)"></div>
+    <div id="chips">
+      <button>nord</button><button>sud</button><button>est</button><button>ouest</button>
+      <button>monter</button><button>descendre</button><button>regarder</button>
+      <button>inventaire</button><button>aide</button>
+    </div>
+  </div>
+  <div id="hint">Commandes : nord/sud/est/ouest (n s e o) · regarder · prendre/poser X · ouvrir X · lire X · allumer la lanterne · attaquer le troll · déplacer le tapis · inventaire · score</div>
+  <a class="back" href="../index.html">← Menu Arcade</a>
+
+<script>
+const term=document.getElementById('term'), input=document.getElementById('cmd');
+const stLieu=document.getElementById('stLieu'), stScore=document.getElementById('stScore');
+let running=false, paused=false, over=false;     // conventions du site
+
+/* ── monde ── */
+const ITEMS={
+  prospectus:{n:'un prospectus', syn:['prospectus','papier','tract'], take:1,
+    lire:'« ZORK : la plus grande aventure souterraine jamais conçue. Aucun ordinateur ne devrait en être privé ! »'},
+  lanterne:{n:'une lanterne en laiton', syn:['lanterne','lampe'], take:1},
+  epee:{n:'une épée elfique', syn:['epee','épée','glaive'], take:1},
+  bouteille:{n:'une bouteille d\'eau', syn:['bouteille','eau'], take:1},
+  sac:{n:'un sac à lunch', syn:['sac','lunch'], take:1, lire:'Il sent l\'ail. Fort.'},
+  corde:{n:'une corde solide', syn:['corde'], take:1},
+  peinture:{n:'une PEINTURE de grand maître', syn:['peinture','tableau','toile'], take:1, tresor:1, pts:10},
+  jade:{n:'une FIGURINE DE JADE', syn:['jade','figurine','statuette'], take:1, tresor:1, pts:10},
+  pieces:{n:'un SAC DE PIÈCES anciennes', syn:['pieces','pièces','or','monnaie'], take:1, tresor:1, pts:10},
+  oeuf:{n:'un ŒUF orné de pierreries', syn:['oeuf','œuf','uf'], take:1, tresor:1, pts:10},
+  boite:{n:'une petite boîte aux lettres', syn:['boite','boîte','lettres','courrier'], take:0},
+  coffre:{n:'le coffre aux trophées', syn:['coffre','trophees','trophées','vitrine'], take:0},
+  tapis:{n:'un grand tapis oriental', syn:['tapis'], take:0},
+  fenetre:{n:'une fenêtre entrouverte', syn:['fenetre','fenêtre'], take:0},
+  troll:{n:'un troll répugnant', syn:['troll'], take:0}
+};
+const ROOMS={
+  champ:{nom:'Champ, à l\'ouest de la maison',
+    desc:'Tu te tiens dans un champ, à l\'ouest d\'une maison blanche dont la porte d\'entrée est condamnée. Il y a ici une petite boîte aux lettres.',
+    exits:{n:'foret', s:'foret', o:'foret', e:'derriere'}, items:['boite'], fixe:['boite']},
+  foret:{nom:'Forêt',
+    desc:'Une forêt d\'arbres immenses. Le vent siffle dans les cimes. Des sentiers partent dans toutes les directions.',
+    exits:{e:'champ', n:'clairiere', s:'champ', o:'foret2'}, items:[]},
+  foret2:{nom:'Forêt profonde',
+    desc:'Les arbres sont si denses que la lumière peine à passer. Tu ferais mieux de ne pas te perdre.',
+    exits:{e:'foret'}, items:[]},
+  clairiere:{nom:'Clairière',
+    desc:'Une clairière paisible. Dans un nid abandonné au pied d\'un arbre brille quelque chose…',
+    exits:{s:'foret'}, items:['oeuf']},
+  derriere:{nom:'Derrière la maison',
+    desc:'Tu es derrière la maison blanche. Une fenêtre est entrouverte au rez-de-chaussée.',
+    exits:{o:'champ', e:'cuisine'}, items:['fenetre'], fixe:['fenetre']},
+  cuisine:{nom:'Cuisine',
+    desc:'La cuisine de la maison blanche. Une table encombrée, un escalier qui monte, un passage vers l\'ouest. Par la fenêtre, on peut ressortir à l\'est.',
+    exits:{o:'salon', e:'derriere', h:'grenier'}, items:['bouteille','sac']},
+  grenier:{nom:'Grenier', sombre:1,
+    desc:'Le grenier poussiéreux de la maison. Une corde est enroulée sur une poutre.',
+    exits:{b:'cuisine'}, items:['corde']},
+  salon:{nom:'Salon',
+    desc:'Le salon : une porte condamnée à l\'est, un COFFRE AUX TROPHÉES vide, une lanterne en laiton, une épée elfique au-dessus de la cheminée, et un grand tapis oriental au centre de la pièce.',
+    exits:{e:'cuisine'}, items:['coffre','lanterne','epee','tapis'], fixe:['coffre','tapis']},
+  cave:{nom:'Cave', sombre:1,
+    desc:'Une cave humide aux murs suintants. Un passage s\'enfonce au nord ; la trappe est au-dessus.',
+    exits:{n:'troll_salle', h:'salon'}, items:[]},
+  troll_salle:{nom:'Repaire du troll', sombre:1,
+    desc:'Une salle basse qui empeste. Les os qui jonchent le sol ne te rassurent pas.',
+    exits:{s:'cave', e:'galerie'}, items:['troll'], fixe:['troll']},
+  galerie:{nom:'Galerie', sombre:1,
+    desc:'Une longue galerie taillée dans le roc. Aux murs, des cadres… dont une PEINTURE qui semble valoir une fortune.',
+    exits:{o:'troll_salle', n:'ronde'}, items:['peinture']},
+  ronde:{nom:'Salle ronde', sombre:1,
+    desc:'Une salle parfaitement circulaire. Sur un autel de pierre, une FIGURINE DE JADE luit doucement. Un souffle d\'air vient de l\'est.',
+    exits:{s:'galerie', e:'tresor'}, items:['jade']},
+  tresor:{nom:'Chambre forte oubliée', sombre:1,
+    desc:'L\'ancienne chambre forte d\'un empire disparu. Un SAC DE PIÈCES traîne dans un coin, oublié des pillards.',
+    exits:{o:'ronde'}, items:['pieces']}
+};
+
+let cur, inv, flags, score, moves, deposes, grue;
+
+function newGame(){
+  for(const k in ROOMS) ROOMS[k]._items=(ROOMS[k].items||[]).slice();
+  cur='champ'; inv=[]; score=0; moves=0; deposes=[]; grue=0;
+  flags={fen:false, tapis:false, trappe:false, troll:false, lampe:false, vus:{}};
+  over=false; running=true;
+  term.innerHTML='';
+  p('ZORK — L\'Empire des Ténèbres', 'titre');
+  p('Hommage à l\'aventure textuelle d\'Infocom (1980) · version française');
+  p('Tape  aide  pour les commandes.');
+  p('');
+  lookAt(true);
+}
+function p(txt, cls){
+  const d=document.createElement('div');
+  if(cls) d.className=cls;
+  d.textContent=txt;
+  term.appendChild(d);
+  term.scrollTop=term.scrollHeight;
+}
+function refresh(){
+  stLieu.textContent=ROOMS[cur].nom;
+  stScore.textContent='Score : '+score+' · Tours : '+moves;
+  if(window.ArcadeHi) ArcadeHi.submit(score);
+}
+function estEclaire(){ return !ROOMS[cur].sombre || flags.lampe; }
+function lookAt(force){
+  const r=ROOMS[cur];
+  refresh();
+  if(!estEclaire()){
+    p('Il fait noir comme dans un four. Tu risques de te faire dévorer par un grue.', 'mort');
+    return;
+  }
+  p('— '+r.nom+' —', 'titre');
+  if(force || !flags.vus[cur]) p(r.desc);
+  flags.vus[cur]=true;
+  const vis=r._items.filter(i=>!(r.fixe||[]).includes(i));
+  if(cur==='troll_salle' && !flags.troll) p('Un TROLL répugnant, armé d\'une hache, bloque le passage vers l\'est !');
+  vis.forEach(i=>p('Il y a '+ITEMS[i].n+' ici.'));
+}
+// normalisation : accents retirés, œ→oe, apostrophes → espaces
+function norm(s){ return s.toLowerCase().normalize('NFD')
+  .replace(/[̀-ͯ]/g,'').replace(/œ/g,'oe').replace(/['’`]/g,' '); }
+function findItem(mot, liste){
+  mot=norm(mot).trim();
+  for(const id of liste){
+    if(ITEMS[id] && ITEMS[id].syn.some(s2=>norm(s2).trim()===mot)) return id;
+  }
+  return null;
+}
+function mourir(txt){
+  p(txt, 'mort');
+  p('');
+  p('*** Tu es mort ***', 'mort');
+  p('Score final : '+score+' en '+moves+' tours. Tape  recommencer  pour rejouer.');
+  over=true; running=false;
+  if(window.ArcadeHi) ArcadeHi.submit(score);
+}
+function gagner(){
+  score+=25;
+  p('');
+  p('Une voix caverneuse gronde dans les profondeurs :', 'titre');
+  p('« Les quatre trésors de l\'Empire sont réunis. Tu es digne des grands aventuriers, maître du donjon ! »', 'tresor');
+  p('*** VICTOIRE — score final : '+score+' en '+moves+' tours ***', 'tresor');
+  p('Tape  recommencer  pour une nouvelle partie.');
+  over=true; running=false;
+  if(window.ArcadeHi) ArcadeHi.submit(score);
+  refresh();
+}
+
+const DIRS={ n:'n', nord:'n', s:'s', sud:'s', e:'e', est:'e', o:'o', ouest:'o',
+  h:'h', haut:'h', monter:'h', b:'b', bas:'b', descendre:'b', entrer:'e' };
+
+function go(d){
+  const r=ROOMS[cur];
+  // cas spéciaux
+  if(cur==='derriere' && d==='e' && !flags.fen){ p('La fenêtre est simplement entrouverte. Essaie :  ouvrir la fenêtre.'); return; }
+  if(cur==='salon' && d==='b'){ d='b'; }
+  if(cur==='salon'){
+    if(d==='b' || d==='descendre'){
+      if(!flags.trappe){ p('Descendre où ? Le plancher est couvert d\'un grand tapis.'); return; }
+      moveTo('cave'); return;
+    }
+  }
+  if(cur==='troll_salle' && d==='e' && !flags.troll){
+    p('Le troll lève sa hache et te repousse brutalement. « GRRRAH ! »'); return;
+  }
+  let dest=r.exits[d];
+  if(cur==='salon' && d==='e') dest='cuisine';
+  if(!dest){ p('Impossible d\'aller par là.'); return; }
+  if(cur==='foret2' ){ /* on ne peut qu'en ressortir */ }
+  moveTo(dest);
+}
+function moveTo(dest){
+  cur=dest;
+  // le grue guette dans le noir
+  if(!estEclaire()){
+    grue++;
+    if(grue>=2){ mourir('Un bruit de pas feutrés… des crocs qui claquent… Tu as été dévoré par un grue !'); return; }
+  } else grue=0;
+  lookAt(false);
+}
+
+function handle(raw){
+  const t=raw.trim().toLowerCase();
+  if(!t) return;
+  p('> '+raw, 'echo');
+  if(over){
+    if(/^(recommencer|restart|rejouer)/.test(t)) newGame();
+    else p('La partie est finie. Tape  recommencer .');
+    return;
+  }
+  moves++;
+  const mots=norm(t)
+    .replace(/\b(le|la|les|l|un|une|du|de|des|d|au|aux|a|avec|dans|sur|mon|ma)\b/g,' ')
+    .split(/\s+/).filter(Boolean);
+  const v=mots[0], obj=mots.slice(1).join(' ');
+  const r=ROOMS[cur];
+
+  if(DIRS[t]||DIRS[v]&&mots.length===1){ go(DIRS[t]||DIRS[v]); refresh(); return; }
+  if(v==='aller'&&DIRS[mots[1]]){ go(DIRS[mots[1]]); refresh(); return; }
+
+  switch(v){
+    case 'aide': case 'help':
+      p('Déplacements : nord sud est ouest (n s e o), monter, descendre.');
+      p('Actions : regarder · prendre X · poser X · ouvrir X · lire X · allumer/éteindre la lanterne · déplacer le tapis · attaquer le troll · inventaire (i) · score.');
+      p('Dépose les 4 TRÉSORS dans le coffre aux trophées du salon pour gagner.');
+      break;
+    case 'regarder': case 'l': case 'voir': lookAt(true); break;
+    case 'inventaire': case 'i':
+      if(!inv.length) p('Tu ne portes rien.');
+      else { p('Tu portes :'); inv.forEach(i=>p('  · '+ITEMS[i].n)); }
+      break;
+    case 'score':
+      p('Score : '+score+' en '+moves+' tours. Trésors déposés : '+deposes.length+'/4.');
+      break;
+    case 'prendre': case 'ramasser': {
+      if(!estEclaire()){ p('Dans le noir ? Mauvaise idée.'); break; }
+      const id=findItem(obj, r._items);
+      if(!id){ p('Je ne vois pas ça ici.'); break; }
+      if(!ITEMS[id].take){ p('C\'est hors de question.'); break; }
+      r._items.splice(r._items.indexOf(id),1); inv.push(id);
+      if(ITEMS[id].tresor){ score+=ITEMS[id].pts; p('Pris. Un TRÉSOR ! (+'+ITEMS[id].pts+')', 'tresor'); }
+      else p('Pris.');
+      break; }
+    case 'poser': case 'deposer': case 'mettre': {
+      const id=findItem(obj.replace(/coffre.*$/,'').trim()||obj, inv);
+      if(!id){ p('Tu ne portes pas ça.'); break; }
+      inv.splice(inv.indexOf(id),1);
+      if(cur==='salon' && ITEMS[id].tresor){
+        deposes.push(id); score+=15;
+        p('Tu déposes '+ITEMS[id].n+' dans le coffre aux trophées. (+15)', 'tresor');
+        if(deposes.length>=4){ gagner(); return; }
+        p('Trésors déposés : '+deposes.length+'/4.');
+      }else{
+        r._items.push(id); p('Posé.');
+      }
+      break; }
+    case 'ouvrir': {
+      const id=findItem(obj, r._items.concat(inv));
+      if(id==='boite'){
+        if(!flags.boite){ flags.boite=true; r._items.push('prospectus');
+          p('Tu ouvres la boîte aux lettres, révélant un prospectus.'); }
+        else p('Elle est déjà ouverte.');
+      }
+      else if(id==='fenetre'){ flags.fen=true;
+        p('Avec un effort, tu ouvres la fenêtre assez grand pour passer. (est pour entrer)'); }
+      else if(id==='coffre'){ p('Le coffre aux trophées est ouvert et attend tes trésors.'); }
+      else p('Impossible d\'ouvrir ça.');
+      break; }
+    case 'lire': {
+      const id=findItem(obj, inv.concat(r._items));
+      if(id && ITEMS[id].lire) p(ITEMS[id].lire);
+      else p('Rien à lire là-dessus.');
+      break; }
+    case 'allumer':
+      if(!inv.includes('lanterne') && !ROOMS[cur]._items.includes('lanterne')){ p('Tu n\'as pas de lampe.'); break; }
+      if(!inv.includes('lanterne')){ p('Prends d\'abord la lanterne.'); break; }
+      if(flags.lampe){ p('Elle est déjà allumée.'); break; }
+      flags.lampe=true; grue=0; p('La lanterne diffuse une belle lumière chaude.');
+      if(ROOMS[cur].sombre) lookAt(true);
+      break;
+    case 'eteindre':
+      if(!flags.lampe){ p('Elle est déjà éteinte.'); break; }
+      flags.lampe=false; p('Tu éteins la lanterne.');
+      if(ROOMS[cur].sombre) p('Il fait noir comme dans un four. Tu risques de te faire dévorer par un grue.', 'mort');
+      break;
+    case 'deplacer': case 'pousser': case 'soulever':
+      if(cur==='salon' && /tapis/.test(obj)){
+        if(flags.tapis) p('Le tapis est déjà roulé dans un coin.');
+        else { flags.tapis=true; flags.trappe=true;
+          p('Tu roules le tapis : une TRAPPE apparaît dans le plancher ! (descendre)', 'titre'); }
+      } else p('Rien ne bouge.');
+      break;
+    case 'attaquer': case 'tuer': case 'frapper':
+      if(cur==='troll_salle' && /troll/.test(obj||'troll')){
+        if(flags.troll){ p('Le troll n\'est plus une menace.'); break; }
+        if(!inv.includes('epee')){ mourir('À mains nues contre une hache ? Le troll ne fait qu\'une bouchée de toi.'); break; }
+        flags.troll=true; score+=10;
+        ROOMS.troll_salle._items=ROOMS.troll_salle._items.filter(i=>i!=='troll');
+        p('D\'un coup d\'épée elfique étincelant, tu terrasses le troll ! Il s\'évapore dans une brume noire. (+10)', 'titre');
+        p('Le passage vers l\'est est libre.');
+      } else p('Du calme. Il n\'y a rien à combattre ici.');
+      break;
+    case 'boire':
+      if(inv.includes('bouteille')) p('Glou. L\'eau est fraîche.');
+      else p('Tu n\'as rien à boire.');
+      break;
+    case 'recommencer': newGame(); return;
+    default:
+      p('Je ne comprends pas « '+raw.trim()+' ». Tape  aide .');
+      moves--;
+  }
+  refresh();
+}
+
+document.getElementById('cmdrow').addEventListener('click',()=>input.focus());
+input.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){ const val=input.value; input.value=''; handle(val); }
+  e.stopPropagation();                          // ne pas déclencher les raccourcis du site
+});
+document.getElementById('chips').addEventListener('click',e=>{
+  if(e.target.tagName==='BUTTON'){ handle(e.target.textContent); input.focus(); }
+});
+
+newGame();
+input.focus();
+</script>
+<script src="../music/i18n-games.js?v=20"></script>
+<script src="../music/playlist.js?v=20"></script>
+<script src="../music/player.js?v=20"></script>
+</body>
+</html>

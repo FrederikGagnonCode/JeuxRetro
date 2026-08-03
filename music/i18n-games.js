@@ -248,6 +248,12 @@ ja:{p:["老王がクエストを託す: 王国の3つの秘宝を取り戻せ！
 cs:{p:["Starý král ti svěřuje úkol: najdi 3 poklady království!","← ↑ ↓ →: chůze · Mezerník: jednat / vzít / mluvit · I: inventář","Prozkoumej 9 obrazovek, kombinuj předměty… a pozor na vlka, trolla a draka","▶ Klikni nebo Mezerník pro dobrodružství"],hint:"Šipky: chůze · Mezerník: akce · I: inventář · P = pauza"},
 zh:{p:["老国王托付给你任务: 找回王国的3件宝物！","← ↑ ↓ →: 行走 · 空格: 互动/拾取/交谈 · I: 物品栏","探索9个画面，组合道具…小心野狼、巨魔和恶龙","▶ 点击或空格开始冒险"],hint:"方向键: 行走 · 空格: 互动 · I: 物品栏 · P = 暂停"},
 ko:{p:["늙은 왕이 퀘스트를 맡깁니다: 왕국의 보물 3개를 되찾으세요!","← ↑ ↓ →: 걷기 · 스페이스: 행동/줍기/대화 · I: 인벤토리","9개의 화면을 탐험하고 아이템을 조합하세요… 늑대, 트롤, 용을 조심!","▶ 클릭 또는 스페이스로 모험 시작"],hint:"방향키: 걷기 · 스페이스: 행동 · I: 인벤토리 · P = 일시정지"}},
+"Zork":{
+en:{hint:"Commands: north/south/east/west (n s e o) · look · take/drop X · open X · read X · light the lantern · attack the troll · move the rug · inventory · score — (the adventure itself is in French)"},
+ja:{hint:"コマンド: nord/sud/est/ouest (n s e o) · regarder · prendre/poser X · ouvrir X · allumer la lanterne · inventaire · score —（本編はフランス語です）"},
+cs:{hint:"Příkazy: nord/sud/est/ouest (n s e o) · regarder · prendre/poser X · ouvrir X · allumer la lanterne · inventaire · score — (hra samotná je ve francouzštině)"},
+zh:{hint:"命令: nord/sud/est/ouest (n s e o) · regarder · prendre/poser X · ouvrir X · allumer la lanterne · inventaire · score —（游戏正文为法语）"},
+ko:{hint:"명령어: nord/sud/est/ouest (n s e o) · regarder · prendre/poser X · ouvrir X · allumer la lanterne · inventaire · score — (본문은 프랑스어입니다)"}},
 "Pacman":{
 en:{hint:"Arrows or WASD: move — P: pause — M: sound — mobile: swipe"},
 ja:{hint:"矢印かWASD: 移動 — P: ポーズ — M: サウンド — モバイル: スワイプ"},
