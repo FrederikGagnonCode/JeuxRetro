@@ -242,6 +242,12 @@ ja:{p:["矢印 / WASDで操作 · 🎯 = 弾薬、スペースでボールや自
 cs:{p:["Šipky / WASD pro hru · bonus 🎯 = munice, Mezerníkem střílej na koule… nebo na svůj ocas!"]},
 zh:{p:["方向键 / WASD 操作 · 🎯 奖励 = 弹药，空格射击圆球…或你的尾巴！"]},
 ko:{p:["방향키 / WASD로 플레이 · 🎯 보너스 = 탄약, 스페이스로 공이나 꼬리를 쏘세요!"]}},
+"QueteDuRoi":{
+en:{p:["The old king entrusts you with a quest: recover the kingdom's 3 treasures!","← ↑ ↓ →: walk · Space: act / take / talk · I: inventory","Explore the 9 screens, combine items… and beware the wolf, the troll and the dragon","▶ Click or Space to start the adventure"],hint:"Arrows: walk · Space: act · I: inventory · P = pause"},
+ja:{p:["老王がクエストを託す: 王国の3つの秘宝を取り戻せ！","← ↑ ↓ →: 歩く · スペース: 調べる/拾う/話す · I: 持ち物","9つの画面を探索し、アイテムを組み合わせろ…狼・トロル・ドラゴンに注意","▶ クリックかスペースで冒険開始"],hint:"矢印: 歩く · スペース: 行動 · I: 持ち物 · P = ポーズ"},
+cs:{p:["Starý král ti svěřuje úkol: najdi 3 poklady království!","← ↑ ↓ →: chůze · Mezerník: jednat / vzít / mluvit · I: inventář","Prozkoumej 9 obrazovek, kombinuj předměty… a pozor na vlka, trolla a draka","▶ Klikni nebo Mezerník pro dobrodružství"],hint:"Šipky: chůze · Mezerník: akce · I: inventář · P = pauza"},
+zh:{p:["老国王托付给你任务: 找回王国的3件宝物！","← ↑ ↓ →: 行走 · 空格: 互动/拾取/交谈 · I: 物品栏","探索9个画面，组合道具…小心野狼、巨魔和恶龙","▶ 点击或空格开始冒险"],hint:"方向键: 行走 · 空格: 互动 · I: 物品栏 · P = 暂停"},
+ko:{p:["늙은 왕이 퀘스트를 맡깁니다: 왕국의 보물 3개를 되찾으세요!","← ↑ ↓ →: 걷기 · 스페이스: 행동/줍기/대화 · I: 인벤토리","9개의 화면을 탐험하고 아이템을 조합하세요… 늑대, 트롤, 용을 조심!","▶ 클릭 또는 스페이스로 모험 시작"],hint:"방향키: 걷기 · 스페이스: 행동 · I: 인벤토리 · P = 일시정지"}},
 "Pacman":{
 en:{hint:"Arrows or WASD: move — P: pause — M: sound — mobile: swipe"},
 ja:{hint:"矢印かWASD: 移動 — P: ポーズ — M: サウンド — モバイル: スワイプ"},
