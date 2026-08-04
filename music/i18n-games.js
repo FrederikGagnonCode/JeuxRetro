@@ -80,6 +80,12 @@ ja:{p:["てっぺんのポリーンの元へ","← → 歩く · ↑ ↓ ハシ�
 cs:{p:["Dostaň se k Pauline úplně nahoru","← → chůze · ↑ ↓ žebříky · Mezerník: skok","Přeskakuj sudy (+100)","▶ Klikni nebo Mezerník pro hru"],hint:"← → chůze · ↑ ↓ žebříky · Mezerník: skok · P = pauza"},
 zh:{p:["爬到最顶端救宝琳","← → 走 · ↑ ↓ 梯子 · 空格: 跳","跳过木桶 (+100)","▶ 点击或空格开始"],hint:"← → 走 · ↑ ↓ 爬梯子 · 空格: 跳 · P = 暂停"},
 ko:{p:["꼭대기의 폴린에게 가세요","← → 걷기 · ↑ ↓ 사다리 · 스페이스: 점프","통을 뛰어넘으세요 (+100)","▶ 클릭 또는 스페이스로 시작"],hint:"← → 걷기 · ↑ ↓ 사다리 · 스페이스: 점프 · P = 일시정지"}},
+"Doom":{
+en:{p:["The demonic invasion has begun: fight through the three sectors of the Mars base.","↑ ↓ or W S: forward/back · ← →: turn · A D: strafe","Space: fire · 1-5 or X: weapon · C: open/use · Tab: map","▶ Click or Space to descend into hell"],hint:"↑↓/WS move · ←→ turn · A D strafe · Space: fire · X: weapon · C: open · Tab: map · P = pause"},
+ja:{p:["悪魔の侵略が始まった：火星基地の3つの区画を突破せよ。","↑ ↓ か W S: 前進/後退 · ← →: 旋回 · A D: 横移動","スペース: 射撃 · 1-5 か X: 武器 · C: 開く/作動 · Tab: マップ","▶ クリックかスペースで地獄へ"],hint:"↑↓/WS 移動 · ←→ 旋回 · A D 横移動 · スペース: 射撃 · X: 武器 · C: 開く · Tab: マップ · P = ポーズ"},
+cs:{p:["Démonická invaze začala: probij se třemi sektory marsovské základny.","↑ ↓ nebo W S: vpřed/vzad · ← →: otáčení · A D: úkrok","Mezerník: střelba · 1-5 nebo X: zbraň · C: otevřít/použít · Tab: mapa","▶ Klikni nebo Mezerník pro cestu do pekla"],hint:"↑↓/WS pohyb · ←→ otáčení · A D úkrok · Mezerník: střelba · X: zbraň · C: otevřít · Tab: mapa · P = pauza"},
+zh:{p:["恶魔入侵开始了：杀穿火星基地的三个区域。","↑ ↓ 或 W S: 前进/后退 · ← →: 转向 · A D: 横移","空格: 射击 · 1-5 或 X: 武器 · C: 开门/启动 · Tab: 地图","▶ 点击或空格堕入地狱"],hint:"↑↓/WS 移动 · ←→ 转向 · A D 横移 · 空格: 射击 · X: 武器 · C: 开门 · Tab: 地图 · P = 暂停"},
+ko:{p:["악마의 침공이 시작됐다: 화성 기지의 세 구역을 돌파하세요.","↑ ↓ 또는 W S: 전진/후진 · ← →: 회전 · A D: 좌우 이동","스페이스: 발사 · 1-5 또는 X: 무기 · C: 열기/작동 · Tab: 지도","▶ 클릭 또는 스페이스로 지옥으로"],hint:"↑↓/WS 이동 · ←→ 회전 · A D 좌우 · 스페이스: 발사 · X: 무기 · C: 열기 · Tab: 지도 · P = 일시정지"}},
 "DoubleDragon":{
 en:{p:["Fight across the city, take revenge on the Black Warriors.","← ↑ ↓ →: walk · X: punch · C: kick · Space: jump","Grab the bat 🏏 from enemies to hit harder","▶ Click or Space to fight"],hint:"Arrows: walk · X punch · C kick · Space jump · grab weapons · P = pause"},
 ja:{p:["街を進み、ブラックウォリアーズに復讐せよ。","← ↑ ↓ →: 歩く · X: パンチ · C: キック · スペース: ジャンプ","敵のバット 🏏 を拾えば攻撃力アップ","▶ クリックかスペースで戦う"],hint:"矢印: 歩く · X パンチ · C キック · スペース ジャンプ · P = ポーズ"},
