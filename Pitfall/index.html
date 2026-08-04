@@ -7,13 +7,13 @@
 <style>
   html,body{margin:0;padding:0;background:#0a0a0a;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Courier New',monospace;color:#cfcfcf}
   canvas{image-rendering:pixelated;max-width:100vw;max-height:88vh;border:4px solid #222;box-shadow:0 0 40px #000}
-  #help{margin-top:8px;font-size:13px;letter-spacing:1px;color:#8a8;text-align:center}
+  #hint{margin-top:8px;font-size:13px;letter-spacing:1px;color:#8a8;text-align:center}
 </style>
 </head>
 <body>
 <canvas id="c" width="800" height="560"></canvas>
 <a href="../index.html" style="color:#4ecca3;font-size:12px;margin-top:8px;text-decoration:none;letter-spacing:1px;font-family:'Courier New',monospace">← Menu Arcade</a>
-<div id="help">&#8592; &#8594; bouger &nbsp;|&nbsp; ESPACE / &#8593; sauter &nbsp;|&nbsp; &#8595; descendre / l&acirc;cher la liane &nbsp;|&nbsp; P pause &nbsp;|&nbsp; ENTR&Eacute;E commencer</div>
+<div id="hint">&#8592; &#8594; bouger &nbsp;|&nbsp; ESPACE / &#8593; sauter &nbsp;|&nbsp; &#8595; descendre / l&acirc;cher la liane &nbsp;|&nbsp; P pause &nbsp;|&nbsp; ENTR&Eacute;E commencer</div>
 <script>
 'use strict';
 const cv = document.getElementById('c'), ctx = cv.getContext('2d');
@@ -799,8 +799,8 @@ function frame(now){
 }
 requestAnimationFrame(frame);
 </script>
-<script src="../music/i18n-games.js?v=21"></script>
-<script src="../music/playlist.js?v=21"></script>
-<script src="../music/player.js?v=21"></script>
+<script src="../music/i18n-games.js?v=22"></script>
+<script src="../music/playlist.js?v=22"></script>
+<script src="../music/player.js?v=22"></script>
 </body>
 </html>

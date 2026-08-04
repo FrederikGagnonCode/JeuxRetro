@@ -25,6 +25,7 @@
       promptTitle:'★ MEILLEUR SCORE ! ★', enterInit:'pts — entre tes initiales',
       initHelp:'Lettres A-Z · Retour = effacer · Entrée = valider',
       noScore:'Aucun score encore…', music:'Musique', silence:'— Aucune (silence) —',
+      toTop:'Remonter en haut',
       notice:"Ce site est un hommage amateur à l'âge d'or du jeu vidéo. Chaque jeu est une réinterprétation originale écrite de zéro, qui ne cherche en aucun cas à reproduire les jeux originaux ni à s'y substituer. Les titres évoqués appartiennent à leurs ayants droit respectifs." },
     en:{ sub:'Pick your game — Insert Coin', games:'GAMES', random:'🎲 Random game',
       all:'All', y70:'The 70s', y80:'The 80s', y90:'1990 +', search:'🔍 Search…',
@@ -33,6 +34,7 @@
       promptTitle:'★ HIGH SCORE! ★', enterInit:'pts — enter your initials',
       initHelp:'Letters A-Z · Backspace = erase · Enter = OK',
       noScore:'No scores yet…', music:'Music', silence:'— None (silence) —',
+      toTop:'Back to top',
       notice:'This site is an amateur tribute to the golden age of video games. Every game is an original reinterpretation written from scratch — in no way does it attempt to reproduce or replace the original games. All referenced titles belong to their respective rights holders.' },
     ja:{ sub:'ゲームをえらんでね — INSERT COIN', games:'ゲーム', random:'🎲 ランダム',
       all:'すべて', y70:'70年代', y80:'80年代', y90:'1990+', search:'🔍 検索…',
@@ -41,6 +43,7 @@
       promptTitle:'★ ハイスコア！ ★', enterInit:'pts — イニシャルを入力',
       initHelp:'A-Z · Backspace=消す · Enter=決定',
       noScore:'まだスコアがありません…', music:'音楽', silence:'— なし —',
+      toTop:'先頭へ戻る',
       notice:'当サイトはレトロゲーム黄金期へのファンメイドのオマージュです。各ゲームはゼロから書かれたオリジナルの再解釈であり、原作の再現や代替を意図するものではありません。言及されるタイトルは各権利者に帰属します。' },
     cs:{ sub:'Vyber si hru — Insert Coin', games:'HER', random:'🎲 Náhodná hra',
       all:'Vše', y70:'70. léta', y80:'80. léta', y90:'1990 +', search:'🔍 Hledat…',
@@ -49,6 +52,7 @@
       promptTitle:'★ NEJLEPŠÍ SKÓRE! ★', enterInit:'b. — zadej iniciály',
       initHelp:'Písmena A-Z · Backspace = smazat · Enter = OK',
       noScore:'Zatím žádné skóre…', music:'Hudba', silence:'— Žádná (ticho) —',
+      toTop:'Zpět nahoru',
       notice:'Tento web je amatérská pocta zlaté éře videoher. Každá hra je originální reinterpretace napsaná od nuly — v žádném případě se nesnaží reprodukovat původní hry ani je nahradit. Zmiňované tituly patří jejich vlastníkům práv.' },
     zh:{ sub:'选择你的游戏 — INSERT COIN', games:'个游戏', random:'🎲 随机游戏',
       all:'全部', y70:'70年代', y80:'80年代', y90:'1990+', search:'🔍 搜索…',
@@ -57,6 +61,7 @@
       promptTitle:'★ 最高分！ ★', enterInit:'分 — 输入名字缩写',
       initHelp:'字母A-Z · 退格=删除 · 回车=确认',
       noScore:'暂无记录…', music:'音乐', silence:'— 无（静音）—',
+      toTop:'返回顶部',
       notice:'本站是对电子游戏黄金时代的业余致敬之作。每个游戏都是从零编写的原创重新演绎，绝非试图复制或替代原作。所提及的作品归各自版权方所有。' },
     ko:{ sub:'게임을 선택하세요 — Insert Coin', games:'게임', random:'🎲 랜덤 게임',
       all:'전체', y70:'70년대', y80:'80년대', y90:'1990 +', search:'🔍 검색…',
@@ -65,6 +70,7 @@
       promptTitle:'★ 최고 기록! ★', enterInit:'점 — 이니셜 입력',
       initHelp:'A-Z · Backspace=지우기 · Enter=확인',
       noScore:'아직 기록이 없습니다…', music:'음악', silence:'— 없음 —',
+      toTop:'맨 위로',
       notice:'이 사이트는 비디오 게임 황금기에 바치는 아마추어 헌사입니다. 모든 게임은 처음부터 새로 작성된 독창적 재해석으로, 원작 게임을 재현하거나 대체하려는 것이 아닙니다. 언급된 타이틀은 각 권리자의 소유입니다.' }
   };
   let lang = localStorage.getItem(LSL) || 'fr'; if (!T[lang]) lang = 'fr';
@@ -109,7 +115,23 @@
   #arcade-pref button,#arcade-pref select{background:rgba(8,8,20,.85);color:#eee;
     border:1px solid #3a3a52;border-radius:8px;font-family:inherit;font-size:13px;
     padding:4px 8px;cursor:pointer;outline:none;}
-  body.touch-ctl #arcade-pref{display:none;}`;
+  body.touch-ctl #arcade-pref{display:none;}
+  /* — bouton « remonter en haut » : bas-droite, le seul coin encore libre — */
+  [data-theme=light] #arcade-top{background:#fdfdff !important;color:#0a7a5a !important;
+    border-color:#c9c6da !important;}
+  #arcade-top{position:fixed;right:10px;bottom:10px;z-index:9999;
+    width:42px;height:42px;border-radius:50%;
+    background:rgba(8,8,20,.85);color:#4ecca3;border:1px solid #3a3a52;
+    font-family:'Courier New',monospace;font-size:20px;line-height:1;
+    cursor:pointer;outline:none;padding:0;
+    display:flex;align-items:center;justify-content:center;
+    opacity:0;visibility:hidden;transform:translateY(12px);
+    transition:opacity .25s ease,transform .25s ease,visibility .25s;}
+  #arcade-top.on{opacity:1;visibility:visible;transform:none;}
+  #arcade-top:hover{color:#ff2e88;border-color:#4ecca3;}
+  #arcade-top:focus-visible{border-color:#4ecca3;box-shadow:0 0 0 2px rgba(78,204,163,.4);}
+  body.touch-ctl #arcade-top{display:none;}
+  @media (prefers-reduced-motion:reduce){ #arcade-top{transition:none;} }`;
   document.head.appendChild(st);
 
   /* — petite barre de préférences : 🌙/☀️ + langue — */
@@ -133,13 +155,41 @@
     });
     bar.appendChild(bt); bar.appendChild(sel);
     document.body.appendChild(bar);
+    mountToTop();
     translate();
+  }
+
+  /* — bouton flottant « remonter en haut » —
+     Injecté partout, mais il ne se montre qu'au-delà de 300 px de défilement :
+     les pages de jeux tiennent dans l'écran, donc il y reste invisible. */
+  function mountToTop() {
+    const b = document.createElement('button');
+    b.id = 'arcade-top';
+    b.type = 'button';
+    b.textContent = '↑';
+    document.body.appendChild(b);
+    const smooth = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+    b.addEventListener('click', () => {
+      scrollTo({ top: 0, behavior: smooth ? 'smooth' : 'auto' });
+    });
+    let queued = false;                        // scroll → une seule maj par frame
+    const sync = () => {
+      queued = false;
+      b.classList.toggle('on', (scrollY || document.documentElement.scrollTop) > 300);
+    };
+    addEventListener('scroll', () => {
+      if (queued) return;
+      queued = true; requestAnimationFrame(sync);
+    }, { passive: true });
+    sync();                                    // état initial (rechargement à mi-page)
   }
 
   /* — traduction des éléments partagés + du menu — */
   function translate() {
     const set=(cs,txt)=>{ const el=document.querySelector(cs); if(el) el.textContent=txt; };
     const back=document.querySelector('a.back'); if(back) back.textContent=t('back');
+    const up=document.getElementById('arcade-top');
+    if(up){ up.title=t('toTop'); up.setAttribute('aria-label', t('toTop')); }
     // menu d'accueil
     set('.sub', t('sub'));
     set('.notice', t('notice'));

@@ -176,6 +176,12 @@ ja:{p:["購読者(明るい家)に新聞を配れ、転ぶな！","← → 移�
 cs:{p:["Doruč noviny předplatitelům (světlé domy) a nespadni!","← → pohyb · ↑ zrychlit · ↓ brzda · Mezerník: hod doleva","Schránka = +250 · veranda = +100 · okno neodběratele = +150","Rozbij okno předplatiteli a přijdeš o něj! Sbírej balíky 📰","▶ Klikni nebo Mezerník pro šlapání"],hint:"← → pohyb · ↑ ↓ rychlost · Mezerník: hod novin na domy · P = pauza"},
 zh:{p:["给订户(亮色房子)送报，别摔车！","← → 移动 · ↑ 加速 · ↓ 刹车 · 空格: 向左扔报","邮箱 = +250 · 门廊 = +100 · 非订户窗户 = +150","砸碎订户的窗户会失去他！捡报纸捆 📰","▶ 点击或空格蹬车"],hint:"← → 移动 · ↑ ↓ 速度 · 空格: 向房子扔报纸 · P = 暂停"},
 ko:{p:["구독자(밝은 집)에게 신문을 배달하세요, 넘어지지 말고!","← → 이동 · ↑ 가속 · ↓ 브레이크 · 스페이스: 왼쪽으로 던지기","우편함 = +250 · 현관 = +100 · 비구독자 창문 = +150","구독자 창문을 깨면 구독 취소! 신문 뭉치 📰 를 주우세요","▶ 클릭 또는 스페이스로 페달"],hint:"← → 이동 · ↑ ↓ 속도 · 스페이스: 신문 던지기 · P = 일시정지"}},
+"Pitfall":{
+en:{hint:"← → move · Space / ↑: jump · ↓: climb down / let go of the vine · P = pause · Enter: start"},
+ja:{hint:"← → 移動 · スペース / ↑: ジャンプ · ↓: 降りる / つるを離す · P = ポーズ · Enter: スタート"},
+cs:{hint:"← → pohyb · Mezerník / ↑: skok · ↓: slézt / pustit liánu · P = pauza · Enter: start"},
+zh:{hint:"← → 移动 · 空格 / ↑: 跳跃 · ↓: 下降 / 松开藤蔓 · P = 暂停 · Enter: 开始"},
+ko:{hint:"← → 이동 · 스페이스 / ↑: 점프 · ↓: 내려가기 / 덩굴 놓기 · P = 일시정지 · Enter: 시작"}},
 "Pong":{
 en:{p:["First to <b>7</b> points wins","Mouse or ↑ / ↓ (or W / S)","▶ Click or Space to play"],hint:"Player (left) vs Computer (right) · P = pause"},
 ja:{p:["先に<b>7</b>点取った方の勝ち","マウスか ↑ / ↓ (かW / S)","▶ クリックかスペースでプレイ"],hint:"プレイヤー(左) vs コンピュータ(右) · P = ポーズ"},
@@ -242,6 +248,12 @@ ja:{p:["矢印 / WASDで操作 · 🎯 = 弾薬、スペースでボールや自
 cs:{p:["Šipky / WASD pro hru · bonus 🎯 = munice, Mezerníkem střílej na koule… nebo na svůj ocas!"]},
 zh:{p:["方向键 / WASD 操作 · 🎯 奖励 = 弹药，空格射击圆球…或你的尾巴！"]},
 ko:{p:["방향키 / WASD로 플레이 · 🎯 보너스 = 탄약, 스페이스로 공이나 꼬리를 쏘세요!"]}},
+"space-invaders":{
+en:{hint:"← → or A/D: move · Space: fire · P = pause · Enter: start"},
+ja:{hint:"← → または A/D: 移動 · スペース: 射撃 · P = ポーズ · Enter: スタート"},
+cs:{hint:"← → nebo A/D: pohyb · Mezerník: střelba · P = pauza · Enter: start"},
+zh:{hint:"← → 或 A/D: 移动 · 空格: 射击 · P = 暂停 · Enter: 开始"},
+ko:{hint:"← → 또는 A/D: 이동 · 스페이스: 발사 · P = 일시정지 · Enter: 시작"}},
 "QueteDuRoi":{
 en:{p:["The old king entrusts you with a quest: recover the kingdom's 3 treasures!","← ↑ ↓ →: walk · Space: act / take / talk · I: inventory","Explore the 9 screens, combine items… and beware the wolf, the troll and the dragon","▶ Click or Space to start the adventure"],hint:"Arrows: walk · Space: act · I: inventory · P = pause"},
 ja:{p:["老王がクエストを託す: 王国の3つの秘宝を取り戻せ！","← ↑ ↓ →: 歩く · スペース: 調べる/拾う/話す · I: 持ち物","9つの画面を探索し、アイテムを組み合わせろ…狼・トロル・ドラゴンに注意","▶ クリックかスペースで冒険開始"],hint:"矢印: 歩く · スペース: 行動 · I: 持ち物 · P = ポーズ"},

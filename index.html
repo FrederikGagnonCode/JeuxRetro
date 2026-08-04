@@ -571,31 +571,137 @@
       <div class="year">1981</div>
       <div class="thumb">
         <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="frRiv" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#062b57"/><stop offset=".5" stop-color="#0d4682"/><stop offset="1" stop-color="#06284e"/>
+            </linearGradient>
+            <linearGradient id="frRoad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#15151f"/><stop offset=".5" stop-color="#0d0d14"/><stop offset="1" stop-color="#15151f"/>
+            </linearGradient>
+            <linearGradient id="frGrass" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#46a637"/><stop offset=".35" stop-color="#2f7a26"/><stop offset="1" stop-color="#215c1c"/>
+            </linearGradient>
+          </defs>
           <!-- rivière -->
-          <rect width="80" height="26" fill="#0a2a52"/>
-          <!-- berge + départ -->
-          <rect y="26" width="80" height="7" fill="#3a7a2e"/>
-          <rect y="53" width="80" height="7" fill="#3a7a2e"/>
-          <!-- route -->
-          <rect y="33" width="80" height="20" fill="#101018"/>
-          <g stroke="#3a3a48" stroke-width="1" stroke-dasharray="4 4">
-            <line x1="0" y1="40" x2="80" y2="40"/><line x1="0" y1="46" x2="80" y2="46"/>
+          <rect y="7" width="80" height="20" fill="url(#frRiv)"/>
+          <g stroke="#3f8fd0" stroke-width=".5" fill="none" opacity=".45">
+            <path d="M2 12 Q6 10.8 10 12 T18 12"/><path d="M38 13.4 Q42 12.2 46 13.4 T54 13.4"/>
+            <path d="M60 11 Q64 9.8 68 11 T76 11"/><path d="M6 24 Q10 22.8 14 24 T22 24"/>
+            <path d="M34 25 Q38 23.8 42 25 T50 25"/><path d="M64 24.6 Q68 23.4 72 24.6 T80 24.6"/>
           </g>
-          <!-- abris -->
-          <rect width="80" height="6" fill="#0d3a12"/>
-          <g fill="#0a2a52"><rect x="6" y="1" width="9" height="5"/><rect x="35" y="1" width="9" height="5"/><rect x="64" y="1" width="9" height="5"/></g>
-          <!-- tronc + tortues -->
-          <rect x="8" y="9" width="26" height="6" rx="3" fill="#7a4a1e"/>
-          <g fill="#37882e"><circle cx="52" cy="20" r="4"/><circle cx="61" cy="20" r="4"/><circle cx="70" cy="20" r="4"/></g>
-          <!-- voitures -->
-          <rect x="12" y="35" width="12" height="7" rx="1" fill="#ffd23a"/>
-          <rect x="52" y="41" width="14" height="7" rx="1" fill="#e0322e"/>
-          <rect x="30" y="47" width="10" height="6" rx="1" fill="#b06cff"/>
-          <!-- grenouille -->
-          <g transform="translate(40,56)">
-            <ellipse rx="4" ry="3.4" fill="#4ddc5a"/>
-            <circle cx="-2" cy="-3" r="1.4" fill="#4ddc5a"/><circle cx="2" cy="-3" r="1.4" fill="#4ddc5a"/>
-            <circle cx="-2" cy="-3.3" r=".6" fill="#111"/><circle cx="2" cy="-3.3" r=".6" fill="#111"/>
+          <!-- abris d'arrivée : 5 baies, une déjà remplie -->
+          <rect width="80" height="7" fill="#0b3a10"/>
+          <rect y="6.2" width="80" height="1.4" fill="#08290b"/>
+          <g fill="#062b57"><rect x="3" y="0" width="11" height="6"/><rect x="19" y="0" width="11" height="6"/>
+            <rect x="35" y="0" width="11" height="6"/><rect x="51" y="0" width="11" height="6"/><rect x="67" y="0" width="11" height="6"/></g>
+          <g stroke="#0e4a15" stroke-width=".8"><path d="M14.5 0 V6 M30.5 0 V6 M46.5 0 V6 M62.5 0 V6"/></g>
+          <g transform="translate(24.5,3.2)">
+            <ellipse rx="3.1" ry="2.4" fill="#4ddc5a"/>
+            <path d="M-3.2 1.5 L-4.4 3 M3.2 1.5 L4.4 3" stroke="#37b043" stroke-width="1.1" stroke-linecap="round"/>
+            <circle cx="-1.5" cy="-1.9" r="1.1" fill="#eafff0"/><circle cx="1.5" cy="-1.9" r="1.1" fill="#eafff0"/>
+            <circle cx="-1.5" cy="-1.9" r=".5" fill="#111"/><circle cx="1.5" cy="-1.9" r=".5" fill="#111"/>
+          </g>
+          <!-- rondins : écorce veinée + cernes aux extrémités -->
+          <g transform="translate(4,9)">
+            <rect width="28" height="6" rx="3" fill="#7a4a1e"/>
+            <rect y=".7" width="28" height="1.7" rx=".85" fill="#9c6430"/>
+            <rect y="4.4" width="28" height="1.2" rx=".6" fill="#5a3212"/>
+            <g stroke="#5a3212" stroke-width=".45" opacity=".8"><path d="M7 1.4 V4.6 M13 1.2 V4.8 M19 1.5 V4.5 M25 1.3 V4.7"/></g>
+            <ellipse cx="1.6" cy="3" rx="1.5" ry="2.9" fill="#8a5424"/>
+            <ellipse cx="1.6" cy="3" rx=".75" ry="1.5" fill="#5f3614"/>
+          </g>
+          <g transform="translate(50,9)">
+            <rect width="24" height="6" rx="3" fill="#7a4a1e"/>
+            <rect y=".7" width="24" height="1.7" rx=".85" fill="#9c6430"/>
+            <rect y="4.4" width="24" height="1.2" rx=".6" fill="#5a3212"/>
+            <g stroke="#5a3212" stroke-width=".45" opacity=".8"><path d="M6 1.4 V4.6 M12 1.2 V4.8 M18 1.5 V4.5"/></g>
+            <ellipse cx="1.6" cy="3" rx="1.5" ry="2.9" fill="#8a5424"/>
+            <ellipse cx="1.6" cy="3" rx=".75" ry="1.5" fill="#5f3614"/>
+          </g>
+          <!-- tortues : carapace à écailles, tête et nageoires -->
+          <g transform="translate(11,21.5)">
+            <path d="M-4.6 .4 L-6.2 -.9 M4.6 .4 L6.2 -.9 M-3.4 2.2 L-4.6 3.6 M3.4 2.2 L4.6 3.6" stroke="#2a6b22" stroke-width="1.2" stroke-linecap="round"/>
+            <circle cx="0" cy="-3.6" r="1.4" fill="#2a6b22"/>
+            <circle r="3.8" fill="#3f9433"/><circle r="2.6" fill="#347d2a"/>
+            <g stroke="#256b1e" stroke-width=".5" fill="none"><circle r="1.3"/><path d="M0 -3.8 V-1.3 M0 3.8 V1.3 M-3.8 0 H-1.3 M3.8 0 H1.3"/></g>
+          </g>
+          <g transform="translate(20.5,21.5)">
+            <path d="M-4.6 .4 L-6.2 -.9 M4.6 .4 L6.2 -.9 M-3.4 2.2 L-4.6 3.6 M3.4 2.2 L4.6 3.6" stroke="#2a6b22" stroke-width="1.2" stroke-linecap="round"/>
+            <circle cx="0" cy="-3.6" r="1.4" fill="#2a6b22"/>
+            <circle r="3.8" fill="#3f9433"/><circle r="2.6" fill="#347d2a"/>
+            <g stroke="#256b1e" stroke-width=".5" fill="none"><circle r="1.3"/><path d="M0 -3.8 V-1.3 M0 3.8 V1.3 M-3.8 0 H-1.3 M3.8 0 H1.3"/></g>
+          </g>
+          <g transform="translate(56,21.5)">
+            <path d="M-4.6 .4 L-6.2 -.9 M4.6 .4 L6.2 -.9 M-3.4 2.2 L-4.6 3.6 M3.4 2.2 L4.6 3.6" stroke="#2a6b22" stroke-width="1.2" stroke-linecap="round"/>
+            <circle cx="0" cy="-3.6" r="1.4" fill="#2a6b22"/>
+            <circle r="3.8" fill="#3f9433"/><circle r="2.6" fill="#347d2a"/>
+            <g stroke="#256b1e" stroke-width=".5" fill="none"><circle r="1.3"/><path d="M0 -3.8 V-1.3 M0 3.8 V1.3 M-3.8 0 H-1.3 M3.8 0 H1.3"/></g>
+          </g>
+          <g transform="translate(65.5,21.5)">
+            <path d="M-4.6 .4 L-6.2 -.9 M4.6 .4 L6.2 -.9 M-3.4 2.2 L-4.6 3.6 M3.4 2.2 L4.6 3.6" stroke="#2a6b22" stroke-width="1.2" stroke-linecap="round"/>
+            <circle cx="0" cy="-3.6" r="1.4" fill="#2a6b22"/>
+            <circle r="3.8" fill="#3f9433"/><circle r="2.6" fill="#347d2a"/>
+            <g stroke="#256b1e" stroke-width=".5" fill="none"><circle r="1.3"/><path d="M0 -3.8 V-1.3 M0 3.8 V1.3 M-3.8 0 H-1.3 M3.8 0 H1.3"/></g>
+          </g>
+          <!-- berge centrale + berge de départ -->
+          <rect y="27" width="80" height="6" fill="url(#frGrass)"/>
+          <rect y="53" width="80" height="7" fill="url(#frGrass)"/>
+          <g stroke="#5cc247" stroke-width=".5" opacity=".55">
+            <path d="M5 32 V29.6 M17 32 V30 M29 32 V29.4 M41 32 V30 M53 32 V29.6 M65 32 V30 M75 32 V29.5"/>
+            <path d="M8 59 V56.4 M22 59 V56.8 M36 59 V56.2 M50 59 V56.8 M64 59 V56.4 M76 59 V56.9"/>
+          </g>
+          <!-- route : asphalte + lignes de voie -->
+          <rect y="33" width="80" height="20" fill="url(#frRoad)"/>
+          <g stroke="#3f3f52" stroke-width=".9" stroke-dasharray="4 4">
+            <line x1="0" y1="38" x2="80" y2="38"/><line x1="0" y1="43" x2="80" y2="43"/><line x1="0" y1="48" x2="80" y2="48"/>
+          </g>
+          <!-- bolide jaune (voie 1) -->
+          <g transform="translate(9,33.6)">
+            <rect x="1.2" y="4" width="2.6" height="1.5" rx=".6" fill="#15151c"/>
+            <rect x="10.2" y="4" width="2.6" height="1.5" rx=".6" fill="#15151c"/>
+            <path d="M0 2.6 L2.4 .6 L11.6 .6 L14 2.6 L14 4.2 L0 4.2 Z" fill="#ffd23a"/>
+            <path d="M2.4 .6 L11.6 .6 L12.6 1.9 L1.4 1.9 Z" fill="#ffe57f"/>
+            <rect x="5.2" y="1.1" width="3.6" height="1.1" rx=".4" fill="#2b3a5c"/>
+            <rect x="13.1" y="2.7" width="1.1" height="1" rx=".4" fill="#fff6c0"/>
+          </g>
+          <!-- camion : tracteur + remorque (voie 2) -->
+          <g transform="translate(44,38.8)">
+            <g fill="#15151c"><rect x="3" y="3.9" width="2.6" height="1.5" rx=".6"/><rect x="16" y="3.9" width="2.6" height="1.5" rx=".6"/><rect x="21.5" y="3.9" width="2.6" height="1.5" rx=".6"/></g>
+            <rect x="1" y=".5" width="19" height="3.6" rx=".5" fill="#e2e8f2"/>
+            <rect x="1" y=".5" width="19" height="1.3" rx=".5" fill="#fbfdff"/>
+            <g stroke="#b9c2d2" stroke-width=".4"><path d="M6 .8 V3.8 M11 .8 V3.8 M16 .8 V3.8"/></g>
+            <path d="M20 4.1 L20 1 L24 1 L25.6 2.6 L25.6 4.1 Z" fill="#c8322e"/>
+            <path d="M20.6 1.5 L23.6 1.5 L24.8 2.7 L20.6 2.7 Z" fill="#5f86b8"/>
+            <rect x="24.9" y="2.9" width="1" height="1" rx=".4" fill="#fff6c0"/>
+          </g>
+          <!-- voiture violette (voie 3) -->
+          <g transform="translate(24,43.8)">
+            <rect x="1.1" y="3.8" width="2.4" height="1.4" rx=".6" fill="#15151c"/>
+            <rect x="9" y="3.8" width="2.4" height="1.4" rx=".6" fill="#15151c"/>
+            <path d="M0 2.4 L2.6 .5 L10 .5 L12.6 2.4 L12.6 4 L0 4 Z" fill="#a659f5"/>
+            <path d="M2.6 .5 L10 .5 L11 1.8 L1.6 1.8 Z" fill="#c894ff"/>
+            <rect x="4.8" y="1" width="3.2" height="1" rx=".4" fill="#2b1c47"/>
+            <rect x="0" y="2.6" width="1.1" height="1" rx=".4" fill="#ffd9d9"/>
+          </g>
+          <!-- voiture rouge (voie 4) -->
+          <g transform="translate(55,48.6)">
+            <rect x="1.3" y="3.8" width="2.5" height="1.4" rx=".6" fill="#15151c"/>
+            <rect x="9.8" y="3.8" width="2.5" height="1.4" rx=".6" fill="#15151c"/>
+            <path d="M0 2.4 L2.7 .5 L10.8 .5 L13.4 2.4 L13.4 4 L0 4 Z" fill="#e0322e"/>
+            <path d="M2.7 .5 L10.8 .5 L11.9 1.8 L1.7 1.8 Z" fill="#ff7a6e"/>
+            <rect x="5.1" y="1" width="3.4" height="1" rx=".4" fill="#4a1210"/>
+            <rect x="12.4" y="2.6" width="1.1" height="1" rx=".4" fill="#fff6c0"/>
+          </g>
+          <!-- grenouille : pattes écartées, gros yeux -->
+          <g transform="translate(40,57)">
+            <path d="M-4.2 1.3 L-6 2.9 M4.2 1.3 L6 2.9" stroke="#2f9a3c" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M-4 -.8 L-6 -2.4 M4 -.8 L6 -2.4" stroke="#2f9a3c" stroke-width="1.4" stroke-linecap="round"/>
+            <ellipse rx="4.2" ry="3.3" fill="#4ddc5a"/>
+            <ellipse ry="1.5" rx="3.4" cy="-1" fill="#7cf089"/>
+            <path d="M-2.6 2.3 Q0 3.4 2.6 2.3" stroke="#2f9a3c" stroke-width=".7" fill="none"/>
+            <circle cx="-2.1" cy="-2.7" r="1.5" fill="#eafff0"/><circle cx="2.1" cy="-2.7" r="1.5" fill="#eafff0"/>
+            <circle cx="-2.1" cy="-2.7" r=".7" fill="#111"/><circle cx="2.1" cy="-2.7" r=".7" fill="#111"/>
+            <circle cx="-1.8" cy="-3.1" r=".25" fill="#fff"/><circle cx="2.4" cy="-3.1" r=".25" fill="#fff"/>
           </g>
         </svg>
         <div class="play"><span>▶ JOUER</span></div>
@@ -809,36 +915,114 @@
       <div class="year">1981</div>
       <div class="thumb">
         <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
-          <rect width="80" height="60" fill="#000"/>
-          <!-- étoiles colorées -->
-          <g><circle cx="12" cy="10" r=".8" fill="#7fd6ff"/><circle cx="66" cy="8" r=".7" fill="#ff8ad5"/><circle cx="40" cy="5" r=".6" fill="#fff"/><circle cx="24" cy="46" r=".7" fill="#ffd23a"/><circle cx="58" cy="50" r=".8" fill="#9fffa0"/><circle cx="72" cy="30" r=".6" fill="#fff"/><circle cx="8" cy="30" r=".6" fill="#cde"/></g>
-          <!-- boss Galaga + faisceau tracteur -->
-          <g transform="translate(24,12)">
-            <polygon points="0,8 -9,26 9,26" fill="#39c6e0" opacity=".2"/>
-            <polygon points="0,8 -6,24 6,24" fill="#5ad1e8" opacity=".18"/>
-            <rect x="-5" y="-2" width="10" height="6" rx="2" fill="#2bd06a"/>
-            <rect x="-7.5" y="0" width="3" height="6" rx="1" fill="#ffd23a"/><rect x="4.5" y="0" width="3" height="6" rx="1" fill="#ffd23a"/>
-            <rect x="-3" y="-5" width="6" height="4" rx="1.6" fill="#1565c0"/>
-            <circle cx="-1.6" cy="1" r=".9" fill="#0a5a2a"/><circle cx="1.6" cy="1" r=".9" fill="#0a5a2a"/>
+          <defs>
+            <linearGradient id="glbg" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#05061a"/><stop offset=".55" stop-color="#0a0b26"/><stop offset="1" stop-color="#01020a"/>
+            </linearGradient>
+            <linearGradient id="glbeam" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#8ffbe4" stop-opacity=".6"/>
+              <stop offset=".5" stop-color="#39c6e0" stop-opacity=".28"/>
+              <stop offset="1" stop-color="#7b5cff" stop-opacity="0"/>
+            </linearGradient>
+            <radialGradient id="glboom" cx="50%" cy="50%" r="50%">
+              <stop offset="0" stop-color="#fff"/><stop offset=".35" stop-color="#ffd23a"/>
+              <stop offset=".7" stop-color="#ff5252" stop-opacity=".75"/><stop offset="1" stop-color="#ff5252" stop-opacity="0"/>
+            </radialGradient>
+            <!-- Goei (papillon) : ailes rouges en flèche à pointes blanches -->
+            <g id="glGoei">
+              <path d="M-1.3 -1.7 L-7.3 -4.5 L-6.2 -.5 L-1.3 .7 Z" fill="#f43535"/>
+              <path d="M1.3 -1.7 L7.3 -4.5 L6.2 -.5 L1.3 .7 Z" fill="#f43535"/>
+              <path d="M-7.3 -4.5 L-6.2 -.5 L-4.7 -1.1 L-5.5 -3.7 Z" fill="#f2f8ff"/>
+              <path d="M7.3 -4.5 L6.2 -.5 L4.7 -1.1 L5.5 -3.7 Z" fill="#f2f8ff"/>
+              <path d="M-1.2 .9 L-5 3.4 L-1.2 2.8 Z" fill="#d92626"/>
+              <path d="M1.2 .9 L5 3.4 L1.2 2.8 Z" fill="#d92626"/>
+              <path d="M0 -4 L1.5 -1.2 L1.1 3.2 L-1.1 3.2 L-1.5 -1.2 Z" fill="#eaf6ff"/>
+              <path d="M0 -4 L.7 -1.2 L0 3.2 L-.7 -1.2 Z" fill="#fff"/>
+              <circle cy="-2.4" r=".95" fill="#1565c0"/>
+              <circle cy="-2.6" r=".35" fill="#a8dcff"/>
+            </g>
+            <!-- Zako (abeille) : corps bleu, ailes dorées relevées -->
+            <g id="glZako">
+              <path d="M-1.6 -1.5 L-5 -5 L-2.3 -4.3 L-.5 -1.8 Z" fill="#ffd23a"/>
+              <path d="M1.6 -1.5 L5 -5 L2.3 -4.3 L.5 -1.8 Z" fill="#ffd23a"/>
+              <path d="M-5 -5 L-2.3 -4.3 L-3.1 -3.5 Z" fill="#fff0a8"/>
+              <path d="M5 -5 L2.3 -4.3 L3.1 -3.5 Z" fill="#fff0a8"/>
+              <path d="M-2.8 -1.7 Q0 -3.3 2.8 -1.7 L2.1 2.4 Q0 3.3 -2.1 2.4 Z" fill="#2a76d8"/>
+              <path d="M-2.8 -1.7 Q0 -3.3 2.8 -1.7 L2.4 -.6 Q0 -2 -2.4 -.6 Z" fill="#82bcf7"/>
+              <circle cx="-1" cy=".2" r=".55" fill="#03203f"/><circle cx="1" cy=".2" r=".55" fill="#03203f"/>
+              <path d="M-1.3 2.6 L-1.9 4.2 M1.3 2.6 L1.9 4.2" stroke="#1e5aa8" stroke-width=".8" stroke-linecap="round"/>
+            </g>
+          </defs>
+          <rect width="80" height="60" fill="url(#glbg)"/>
+          <!-- champ d'étoiles Galaga : étoiles multicolores de tailles variées -->
+          <g>
+            <circle cx="7" cy="7" r=".9" fill="#fff"/><circle cx="34" cy="4" r=".6" fill="#7fd6ff"/>
+            <circle cx="61" cy="4" r=".8" fill="#ff8ad5"/><circle cx="75" cy="14" r=".6" fill="#fff"/>
+            <circle cx="4" cy="21" r=".7" fill="#ffd23a"/><circle cx="77" cy="33" r=".85" fill="#9fffa0"/>
+            <circle cx="12" cy="37" r=".6" fill="#cfe4ff"/><circle cx="26" cy="8" r=".5" fill="#fff"/>
+            <circle cx="69" cy="44" r=".7" fill="#7fd6ff"/><circle cx="3" cy="51" r=".8" fill="#fff"/>
+            <circle cx="20" cy="57" r=".6" fill="#ff8ad5"/><circle cx="53" cy="55" r=".7" fill="#ffd23a"/>
+            <circle cx="76" cy="56" r=".6" fill="#cfe4ff"/><circle cx="43" cy="49" r=".5" fill="#fff"/>
+            <circle cx="15" cy="28" r=".45" fill="#9fffa0"/><circle cx="65" cy="34" r=".5" fill="#fff"/>
           </g>
-          <!-- papillons -->
-          <g transform="translate(46,13)"><path d="M0 0 L-4.5 -3 L-4.5 3 Z M0 0 L4.5 -3 L4.5 3 Z" fill="#ff5252"/><rect x="-1" y="-3" width="2" height="6" rx="1" fill="#fff"/></g>
-          <g transform="translate(60,17)"><path d="M0 0 L-4.5 -3 L-4.5 3 Z M0 0 L4.5 -3 L4.5 3 Z" fill="#ff5252"/><rect x="-1" y="-3" width="2" height="6" rx="1" fill="#fff"/></g>
-          <!-- abeilles -->
-          <g transform="translate(50,27)"><rect x="-3" y="-2" width="6" height="4" rx="1.4" fill="#ffd23a"/><path d="M-3 -2 L-5.5 -4 M3 -2 L5.5 -4" stroke="#7fd6ff" stroke-width="1"/></g>
-          <g transform="translate(64,29)"><rect x="-3" y="-2" width="6" height="4" rx="1.4" fill="#ffd23a"/><path d="M-3 -2 L-5.5 -4 M3 -2 L5.5 -4" stroke="#7fd6ff" stroke-width="1"/></g>
-          <!-- alien en piqué + tirs ennemis -->
-          <g transform="translate(36,38) rotate(24)"><path d="M0 0 L-4.5 -3 L-4.5 3 Z M0 0 L4.5 -3 L4.5 3 Z" fill="#ff5252"/><rect x="-1" y="-3" width="2" height="6" rx="1" fill="#fff"/></g>
-          <circle cx="32" cy="44" r="1" fill="#ff8a8a"/><circle cx="29" cy="48" r="1" fill="#ff8a8a"/>
-          <!-- tir joueur -->
-          <rect x="43.2" y="40" width="1.6" height="7" fill="#7fd6ff"/>
-          <!-- chasseur détaillé -->
-          <g transform="translate(44,53)">
-            <polygon points="0,-8 -2.4,-2 2.4,-2" fill="#fff"/>
-            <polygon points="0,-8 -1.2,-3.5 1.2,-3.5" fill="#9fd6ff"/>
-            <rect x="-8" y="-2" width="16" height="3" rx="1" fill="#36c5f0"/>
-            <rect x="-8" y="-3.4" width="3" height="2" fill="#e02020"/><rect x="5" y="-3.4" width="3" height="2" fill="#e02020"/>
-            <rect x="-1" y="1" width="2" height="2" fill="#ff9d2e"/>
+          <!-- boss Galaga : faisceau tracteur d'abord, coque par-dessus -->
+          <g transform="translate(20,13)">
+            <polygon points="0,5 -11,31 11,31" fill="url(#glbeam)"/>
+            <g fill="none" stroke="#9ffbea" stroke-width=".45" opacity=".55">
+              <path d="M-3.4 12 Q0 14.2 3.4 12"/>
+              <path d="M-5.9 19 Q0 21.6 5.9 19"/>
+              <path d="M-8.4 26 Q0 29 8.4 26"/>
+            </g>
+            <!-- pods latéraux dorés -->
+            <path d="M-4.8 -2.4 L-9.2 -.6 Q-10.4 2 -8.4 3.8 L-4.8 2.8 Z" fill="#f0b81c"/>
+            <path d="M-4.8 -2.4 L-9.2 -.6 Q-9.8 .5 -9.2 1.3 L-4.8 .3 Z" fill="#ffe07a"/>
+            <path d="M4.8 -2.4 L9.2 -.6 Q10.4 2 8.4 3.8 L4.8 2.8 Z" fill="#f0b81c"/>
+            <path d="M4.8 -2.4 L9.2 -.6 Q9.8 .5 9.2 1.3 L4.8 .3 Z" fill="#ffe07a"/>
+            <!-- coque verte -->
+            <path d="M-5.6 -2.8 Q0 -4.6 5.6 -2.8 L4.7 3.2 Q0 4.8 -4.7 3.2 Z" fill="#22b85c"/>
+            <path d="M-5.6 -2.8 Q0 -4.6 5.6 -2.8 L5.2 -1.1 Q0 -2.7 -5.2 -1.1 Z" fill="#6ef0a4"/>
+            <!-- dôme bleu -->
+            <path d="M-3.6 -3.1 Q0 -7.8 3.6 -3.1 Z" fill="#1257ad"/>
+            <path d="M-1.9 -3.7 Q0 -6.4 1.9 -3.7 Z" fill="#5aa8f0"/>
+            <!-- yeux -->
+            <circle cx="-2" cy="0" r=".95" fill="#05351a"/><circle cx="2" cy="0" r=".95" fill="#05351a"/>
+            <circle cx="-2" cy="-.32" r=".34" fill="#b6ffd4"/><circle cx="2" cy="-.32" r=".34" fill="#b6ffd4"/>
+            <!-- mandibules -->
+            <path d="M-3.1 3.5 L-4 5.8 M3.1 3.5 L4 5.8" stroke="#eaf6ff" stroke-width="1.05" stroke-linecap="round"/>
+          </g>
+          <!-- formation de Goei -->
+          <use href="#glGoei" transform="translate(37,10)"/>
+          <use href="#glGoei" transform="translate(52,9)"/>
+          <use href="#glGoei" transform="translate(67,12)"/>
+          <!-- Zako -->
+          <use href="#glZako" transform="translate(58,24)"/>
+          <use href="#glZako" transform="translate(70,21.2)"/>
+          <!-- Zako touché : explosion en étoile -->
+          <g transform="translate(46,26)">
+            <circle r="5.6" fill="url(#glboom)"/>
+            <g stroke="#fff6c8" stroke-width=".8" stroke-linecap="round" opacity=".9">
+              <path d="M0 -6.4 L0 -3.6 M0 3.6 L0 6.4 M-6.4 0 L-3.6 0 M3.6 0 L6.4 0"/>
+              <path d="M-4.4 -4.4 L-2.6 -2.6 M4.4 -4.4 L2.6 -2.6 M-4.4 4.4 L-2.6 2.6 M4.4 4.4 L2.6 2.6"/>
+            </g>
+          </g>
+          <!-- Goei en piqué + ses tirs -->
+          <use href="#glGoei" transform="translate(29,44) rotate(26)"/>
+          <circle cx="33" cy="51" r="1" fill="#ff9a9a"/><circle cx="35.5" cy="56" r=".9" fill="#ff7070"/>
+          <!-- tir du joueur -->
+          <rect x="45.2" y="33" width="1.6" height="7" rx=".8" fill="#a8f0ff"/>
+          <rect x="45.6" y="33" width=".8" height="7" fill="#fff"/>
+          <!-- chasseur du joueur : blanc, ailerons rouges, tuyère -->
+          <g transform="translate(46,53)">
+            <path d="M-7.6 -1.5 L-3.1 -2.7 L-3.1 1.9 L-7.6 1.3 Z" fill="#d81b1b"/>
+            <path d="M7.6 -1.5 L3.1 -2.7 L3.1 1.9 L7.6 1.3 Z" fill="#d81b1b"/>
+            <path d="M-7.6 -1.5 L-3.1 -2.7 L-3.1 -1.5 L-7.4 -.6 Z" fill="#ff6a6a"/>
+            <path d="M7.6 -1.5 L3.1 -2.7 L3.1 -1.5 L7.4 -.6 Z" fill="#ff6a6a"/>
+            <path d="M0 -8.2 L2.7 -1 L2.7 2.3 L-2.7 2.3 L-2.7 -1 Z" fill="#f2f8ff"/>
+            <path d="M0 -8.2 L1.15 -1.4 L0 2.3 L-1.15 -1.4 Z" fill="#9fd6ff"/>
+            <circle cy="-2.7" r="1.1" fill="#36c5f0"/>
+            <circle cy="-3" r=".45" fill="#eaffff"/>
+            <path d="M-1.7 2.3 L1.7 2.3 L.85 4.8 L-.85 4.8 Z" fill="#ff9d2e"/>
+            <path d="M-.75 2.5 L.75 2.5 L.35 4.1 L-.35 4.1 Z" fill="#fff3b0"/>
           </g>
         </svg>
         <div class="play"><span>▶ JOUER</span></div>
@@ -2418,7 +2602,7 @@
       r.readAsText(f);
     });
   </script>
-  <script src="music/playlist.js?v=21"></script>
-  <script src="music/player.js?v=21"></script>
+  <script src="music/playlist.js?v=22"></script>
+  <script src="music/player.js?v=22"></script>
 </body>
 </html>
