@@ -1,4 +1,4 @@
-﻿// ── Musique libre (CC0, domaine public) — Juhani Junkala / SubspaceAudio ──
+// ── Musique libre (CC0, domaine public) — Juhani Junkala / SubspaceAudio ──
 // Incluse dans le dépôt : joue partout, y compris sur le site public.
 // douce:true = morceau calme, joué sur la page d'accueil
 const LIBRE_PLAYLIST = [
@@ -60,7 +60,7 @@ const PLAYLIST = [
     "url": "../../../Music/0%20We%20Built%20This%20City.mp3"
   },
   {
-    "name": "17 chants de NoÃ«l en franÃ§ais avec vos artistes prÃ©fÃ©rÃ©s - Hosanna SpÃ©cial NoÃ«l",
+    "name": "17 chants de Noël en français avec vos artistes préférés - Hosanna Spécial Noël",
     "url": "../../../Music/17%20chants%20de%20No%C3%ABl%20en%20fran%C3%A7ais%20avec%20vos%20artistes%20pr%C3%A9f%C3%A9r%C3%A9s%20-%20Hosanna%20Sp%C3%A9cial%20No%C3%ABl.mp3"
   },
   {

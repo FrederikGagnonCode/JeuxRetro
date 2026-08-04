@@ -254,7 +254,15 @@
   #arcade-music{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);
     z-index:9999;font-family:'Courier New',monospace;color:#eee;
     background:rgba(8,8,20,.92);border:1px solid #333;border-radius:10px;
-    box-shadow:0 6px 24px rgba(0,0,0,.5);max-width:min(94vw,560px);}
+    box-shadow:0 6px 24px rgba(0,0,0,.5);
+    /* le titre est en nowrap : sans cette reserve laterale, un nom de piste long
+       fait deborder la barre sur #arcade-pref (a gauche) et #arcade-top (a droite) */
+    max-width:min(560px,calc(100vw - 300px));}
+  /* ecrans etroits : plus de place pour trois bandeaux cote a cote,
+     on remonte le lecteur au-dessus des deux autres */
+  @media (max-width:560px){
+    #arcade-music{bottom:58px;max-width:min(94vw,560px);}
+  }
   #arcade-music .am-head{display:flex;align-items:center;gap:8px;padding:6px 10px;cursor:pointer;}
   #arcade-music .am-title{font-size:12px;letter-spacing:1px;color:#4ecca3;white-space:nowrap;
     overflow:hidden;text-overflow:ellipsis;flex:1;}
