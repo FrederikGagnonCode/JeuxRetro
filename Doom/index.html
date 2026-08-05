@@ -38,11 +38,12 @@
       <p class="ins">L'invasion démoniaque a commencé : traverse les trois secteurs de la base martienne.</p>
       <p class="ins">↑ ↓ ou W S : avancer/reculer · ← → : pivoter · A D : pas de côté</p>
       <p class="ins">Espace : tirer · 1-5 ou X : arme · C : ouvrir/actionner · Tab : carte</p>
+      <p class="ins">🖱 Souris : viser · clic : tirer · clic droit : ouvrir · molette : arme</p>
       <p class="ins blink" style="margin-top:12px">▶ Cliquez ou Espace pour descendre en enfer</p>
       <p id="ovMsg"></p>
     </div>
   </div>
-  <div id="hint">↑↓/WS avancer · ←→ pivoter · A D strafe · Espace : tir · X : arme · C : ouvrir · Tab : carte · P = pause</div>
+  <div id="hint">Souris : viser · clic : tir · clic droit : ouvrir · molette : arme<br>↑↓/WS avancer · ←→ pivoter · A D strafe · Espace : tir · X : arme · C : ouvrir · Tab : carte · P = pause</div>
   <a class="back" href="../index.html">← Menu Arcade</a>
 
 <script>
@@ -67,48 +68,238 @@ let last=0, frame=0;
 const keys={};
 const zbuffer=new Float32Array(W);
 
-/* ════════════════════ sons (Web Audio synthétisé) ════════════════════ */
-let _ac=null;
-function ac(){ if(!_ac) _ac=new (window.AudioContext||window.webkitAudioContext)();
-  if(_ac.state==='suspended') _ac.resume(); return _ac; }
-function noiseBuf(a,dur){
-  const n=Math.floor(a.sampleRate*dur), b=a.createBuffer(1,n,a.sampleRate), d=b.getChannelData(0);
-  for(let i=0;i<n;i++) d[i]=Math.random()*2-1; return b;
+/* ════════════════════ sons ════════════════════
+   Synthèse par COUCHES plutôt qu'à l'oscillateur nu, qui sonne « bip 8 bits ».
+   Un coup de feu réel n'est presque que du bruit, en quatre temps :
+     1. le claquement  — 8 à 15 ms de bruit large bande, saturé : c'est lui qui
+        donne le « snap » ; sans transitoire, tout sonne mou ;
+     2. le corps       — bruit passé dans un passe-bas qui s'effondre de
+        plusieurs kHz vers quelques centaines de Hz ;
+     3. le coup de basse — une sinusoïde qui chute, pour le poids ;
+     4. la pièce       — la réverbération, sans quoi le son reste « à plat ».
+   Chaque tir est légèrement varié (fréquences, niveau) : deux détonations
+   rigoureusement identiques s'entendent comme un échantillon en boucle.
+   Les créatures, elles, passent par des FORMANTS (bandes résonnantes) avec un
+   grain d'amplitude : c'est ce qui distingue une gorge d'un synthétiseur. */
+let _ac=null, BUS=null, NOISE=null;
+const CURVES={};
+function ac(){
+  if(!_ac){ _ac=new (window.AudioContext||window.webkitAudioContext)(); buildBus(); }
+  if(!BUS) buildBus();
+  if(_ac.state==='suspended' && _ac.resume) _ac.resume();
+  return _ac;
 }
-function burst(dur,f0,f1,vol,type,q){
-  const a=ac(),t=a.currentTime;
-  const s=a.createBufferSource(); s.buffer=noiseBuf(a,dur);
-  const bp=a.createBiquadFilter(); bp.type=type||'bandpass'; bp.Q=q||1.2;
-  bp.frequency.setValueAtTime(f0,t); bp.frequency.exponentialRampToValueAtTime(f1,t+dur);
-  const g=a.createGain(); g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.001,t+dur);
-  s.connect(bp); bp.connect(g); g.connect(a.destination); s.start(t); s.stop(t+dur);
+function buildBus(){
+  const a=_ac;
+  // bruit blanc réutilisé : on y lit une tranche au hasard à chaque couche,
+  // ce qui évite de réallouer un tampon à chaque coup de feu
+  NOISE=a.createBuffer(1, Math.floor(a.sampleRate*2), a.sampleRate);
+  const d=NOISE.getChannelData(0);
+  for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+  // réponse impulsionnelle d'une petite salle en béton : bruit décroissant,
+  // décorrélé entre les deux canaux pour donner de la largeur
+  const len=Math.floor(a.sampleRate*0.7);
+  const ir=a.createBuffer(2,len,a.sampleRate);
+  for(let c=0;c<2;c++){
+    const ch=ir.getChannelData(c);
+    for(let i=0;i<len;i++) ch[i]=(Math.random()*2-1)*Math.pow(1-i/len,2.6);
+  }
+  const room=a.createConvolver(); room.buffer=ir;
+  const wet=a.createGain(); wet.gain.value=0.8;
+  // un compresseur en sortie : évite que mitrailleuse + monstres ne saturent
+  const comp=a.createDynamicsCompressor();
+  comp.threshold.value=-13; comp.knee.value=9; comp.ratio.value=5;
+  comp.attack.value=0.003; comp.release.value=0.2;
+  const out=a.createGain(); out.gain.value=0.8;
+  const dry=a.createGain(); dry.gain.value=1;
+  room.connect(wet); wet.connect(comp); dry.connect(comp);
+  comp.connect(out); out.connect(a.destination);
+  BUS={dry,room,out};
 }
-function tone(type,f0,f1,dur,vol){
-  const a=ac(),t=a.currentTime, o=a.createOscillator(); o.type=type;
-  o.frequency.setValueAtTime(f0,t); o.frequency.exponentialRampToValueAtTime(Math.max(1,f1),t+dur);
-  const g=a.createGain(); g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.001,t+dur);
-  o.connect(g); g.connect(a.destination); o.start(t); o.stop(t+dur+0.02);
+function satCurve(amount){
+  if(!CURVES[amount]){
+    const n=1024, c=new Float32Array(n), k=Math.tanh(amount);
+    for(let i=0;i<n;i++){ const x=i/(n-1)*2-1; c[i]=Math.tanh(x*amount)/k; }
+    CURVES[amount]=c;
+  }
+  return CURVES[amount];
 }
-const sfxFist    =()=>burst(0.09,900,300,0.10);
-const sfxPistol  =()=>{ burst(0.10,2200,500,0.16); tone('square',420,90,0.09,0.07); };
-const sfxShotgun =()=>{ burst(0.26,1500,180,0.28,'lowpass',0.9); tone('sawtooth',200,50,0.22,0.10); };
-const sfxChain   =()=>{ burst(0.07,2600,700,0.13); tone('square',520,160,0.06,0.05); };
-const sfxRocket  =()=>{ burst(0.34,700,140,0.22,'lowpass',1); tone('sawtooth',150,60,0.3,0.10); };
-const sfxBoom    =()=>{ burst(0.55,420,60,0.34,'lowpass',0.8); tone('sine',110,28,0.5,0.16); };
-const sfxImp     =()=>{ burst(0.2,1100,400,0.12); tone('sawtooth',330,140,0.18,0.06); };
-const sfxPlasma  =()=>tone('square',760,300,0.2,0.08);
-const sfxPain    =()=>{ tone('sawtooth',300,110,0.24,0.13); burst(0.16,700,200,0.10); };
-const sfxDie     =()=>{ tone('sawtooth',260,50,0.7,0.15); burst(0.6,600,90,0.14,'lowpass',0.8); };
-const sfxPick    =()=>tone('triangle',560,1080,0.13,0.09);
-const sfxWeap    =()=>{ tone('square',300,720,0.1,0.07); burst(0.09,1400,600,0.07); };
-const sfxDoor    =()=>{ burst(0.5,300,90,0.14,'lowpass',0.8); tone('sine',90,55,0.45,0.07); };
-const sfxLocked  =()=>tone('square',180,120,0.16,0.10);
-const sfxExit    =()=>{ tone('square',300,900,0.3,0.11); tone('square',450,1350,0.34,0.07); };
+/* Les formants à Q élevé dissipent énormément d'énergie : mesuré au rendu, une
+   voix sortait ~27 dB sous le fusil à pompe. VOX rattrape cet écart pour que
+   tout tienne dans le même mixage. */
+const VOX=4.5;
+const rv=(v,p)=>v*(1+(Math.random()*2-1)*(p===undefined?0.08:p));
+function send(node,wet){
+  node.connect(BUS.dry);
+  if(wet>0){ const s=_ac.createGain(); s.gain.value=wet; node.connect(s); s.connect(BUS.room); }
+}
+function envG(peak,atk,dec,t){
+  const g=_ac.createGain();
+  g.gain.setValueAtTime(0.0001,t);
+  g.gain.linearRampToValueAtTime(peak,t+atk);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+atk+dec);
+  return g;
+}
+/* une couche de bruit : filtre balayé + enveloppe + saturation optionnelle */
+function nz(t,dur,type,f0,f1,q,peak,atk,wet,sat){
+  atk=atk||0.0008;
+  const a=_ac, s=a.createBufferSource(); s.buffer=NOISE;
+  const f=a.createBiquadFilter(); f.type=type; f.Q.value=q||1;
+  f.frequency.setValueAtTime(f0,t);
+  f.frequency.exponentialRampToValueAtTime(Math.max(30,f1),t+atk+dur);
+  const g=envG(peak,atk,dur,t);
+  s.connect(f);
+  if(sat){ const ws=a.createWaveShaper(); ws.curve=satCurve(sat); f.connect(ws); ws.connect(g); }
+  else f.connect(g);
+  send(g,wet);
+  s.start(t,Math.random()*1.4); s.stop(t+atk+dur+0.1);
+  return g;
+}
+/* une couche tonale (poids des basses, confirmations) */
+function tn(t,type,f0,f1,dur,peak,wet){
+  const a=_ac, o=a.createOscillator(); o.type=type;
+  o.frequency.setValueAtTime(f0,t);
+  o.frequency.exponentialRampToValueAtTime(Math.max(20,f1),t+dur);
+  const g=envG(peak,0.002,dur,t);
+  o.connect(g); send(g,wet);
+  o.start(t); o.stop(t+dur+0.1);
+  return g;
+}
+/* vocalisation : source rauque (dent de scie + bruit) filtrée par deux ou trois
+   formants, avec une modulation d'amplitude qui donne le grain de la gorge */
+function voice(t,o){
+  const a=_ac, dur=o.dur, atk=o.atk||0.02;
+  const g=envG(o.peak*VOX,atk,dur,t);
+  const lfo=a.createOscillator(); lfo.type='sine'; lfo.frequency.value=o.rough||22;
+  const lg=a.createGain(); lg.gain.value=o.peak*VOX*(o.roughAmt||0.4);
+  lfo.connect(lg); lg.connect(g.gain);
+  lfo.start(t); lfo.stop(t+atk+dur+0.1);
+  const saw=a.createOscillator(); saw.type='sawtooth';
+  saw.frequency.setValueAtTime(o.f0,t);
+  saw.frequency.exponentialRampToValueAtTime(Math.max(20,o.f1),t+atk+dur);
+  const ns=a.createBufferSource(); ns.buffer=NOISE;
+  const ng=a.createGain(); ng.gain.value=o.noise||0.3;
+  const mix=a.createGain(); mix.gain.value=0.6;
+  saw.connect(mix); ns.connect(ng); ng.connect(mix);
+  o.formants.forEach(f=>{
+    const bp=a.createBiquadFilter(); bp.type='bandpass';
+    bp.frequency.value=f[0]; bp.Q.value=f[1];
+    const fg=a.createGain(); fg.gain.value=f[2];
+    mix.connect(bp); bp.connect(fg); fg.connect(g);
+  });
+  send(g,o.wet===undefined?0.45:o.wet);
+  saw.start(t); saw.stop(t+atk+dur+0.1);
+  ns.start(t,Math.random()*1.4); ns.stop(t+atk+dur+0.1);
+}
+
+/* ── armes ── */
+function sfxFist(){
+  const t=ac().currentTime;
+  nz(t,0.07,'bandpass',rv(760),260,1.2,0.85,0.004,0.20);      // souffle du bras
+  tn(t,'sine',rv(125),50,0.09,0.78,0.15);                      // impact sourd
+}
+function sfxPistol(){
+  const t=ac().currentTime;
+  nz(t,0.011,'highpass',rv(3800),rv(2600),0.7,0.95,0.0004,0.35,3);
+  nz(t,0.085,'lowpass', rv(5200),rv(430), 1.0,0.55,0.001, 0.50,2);
+  tn(t,'sine',rv(150),55,0.07,0.30,0.30);
+  nz(t+0.05,0.03,'bandpass',rv(3000),2200,7,0.10,0.002,0.20); // culasse
+}
+function sfxShotgun(){
+  const t=ac().currentTime;
+  nz(t,0.015,'highpass',rv(3000),rv(1800),0.7,1.00,0.0005,0.50,4);
+  nz(t,0.30, 'lowpass', rv(4200),rv(185), 0.9,0.85,0.001, 0.85,2.5);
+  tn(t,'sine',rv(108),36,0.24,0.50,0.55);
+  nz(t+0.20,0.035,'bandpass',2400,1500,8,0.16,0.002,0.25);    // pompe : aller
+  nz(t+0.31,0.045,'bandpass',1800, 900,7,0.18,0.002,0.25);    //         retour
+}
+function sfxChain(){
+  const t=ac().currentTime;
+  nz(t,0.008,'highpass',rv(4200,0.13),rv(3000,0.13),0.7,0.78,0.0004,0.22,3);
+  nz(t,0.055,'lowpass', rv(5600,0.13),rv(620,0.13), 1.0,0.45,0.001, 0.30,2);
+  tn(t,'sine',rv(172,0.15),70,0.05,0.22,0.18);
+  nz(t+0.026,0.02,'bandpass',rv(3400,0.16),2400,9,0.09,0.001,0.12);
+}
+function sfxRocket(){
+  const t=ac().currentTime;
+  nz(t,0.05,'highpass',900,2600,0.8,0.70,0.004,0.40,2);        // souffle montant
+  nz(t,0.45,'lowpass', 1800,260, 0.9,0.50,0.010,0.60,1.5);
+  tn(t,'sine',rv(92),40,0.30,0.35,0.40);
+}
+function sfxBoom(){
+  const t=ac().currentTime;
+  nz(t,0.02,'highpass',2600,1400,0.7,1.00,0.0006,0.60,5);
+  nz(t,0.75,'lowpass', 2400,  90,0.8,0.90,0.002, 1.00,3);
+  tn(t,'sine',rv(85),24,0.60,0.70,0.70);
+  for(let i=0;i<7;i++)                                          // débris
+    nz(t+0.12+Math.random()*0.5,0.03,'bandpass',900+Math.random()*2600,600,6,
+       0.06+Math.random()*0.06,0.001,0.35);
+}
+
+/* ── projectiles ennemis ── */
+function sfxImp(){
+  const t=ac().currentTime;
+  nz(t,0.28,'bandpass',700,2400,1.4,1.30,0.010,0.45);           // souffle de flamme
+  tn(t,'triangle',rv(320),140,0.22,0.53,0.30);
+}
+function sfxPlasma(){
+  const t=ac().currentTime;
+  nz(t,0.18,'bandpass',1800,700,4,1.45,0.004,0.40);
+  tn(t,'triangle',rv(900),260,0.16,0.78,0.35);
+}
+
+/* ── voix ── */
 function sfxGrowl(kind){
-  if(kind==='pinky')      { tone('sawtooth',180,90,0.34,0.11); burst(0.3,500,160,0.10,'lowpass',0.9); }
-  else if(kind==='caco')  { tone('sine',260,120,0.4,0.10); burst(0.3,900,300,0.08); }
-  else if(kind==='baron') { tone('sawtooth',120,55,0.8,0.16); burst(0.7,420,110,0.14,'lowpass',0.8); }
-  else                    { tone('sawtooth',240,130,0.3,0.08); burst(0.24,800,260,0.08); }
+  const t=ac().currentTime;
+  if(kind==='pinky')      voice(t,{dur:0.42,f0:rv(95), f1:62, peak:0.62,rough:26,noise:0.35,
+                                   formants:[[320,6,1],[820,8,0.6],[1900,10,0.25]]});
+  else if(kind==='caco')  voice(t,{dur:0.50,f0:rv(150),f1:95, peak:0.31,rough:15,noise:0.50,roughAmt:0.55,
+                                   formants:[[430,5,1],[1150,7,0.7],[2600,9,0.30]]});
+  else if(kind==='baron') voice(t,{dur:0.95,f0:rv(62), f1:38, peak:0.44,rough:18,noise:0.30,wet:0.70,
+                                   formants:[[190,7,1],[520,9,0.7],[1300,11,0.30]]});
+  else                    voice(t,{dur:0.34,f0:rv(130),f1:88, peak:0.52,rough:30,noise:0.45,
+                                   formants:[[520,6,1],[1350,8,0.55],[2500,9,0.20]]});
+}
+function sfxDie(){                                              // râle descendant
+  const t=ac().currentTime;
+  voice(t,{dur:0.80,f0:rv(180),f1:48,peak:0.38,rough:19,noise:0.50,wet:0.60,
+           formants:[[430,5,1],[1100,7,0.6],[2300,9,0.25]]});
+}
+function sfxPain(){                                             // grognement du marine
+  const t=ac().currentTime;
+  voice(t,{dur:0.22,f0:rv(210),f1:120,peak:0.62,rough:24,noise:0.40,wet:0.30,
+           formants:[[600,6,1],[1500,8,0.5]]});
+}
+
+/* ── mécanique et objets ── */
+function sfxDoor(){
+  const t=ac().currentTime;
+  nz(t,0.55,'lowpass', 320, 120,1.0,0.61,0.06,0.50);            // vérin
+  nz(t,0.50,'bandpass',900,1700,7,  0.18,0.08,0.40);            // grincement
+  nz(t+0.55,0.09,'lowpass',700,200,1.2,0.54,0.002,0.50);        // butée
+}
+function sfxLocked(){
+  const t=ac().currentTime;
+  nz(t,0.08,'lowpass', 500, 160,1.1,1.19,0.001,0.35);           // heurt sourd
+  nz(t,0.14,'bandpass',1400,1100,12,0.34,0.002,0.30);           // résonance du métal
+  tn(t,'sine',95,60,0.10,0.68,0.20);
+}
+function sfxExit(){
+  const t=ac().currentTime;
+  nz(t,0.10,'lowpass',800,220,1.2,0.50,0.002,0.50);             // gros levier
+  tn(t+0.06,'triangle',320,640,0.18,0.28,0.45);
+  tn(t+0.14,'triangle',480,960,0.22,0.20,0.50);
+}
+function sfxPick(){
+  const t=ac().currentTime;
+  nz(t,0.02,'bandpass',2600,2000,9,0.77,0.001,0.20);            // clic mécanique
+  tn(t,'triangle',620,1180,0.10,0.77,0.25);
+}
+function sfxWeap(){
+  const t=ac().currentTime;
+  nz(t,0.05,'bandpass',1900,1200,7,1.25,0.001,0.35);            // métal saisi
+  nz(t+0.07,0.07,'bandpass',1200,700,8,0.94,0.002,0.35);
+  tn(t,'triangle',380,760,0.14,0.73,0.30);
 }
 
 /* ════════════════════ textures murales (32×32, pré-ombrées) ════════════════════ */
@@ -780,9 +971,11 @@ function selectWeapon(i){
   if(w.key && ammo[w.key]<=0){ flash('Pas de munitions pour '+w.n); return; }
   wsel=i; wcd=0.18; flash(w.n);
 }
-function cycleWeapon(){
-  for(let k=1;k<=WEAPONS.length;k++){
-    const i=(wsel+k)%WEAPONS.length;
+function cycleWeapon(dir){
+  const d = dir<0 ? -1 : 1;                  // molette vers le haut = arme précédente
+  const n = WEAPONS.length;
+  for(let k=1;k<=n;k++){
+    const i=((wsel+k*d)%n+n)%n;
     if(!weapons[i]) continue;
     const w=WEAPONS[i];
     if(w.key && ammo[w.key]<=0) continue;
@@ -930,6 +1123,7 @@ function flash(m){ msg=m; msgT=2.6; }
 function endOverlay(title,sub){
   ovTitle.textContent=title; ovMsg.textContent=sub;
   overlay.classList.add('ended'); overlay.style.display='flex';
+  unlockMouse();          // rend le curseur : l'invite d'initiales doit rester utilisable
 }
 function finishLevel(){
   if(inter) return;
@@ -960,7 +1154,9 @@ function newGame(){
   ammo={bal:50, car:0, roq:0};
   weapons=[true,true,false,false,false]; hasKey=false; wsel=1;
   over=false; paused=false; inter=false; running=true;
+  mouseDX=0; mouseFire=false;
   startLevel();
+  lockMouse();            // appelé depuis un clic ou une touche : geste valide
 }
 
 /* ════════════════════ entrées ════════════════════ */
@@ -968,7 +1164,7 @@ document.addEventListener('keydown',e=>{
   const k=e.key.toLowerCase(); keys[k]=true;
   if(['arrowup','arrowdown','arrowleft','arrowright',' ','tab'].includes(k)) e.preventDefault();
   if(inter){ if(k===' '||k==='enter') nextLevel(); return; }
-  if(paused && k!=='p'){ paused=false; return; }
+  if(paused && k!=='p'){ paused=false; lockMouse(); return; }
   if((k===' '||k==='enter') && (!running||over)){ newGame(); return; }
   if(k==='p' && running && !over){ paused=!paused; return; }
   if(!running||over) return;
@@ -982,6 +1178,48 @@ overlay.addEventListener('click',()=>{ if(!running||over) newGame(); });
 cv.addEventListener('touchstart',e=>{
   if(inter){ e.preventDefault(); nextLevel(); }
   else if(!running||over){ e.preventDefault(); newGame(); }
+},{passive:false});
+
+/* ════════════════════ souris ════════════════════
+   Visée à la souris par verrouillage du pointeur : une fois capté, seuls les
+   déplacements RELATIFS comptent (movementX), donc on pivote sans fin et sans
+   que le curseur sorte de la fenêtre. Le mouvement vertical est ignoré : le
+   moteur n'a pas de tangage, mieux vaut ne rien faire que simuler mal.
+   Les déplacements sont accumulés puis consommés dans update(), pour rester
+   synchrone avec l'image et ignorer naturellement pause et fin de partie. */
+const MOUSE_SENS=0.0035;      // ~450 px pour un quart de tour ; à ajuster au goût
+const TOUCHDEV = ('ontouchstart' in window) || navigator.maxTouchPoints>1;
+let mouseDX=0, mouseFire=false, locked=false;
+function lockMouse(){
+  if(TOUCHDEV || locked || !cv.requestPointerLock) return;
+  try{ const p=cv.requestPointerLock(); if(p&&p.catch) p.catch(()=>{}); }catch(e){}
+}
+function unlockMouse(){
+  if(document.pointerLockElement===cv && document.exitPointerLock) document.exitPointerLock();
+}
+document.addEventListener('pointerlockchange',()=>{
+  locked=(document.pointerLockElement===cv);
+  mouseDX=0; mouseFire=false;
+  // pointeur relâché en pleine partie (Échap) : on met en pause plutôt que de
+  // laisser le joueur sans visée
+  if(!locked && running && !over && !inter) paused=true;
+});
+document.addEventListener('mousemove',e=>{ if(locked) mouseDX+=e.movementX||0; });
+cv.addEventListener('contextmenu',e=>e.preventDefault());
+cv.addEventListener('mousedown',e=>{
+  e.preventDefault();
+  if(inter){ nextLevel(); return; }
+  if(!running||over){ newGame(); return; }
+  if(paused){ paused=false; lockMouse(); return; }
+  if(!locked){ lockMouse(); return; }        // le premier clic sert à capter la souris
+  if(e.button===0) mouseFire=true;
+  else if(e.button===2) useFront();
+});
+document.addEventListener('mouseup',e=>{ if(e.button===0) mouseFire=false; });
+cv.addEventListener('wheel',e=>{
+  if(!running||over||paused||inter) return;
+  e.preventDefault();
+  cycleWeapon(e.deltaY<0 ? -1 : 1);
 },{passive:false});
 
 /* ════════════════════ mise à jour ════════════════════ */
@@ -1006,10 +1244,11 @@ function update(dt){
   if(keys['d']) strafe+=1;
   if(keys['arrowleft']) rot(-rotS);
   if(keys['arrowright']) rot(rotS);
+  if(mouseDX){ rot(mouseDX*MOUSE_SENS); mouseDX=0; }     // visée souris
   if(fwd) tryMove(px+dirX*moveS*fwd, py+dirY*moveS*fwd);
   if(strafe) tryMove(px-dirY*moveS*strafe, py+dirX*moveS*strafe);
   if(fwd||strafe){ bobT+=dt*9; bob=Math.sin(bobT)*2.1; } else bob*=0.86;
-  if(keys[' ']) fire();
+  if(keys[' ']||mouseFire) fire();
 
   // ── découverte pour la carte ──
   if(frame%3===0){
@@ -1060,12 +1299,47 @@ function updateParts(dt){
   if(parts.length>190) parts.splice(0,parts.length-190);
 }
 function wake(t){ t.st='chase'; sfxGrowl(t.type); }
+/* Collision des monstres.
+   Avant, stepTo ne testait que le POINT central : un monstre pouvait plaquer
+   son centre contre un mur et y enfoncer toute sa demi-largeur, surtout dans
+   les angles de couloir. On teste maintenant les quatre coins de sa boîte,
+   axe par axe, comme le fait déjà le joueur — il glisse le long du mur au
+   lieu d'y entrer.
+   Le rayon de collision est volontairement plus petit que le lutin (les
+   couloirs ne font qu'une case : au-delà, les monstres resteraient coincés).
+   C'est ce que faisait Doom, dont les rayons de collision étaient bien
+   inférieurs aux sprites. */
+/* Un rayon par créature, calé au plus près de sa largeur DESSINÉE pour qu'elle
+   ne déborde pas sur les murs — mais plafonné : un couloir ne fait qu'une case,
+   et au-delà de ~0.38 la bête n'aurait plus assez de jeu pour y circuler. Le
+   baron, plus large que son rayon, débordera donc légèrement : c'est inévitable
+   ici, et c'était déjà le cas dans Doom. */
+const CRAD={zombie:0.30, imp:0.33, pinky:0.36, caco:0.36, baron:0.38};
+function boxHitsWall(x,y,r){
+  return isWall(x-r,y-r)||isWall(x+r,y-r)||isWall(x-r,y+r)||isWall(x+r,y+r);
+}
 function stepTo(t,tx,ty,sp,dt){
   const dx=tx-t.x, dy=ty-t.y, d=Math.hypot(dx,dy)||1;
-  const nx=t.x+dx/d*sp*dt, ny=t.y+dy/d*sp*dt;
-  if(!isWall(nx,t.y)) t.x=nx; else if(!isWall(t.x,ny)){ t.y=ny; return; }
-  if(!isWall(t.x,ny)) t.y=ny;
-  t.face=dx<0?-1:1;
+  const step=sp*dt;
+  const nx=t.x+dx/d*step, ny=t.y+dy/d*step;
+  const MRAD=CRAD[t.type]||0.32;
+  t.face = dx<0 ? -1 : 1;
+  if(boxHitsWall(t.x,t.y,MRAD)){
+    // déjà encastré (apparition à l'étroit, bousculade) : on le dégage plutôt
+    // que de le figer là pour toujours
+    const cx=Math.floor(t.x), cy=Math.floor(t.y);
+    if(MAP[cy] && MAP[cy][cx]===0){        // centre sur du sol : on recentre
+      const gx=cx+0.5, gy=cy+0.5;
+      t.x+=Math.sign(gx-t.x)*Math.min(step,Math.abs(gx-t.x));
+      t.y+=Math.sign(gy-t.y)*Math.min(step,Math.abs(gy-t.y));
+    }else{                                  // centre dans un mur : on ressort
+      if(!isWall(nx,t.y)) t.x=nx;
+      if(!isWall(t.x,ny)) t.y=ny;
+    }
+    return;
+  }
+  if(!boxHitsWall(nx,t.y,MRAD)) t.x=nx;
+  if(!boxHitsWall(t.x,ny,MRAD)) t.y=ny;
 }
 function shootAt(t,type,speed,dmg,snd){
   const dx=px-t.x, dy=py-t.y, d=Math.hypot(dx,dy)||1;
@@ -1569,8 +1843,8 @@ msg=''; msgT=0; lockCd=0; hurtT=0; muzzleT=0; faceHurt=0; faceDir=0; bobT=0; bob
 genLevel();
 requestAnimationFrame(loop);
 </script>
-<script src="../music/i18n-games.js?v=22"></script>
-<script src="../music/playlist.js?v=22"></script>
-<script src="../music/player.js?v=22"></script>
+<script src="../music/i18n-games.js?v=23"></script>
+<script src="../music/playlist.js?v=23"></script>
+<script src="../music/player.js?v=23"></script>
 </body>
 </html>
