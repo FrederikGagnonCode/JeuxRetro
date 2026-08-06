@@ -56,6 +56,12 @@ ja:{p:["ムカデを一節ずつ破壊せよ","矢印: 移動 · スペース: �
 cs:{p:["Znič stonožku článek po článku","Šipky: pohyb · Mezerník: střelba","Každý zasažený článek se stane houbou","▶ Klikni nebo Mezerník pro hru"],hint:"Šipky: pohyb (dolní zóna) · Mezerník: střelba · P = pauza"},
 zh:{p:["逐节消灭蜈蚣","方向键: 移动 · 空格: 射击","被击中的节会变成蘑菇","▶ 点击或空格开始"],hint:"方向键: 移动(下方区域) · 空格: 射击 · P = 暂停"},
 ko:{p:["지네를 마디마다 파괴하세요","방향키: 이동 · 스페이스: 발사","맞은 마디는 버섯이 됩니다","▶ 클릭 또는 스페이스로 시작"],hint:"방향키: 이동(하단) · 스페이스: 발사 · P = 일시정지"}},
+"CommanderKeen":{
+en:{p:["Billy Blaze, eight years old and a genius, is stranded on Mars: the Yorps stole his ship parts.","← → run · ↑ jump · Space: neural stunner","X: hop on the pogo — hold ↑ as you bounce to leap very high","Grab the ship part ⚙ then reach the saucer","▶ Click or Space to start the adventure"],hint:"← → run · ↑ jump · Space: stunner · X: pogo · P = pause"},
+ja:{p:["8歳の天才ビリー・ブレイズが火星で立ち往生：ヨープに宇宙船の部品を盗まれた。","← → 走る · ↑ ジャンプ · スペース: 神経銃","X: ポゴに乗る — 跳ねる瞬間に ↑ を長押しで大ジャンプ","宇宙船の部品 ⚙ を回収して円盤へ戻れ","▶ クリックかスペースで冒険開始"],hint:"← → 走る · ↑ ジャンプ · スペース: 神経銃 · X: ポゴ · P = ポーズ"},
+cs:{p:["Billy Blaze, osmiletý génius, uvízl na Marsu: Yorpové mu ukradli díly lodi.","← → běh · ↑ skok · Mezerník: neuronová pistole","X: nasedni na pogo — podrž ↑ při odrazu a vyskočíš velmi vysoko","Seber díl lodi ⚙ a vrať se k talíři","▶ Klikni nebo Mezerník pro start dobrodružství"],hint:"← → běh · ↑ skok · Mezerník: pistole · X: pogo · P = pauza"},
+zh:{p:["八岁天才比利·布雷兹被困火星：约普人偷走了他的飞船零件。","← → 跑 · ↑ 跳 · 空格: 神经枪","X: 骑上弹簧棒 — 反弹瞬间按住 ↑ 可跳得极高","找回飞船零件 ⚙ 然后回到飞碟","▶ 点击或空格开始冒险"],hint:"← → 跑 · ↑ 跳 · 空格: 神经枪 · X: 弹簧棒 · P = 暂停"},
+ko:{p:["여덟 살 천재 빌리 블레이즈가 화성에 발이 묶였다: 요프들이 우주선 부품을 훔쳐갔다.","← → 달리기 · ↑ 점프 · 스페이스: 신경총","X: 포고 타기 — 튀어오르는 순간 ↑ 를 누르면 아주 높이 도약","우주선 부품 ⚙ 을 찾아 원반으로 돌아가세요","▶ 클릭 또는 스페이스로 모험 시작"],hint:"← → 달리기 · ↑ 점프 · 스페이스: 신경총 · X: 포고 · P = 일시정지"}},
 "Commando":{
 en:{p:["Push north, take out the enemy soldiers.","← ↑ ↓ → (or WASD): move · you fire where you walk","Space: shoot · X: throw a grenade · P: pause","Grab grenade crates · beware bikes and snipers in foxholes!","▶ Click or Space to head into battle"],hint:"Arrows / WASD: move & aim · Space: fire · X: grenade · P = pause"},
 ja:{p:["北へ進み、敵兵を倒せ。","← ↑ ↓ → (かWASD): 移動 · 進む方向に射撃","スペース: 射撃 · X: 手榴弾 · P: ポーズ","手榴弾の箱を拾え · バイクと塹壕の伏兵に注意！","▶ クリックかスペースで出撃"],hint:"矢印 / WASD: 移動と照準 · スペース: 射撃 · X: 手榴弾 · P = ポーズ"},

@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Commander Keen</title>
+<style>
+  html,body{margin:0;padding:0;height:100%;background:#000;color:#fff;
+    font-family:'Courier New',monospace;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;user-select:none;overflow:hidden}
+  h1{letter-spacing:5px;margin:0 0 8px;font-size:20px;color:#ffd23a;
+     text-shadow:0 0 8px #ffd23a,0 0 18px #c04a1a}
+  #wrap{position:relative}
+  canvas{background:#1a1030;border:2px solid #fff;display:block;
+    box-shadow:0 0 24px rgba(255,210,58,.3);touch-action:none;image-rendering:pixelated}
+  #hint{color:#777;font-size:12px;margin-top:10px;text-align:center;line-height:1.6}
+  #overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;background:rgba(8,4,20,.86);text-align:center;cursor:pointer;padding:0 14px}
+  #overlay h2{font-size:23px;letter-spacing:3px;margin:0 0 12px;color:#ffd23a;
+    text-shadow:0 0 10px #c04a1a}
+  #overlay p{color:#bbb;font-size:13px;margin:4px 0;line-height:1.5}
+  #overlay.ended p.ins{display:none}
+  #ovMsg{display:none;color:#ffd23a!important;font-size:14px!important;margin-top:10px!important}
+  #overlay.ended #ovMsg{display:block}
+  .blink{animation:blink 1.1s steps(2,start) infinite}
+  @keyframes blink{50%{opacity:0}}
+  a.back{color:#4ecca3;font-size:12px;margin-top:8px;text-decoration:none;letter-spacing:1px}
+  a.back:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+  <h1>COMMANDER KEEN</h1>
+  <div id="wrap">
+    <canvas id="game" width="560" height="400"></canvas>
+    <div id="overlay">
+      <h2 id="ovTitle">COMMANDER KEEN</h2>
+      <p class="ins">Billy Blaze, huit ans et génie, est échoué sur Mars : les Yorps ont volé les pièces de son vaisseau.</p>
+      <p class="ins">← → courir · ↑ sauter · Espace : pistolet à neurones</p>
+      <p class="ins">X : monter sur le pogo — maintiens ↑ au rebond pour bondir très haut</p>
+      <p class="ins">Récupère la pièce du vaisseau ⚙ puis rejoins la soucoupe</p>
+      <p class="ins blink" style="margin-top:12px">▶ Cliquez ou Espace pour partir à l'aventure</p>
+      <p id="ovMsg"></p>
+    </div>
+  </div>
+  <div id="hint">← → courir · ↑ saut · Espace : pistolet · X : pogo · P = pause</div>
+  <a class="back" href="../index.html">← Menu Arcade</a>
+
+<script>
+const cv=document.getElementById('game'), ctx=cv.getContext('2d');
+ctx.imageSmoothingEnabled=false;
+const W=cv.width, H=cv.height;
+const overlay=document.getElementById('overlay');
+const ovTitle=document.getElementById('ovTitle'), ovMsg=document.getElementById('ovMsg');
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const rand=n=>Math.floor(Math.random()*n);
+const rng=(a,b)=>a+Math.random()*(b-a);
+
+const TS=28, ROWS=13, HUD_H=36;            // 13 rangées de 28 px + bandeau = 400
+const VIEW_H=ROWS*TS;                      // 364
+let MAP, COLS, cam;
+let keen, mobs, shots, items, parts, level, lives, score, gems, gemsTotal;
+let hasPogo, hasPart, charges, exitX, msg, msgT, shakeT;
+let running=false, paused=false, over=false, inter=false;
+let last=0, frame=0;
+const keys={};
+
+/* ════════════════════ sons ════════════════════
+   Keen sortait du haut-parleur PC : ses bips en onde carrée sont d'époque, on
+   les garde. Mais on leur donne de vraies enveloppes et une petite pièce
+   réverbérante, pour éviter le côté criard du carré nu ; les impacts, eux,
+   passent par du bruit filtré, qui porte mieux qu'un bip. */
+let _ac=null, BUS=null, NOISE=null;
+function ac(){
+  if(!_ac){ _ac=new (window.AudioContext||window.webkitAudioContext)(); buildBus(); }
+  if(!BUS) buildBus();
+  if(_ac.state==='suspended' && _ac.resume) _ac.resume();
+  return _ac;
+}
+function buildBus(){
+  const a=_ac;
+  NOISE=a.createBuffer(1,Math.floor(a.sampleRate*1.5),a.sampleRate);
+  const d=NOISE.getChannelData(0);
+  for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+  const len=Math.floor(a.sampleRate*0.4);
+  const ir=a.createBuffer(2,len,a.sampleRate);
+  for(let c=0;c<2;c++){ const ch=ir.getChannelData(c);
+    for(let i=0;i<len;i++) ch[i]=(Math.random()*2-1)*Math.pow(1-i/len,3.2); }
+  const room=a.createConvolver(); room.buffer=ir;
+  const wet=a.createGain(); wet.gain.value=0.5;
+  const comp=a.createDynamicsCompressor();
+  comp.threshold.value=-14; comp.ratio.value=4; comp.attack.value=0.003; comp.release.value=0.2;
+  const out=a.createGain(); out.gain.value=0.8;
+  const dry=a.createGain(); dry.gain.value=1;
+  room.connect(wet); wet.connect(comp); dry.connect(comp); comp.connect(out); out.connect(a.destination);
+  BUS={dry,room};
+}
+function send(n,wet){ n.connect(BUS.dry);
+  if(wet>0){ const s=_ac.createGain(); s.gain.value=wet; n.connect(s); s.connect(BUS.room); } }
+function envG(peak,atk,dec,t){
+  const g=_ac.createGain();
+  g.gain.setValueAtTime(0.0001,t);
+  g.gain.linearRampToValueAtTime(peak,t+atk);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+atk+dec);
+  return g;
+}
+/* bip d'époque : onde carrée + léger vibrato, ce qui l'éloigne du bip figé */
+function bip(t,f0,f1,dur,peak,wet,vib){
+  const a=_ac, o=a.createOscillator(); o.type='square';
+  o.frequency.setValueAtTime(f0,t);
+  o.frequency.exponentialRampToValueAtTime(Math.max(20,f1),t+dur);
+  if(vib){ const l=a.createOscillator(); l.type='sine'; l.frequency.value=vib;
+    const lg=a.createGain(); lg.gain.value=f0*0.05; l.connect(lg); lg.connect(o.frequency);
+    l.start(t); l.stop(t+dur+0.05); }
+  const g=envG(peak,0.002,dur,t);
+  o.connect(g); send(g,wet===undefined?0.25:wet);
+  o.start(t); o.stop(t+dur+0.05);
+}
+function nz(t,dur,type,f0,f1,q,peak,wet){
+  const a=_ac, s=a.createBufferSource(); s.buffer=NOISE;
+  const f=a.createBiquadFilter(); f.type=type; f.Q.value=q||1;
+  f.frequency.setValueAtTime(f0,t);
+  f.frequency.exponentialRampToValueAtTime(Math.max(30,f1),t+dur);
+  const g=envG(peak,0.001,dur,t);
+  s.connect(f); f.connect(g); send(g,wet===undefined?0.3:wet);
+  s.start(t,Math.random()); s.stop(t+dur+0.08);
+}
+const sfxJump  =()=>{ const t=ac().currentTime; bip(t,300,720,0.11,0.16,0.2); };
+const sfxPogo  =()=>{ const t=ac().currentTime; bip(t,220,900,0.14,0.18,0.3,30); };
+const sfxPogoHi=()=>{ const t=ac().currentTime; bip(t,260,1300,0.2,0.2,0.4,26); };
+const sfxLand  =()=>{ const t=ac().currentTime; nz(t,0.06,'lowpass',700,180,1.1,0.5,0.2); };
+const sfxZap   =()=>{ const t=ac().currentTime; bip(t,1400,320,0.13,0.17,0.3);
+                      nz(t,0.09,'bandpass',2600,1200,5,0.5,0.25); };
+const sfxGem   =()=>{ const t=ac().currentTime; bip(t,880,1320,0.07,0.14,0.3); bip(t+0.06,1320,1760,0.09,0.11,0.35); };
+const sfxPart  =()=>{ const t=ac().currentTime; [660,880,1100,1320].forEach((f,i)=>bip(t+i*0.08,f,f*1.2,0.1,0.14,0.4)); };
+const sfxPick  =()=>{ const t=ac().currentTime; bip(t,520,1040,0.1,0.14,0.3); };
+const sfxStun  =()=>{ const t=ac().currentTime; bip(t,900,180,0.22,0.14,0.35,40); };
+const sfxKill  =()=>{ const t=ac().currentTime; nz(t,0.18,'bandpass',1600,400,3,0.6,0.4);
+                      bip(t,520,120,0.2,0.13,0.35); };
+const sfxHurt  =()=>{ const t=ac().currentTime; bip(t,420,90,0.4,0.2,0.4,18);
+                      nz(t,0.25,'lowpass',900,200,1,0.4,0.35); };
+const sfxDoor  =()=>{ const t=ac().currentTime; [523,659,784,1047].forEach((f,i)=>bip(t+i*0.1,f,f,0.12,0.15,0.45)); };
+const sfxWin   =()=>{ const t=ac().currentTime;
+  [523,659,784,1047,1319].forEach((f,i)=>bip(t+i*0.13,f,f,0.16,0.16,0.5)); };
+
+/* ════════════════════ fragments de niveau ════════════════════
+   Un générateur purement aléatoire produit tôt ou tard un passage
+   infranchissable. On assemble donc le niveau à partir de fragments dessinés à
+   la main, tous larges de 10 cases et raccordés au même niveau de sol : le
+   tracé varie à chaque partie mais reste toujours jouable.
+   . vide   # roche   = plateforme traversable par en dessous   ^ pointes
+   o gemme  c charge  y yorp   g garg   v vorticon */
+const CHUNKS=[
+[ '..........','..........','..........','..........','..........','..........',
+  '..........','...oo.....','..........','..........','..........','##########','##########'],
+[ '..........','..........','..........','..........','..........','.....===..',
+  '..........','..........','...o......','..........','.......y..','##########','##########'],
+[ '..........','..........','..........','.......===','..........','.....==...',
+  '..........','...==.....','..........','.o........','..........','##########','##########'],
+[ '..........','..........','..........','..==...==.','..........','..........',
+  '....o.....','..........','..........','...y......','..........','##########','##########'],
+[ '..........','..........','..........','..........','..........','..........',
+  '..........','...====...','..........','.==....==.','....o.....','###^^#####','##########'],
+[ '..........','..........','..........','..........','.....o....','..........',
+  '..===.....','..........','.......===','..........','..y.....g.','##########','##########'],
+[ '..........','..........','..........','..........','..........','..........',
+  '..........','..........','...ooo....','..........','..........','###...####','###...####'],
+[ '..........','..........','..........','....===...','..........','..o....o..',
+  '..........','.==....==.','..........','..........','....g.....','##########','##########'],
+[ '..........','..........','..........','..........','..........','..===..===',
+  '..........','..........','.....c....','..........','...v......','##########','##########'],
+[ '..........','..........','..........','..........','..........','..........',
+  '..........','..==..==..','....o.....','..........','..y....y..','##^^..^^##','##########'],
+[ '..........','..........','..........','..........','..........','..........',
+  '...o...o..','..........','..........','..........','..........','##..##..##','##..##..##'],
+[ '..........','..........','..........','.......==.','..........','....==....',
+  '..........','.==.......','......c...','..........','.....g....','##########','##########']
+];
+const START=[ '..........','..........','..........','..........','..........','..........',
+  '..........','..........','..........','..........','..........','##########','##########'];
+const FIN=[ '..........','..........','..........','..........','..........','..........',
+  '..........','..........','..........','..........','..........','##########','##########'];
+
+const THEMES=[
+  {nom:'SURFACE DE MARS', ciel:['#2a1a4a','#5a2a3a'], roche:'#a85a2a', roche2:'#7a3d18',
+   sol:'#c47038', deco:'#3a2050', mobs:['yorp','yorp','garg']},
+  {nom:'CITÉ DES YORPS',  ciel:['#1a2a4a','#2a4a6a'], roche:'#8a8a9a', roche2:'#5a5a6a',
+   sol:'#a8a8b8', deco:'#26365a', mobs:['yorp','garg','garg']},
+  {nom:'VAISSEAU VORTICON',ciel:['#180a28','#3a1450'], roche:'#6a4a8a', roche2:'#432a5a',
+   sol:'#8a5aa8', deco:'#2a1040', mobs:['garg','vorticon','vorticon']}
+];
+
+function buildLevel(){
+  const th=THEMES[level-1];
+  const ordre=[];
+  const pool=CHUNKS.slice();
+  for(let i=pool.length-1;i>0;i--){ const j=rand(i+1); const t=pool[i]; pool[i]=pool[j]; pool[j]=t; }
+  const n=8+level;                               // niveaux de plus en plus longs
+  for(let i=0;i<n;i++) ordre.push(pool[i%pool.length]);
+  const grille=[START].concat(ordre,[FIN]);
+  COLS=grille.length*10;
+  MAP=[]; for(let r=0;r<ROWS;r++) MAP.push(new Array(COLS).fill('.'));
+  mobs=[]; items=[];
+  grille.forEach((ch,ci)=>{
+    for(let r=0;r<ROWS;r++) for(let c=0;c<10;c++){
+      const x=ci*10+c, t=ch[r][c];
+      if(t==='#'||t==='='||t==='^'){ MAP[r][x]=t; continue; }
+      if(t==='o') items.push({type:'gem',x:x*TS+TS/2,y:r*TS+TS/2,taken:false,bob:Math.random()*6});
+      else if(t==='c') items.push({type:'charge',x:x*TS+TS/2,y:r*TS+TS/2,taken:false,bob:Math.random()*6});
+      else if(t==='y'||t==='g'||t==='v'){
+        // le fragment propose un emplacement, le thème choisit l'espèce
+        const type = t==='y' ? 'yorp' : t==='g' ? 'garg' : 'vorticon';
+        const eff = th.mobs.indexOf(type)>=0 ? type : th.mobs[rand(th.mobs.length)];
+        addMob(eff, x*TS+TS/2, r*TS+TS-1);
+      }
+    }
+  });
+  // le pogo se trouve au premier niveau, tôt et bien en vue
+  if(level===1 && !hasPogo) items.push({type:'pogo',x:16*TS,y:9*TS+14,taken:false,bob:0});
+  // la pièce du vaisseau prend la place d'une gemme du deuxième tiers : cet
+  // emplacement est dessiné à la main, donc forcément atteignable
+  const cand=items.filter(i=>i.type==='gem' && i.x>COLS*TS*0.35 && i.x<COLS*TS*0.85);
+  const cible=cand.length?cand[rand(cand.length)]:items.find(i=>i.type==='gem');
+  if(cible) cible.type='part';
+  // filet : sans gemme dans le tirage, le niveau serait infinissable
+  else items.push({type:'part',x:Math.floor(COLS*0.6)*TS+TS/2,y:(ROWS-3)*TS,taken:false,bob:0});
+  gemsTotal=items.filter(i=>i.type==='gem').length;
+  exitX=(COLS-5)*TS;
+  keen=makeKeen(TS*2, (ROWS-3)*TS);
+  cam=0; gems=0; hasPart=false; shots=[]; parts=[];
+}
+function makeKeen(x,y){
+  return {x,y,vx:0,vy:0,w:18,h:26,dir:1,ground:false,pogo:false,
+          anim:0,inv:1.2,dead:false,deadT:0,bounce:0};
+}
+const MOBDEF={
+  yorp    :{w:22,h:22,sp:38, pts:200, hp:1},
+  garg    :{w:22,h:26,sp:78, pts:400, hp:1},
+  vorticon:{w:24,h:30,sp:62, pts:700, hp:2}
+};
+function addMob(type,x,y){
+  const d=MOBDEF[type];
+  mobs.push({type,x,y:y-d.h/2,w:d.w,h:d.h,vx:(Math.random()<0.5?-1:1)*d.sp,vy:0,
+             hp:d.hp,alive:true,stun:0,anim:Math.random()*6,jumpCd:rng(0.8,2.2),ground:false});
+}
+
+/* ════════════════════ décor et collisions ════════════════════ */
+function tileAt(c,r){
+  if(r<0||r>=ROWS) return '.';
+  if(c<0||c>=COLS) return '#';                 // murs invisibles aux extrémités
+  return MAP[r][c];
+}
+/* Les pointes portent comme du sol : sinon Keen les traverserait et mourrait
+   de la chute, pas de l'obstacle. C'est le contact par-dessous les pieds qui
+   tue — on peut donc les survoler par les plateformes. */
+function solidAt(x,y){
+  const t=tileAt(Math.floor(x/TS),Math.floor(y/TS));
+  return t==='#'||t==='^';
+}
+function hazardAt(x,y){
+  return tileAt(Math.floor(x/TS),Math.floor(y/TS))==='^';
+}
+/* Déplacement en sous-pas : à pleine chute une seule grande avance pourrait
+   traverser une case de 28 px sans jamais la tester. */
+function moveBody(e,dx,dy,oneWay){
+  const pas=Math.max(1,Math.ceil(Math.max(Math.abs(dx),Math.abs(dy))/6));
+  const sx=dx/pas, sy=dy/pas;
+  let touche={sol:false,mur:false,plafond:false};
+  for(let i=0;i<pas;i++){
+    // horizontal
+    if(sx){
+      const nx=e.x+sx, hw=e.w/2;
+      const bord=nx+(sx>0?hw:-hw);
+      let bloque=false;
+      for(let yy=e.y-e.h/2+2; yy<=e.y+e.h/2-2; yy+=Math.min(TS-2,e.h-4)) if(solidAt(bord,yy)) bloque=true;
+      if(solidAt(bord,e.y+e.h/2-2)) bloque=true;
+      if(bloque){ e.vx=0; touche.mur=true; } else e.x=nx;
+    }
+    // vertical
+    if(sy){
+      const ny=e.y+sy, hh=e.h/2;
+      const bord=ny+(sy>0?hh:-hh);
+      let bloque=false;
+      for(const ox of [-e.w/2+2,0,e.w/2-2]) if(solidAt(e.x+ox,bord)) bloque=true;
+      // plateforme traversable : ne stoppe qu'en descente, et si on venait du dessus
+      if(!bloque && sy>0 && oneWay!==false){
+        const r=Math.floor(bord/TS);
+        const hautPlate=r*TS;
+        if(e.y+hh<=hautPlate+2){
+          for(const ox of [-e.w/2+2,0,e.w/2-2])
+            if(tileAt(Math.floor((e.x+ox)/TS),r)==='=') bloque=true;
+        }
+      }
+      if(bloque){
+        if(sy>0){ e.y=Math.floor(bord/TS)*TS-hh; touche.sol=true; }
+        else { e.y=Math.floor(bord/TS)*TS+TS+hh; touche.plafond=true; }
+        e.vy=0;
+      } else e.y=ny;
+    }
+  }
+  return touche;
+}
+
+/* ════════════════════ partie ════════════════════ */
+const GRAV=1500, RUN=178, JUMP=-540, POGO=-560, POGO_HI=-720;
+function flash(m){ msg=m; msgT=2.4; }
+function endOverlay(titre,sous){
+  ovTitle.textContent=titre; ovMsg.textContent=sous;
+  overlay.classList.add('ended'); overlay.style.display='flex';
+}
+function startLevel(){
+  buildLevel();
+  msg='E'+level+' — '+THEMES[level-1].nom; msgT=3;
+  overlay.classList.remove('ended'); overlay.style.display='none';
+}
+function newGame(){
+  level=1; score=0; lives=3; charges=8; hasPogo=false;
+  over=false; paused=false; inter=false; running=true;
+  startLevel();
+}
+function nextLevel(){
+  inter=false;
+  if(level>=3){
+    running=false; over=true;
+    endOverlay('★ KEEN S\'ÉCHAPPE ★','Le vaisseau est réparé · Score : '+score);
+    return;
+  }
+  level++; startLevel();
+}
+function loseLife(){
+  if(keen.dead) return;
+  keen.dead=true; keen.deadT=1.4; keen.vy=-320; keen.vx=0; sfxHurt(); shakeT=0.4;
+  lives--;
+}
+function respawn(){
+  if(lives<=0){
+    running=false; over=true;
+    endOverlay('MISSION ÉCHOUÉE','Niveau E'+level+' · Score : '+score);
+    return;
+  }
+  keen=makeKeen(TS*2,(ROWS-3)*TS); cam=0; shots=[];
+  flash('Il te reste '+lives+' vie'+(lives>1?'s':''));
+}
+
+/* ── entrées ── */
+document.addEventListener('keydown',e=>{
+  const k=e.key.toLowerCase(); keys[k]=true;
+  if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)) e.preventDefault();
+  if(inter){ if(k===' '||k==='enter') nextLevel(); return; }
+  if(paused && k!=='p'){ paused=false; return; }
+  if((k===' '||k==='enter') && (!running||over)){ newGame(); return; }
+  if(k==='p' && running && !over){ paused=!paused; return; }
+  if(!running||over||keen.dead) return;
+  if(k===' ') tirer();
+  else if(k==='x'){
+    if(!hasPogo){ flash('Il te faut le pogo !'); return; }
+    keen.pogo=!keen.pogo; sfxPick();
+    flash(keen.pogo?'Pogo en marche':'Pogo rangé');
+  }
+});
+document.addEventListener('keyup',e=>{ keys[e.key.toLowerCase()]=false; });
+overlay.addEventListener('click',()=>{ if(!running||over) newGame(); });
+cv.addEventListener('mousedown',e=>{
+  e.preventDefault();
+  if(inter){ nextLevel(); return; }
+  if(!running||over){ newGame(); return; }
+  if(paused){ paused=false; return; }
+  if(!keen.dead) tirer();
+});
+cv.addEventListener('touchstart',e=>{
+  if(inter){ e.preventDefault(); nextLevel(); }
+  else if(!running||over){ e.preventDefault(); newGame(); }
+},{passive:false});
+
+function tirer(){
+  if(shots.length>=3) return;
+  if(charges<=0){ flash('Plus de charges !'); return; }
+  charges--;
+  shots.push({x:keen.x+keen.dir*12,y:keen.y-2,vx:keen.dir*430,vie:1.1});
+  sfxZap();
+}
+
+/* ════════════════════ mise à jour ════════════════════ */
+function update(dt){
+  if(!running||paused||over||inter) return;
+  frame++;
+  if(msgT>0) msgT-=dt;
+  if(shakeT>0) shakeT-=dt;
+  if(keen.inv>0) keen.inv-=dt;
+
+  if(keen.dead){
+    keen.deadT-=dt; keen.vy+=GRAV*dt; keen.y+=keen.vy*dt;
+    if(keen.deadT<=0) respawn();
+    return;
+  }
+
+  /* ── Keen ── */
+  let ax=0;
+  if(keys['arrowleft']||keys['a']) ax-=1;
+  if(keys['arrowright']||keys['d']) ax+=1;
+  if(ax) keen.dir=ax;
+  const cible=ax*RUN;
+  keen.vx += (cible-keen.vx) * (keen.ground?14:6) * dt;
+  if(!ax && keen.ground) keen.vx*=Math.pow(0.0015,dt);
+
+  const veutSauter = keys['arrowup']||keys['w'];
+  if(keen.pogo){
+    // sur le pogo, Keen rebondit tout seul : maintenir ↑ au contact du sol
+    // déclenche le bond haut, la signature du jeu
+    if(keen.ground){
+      const haut = veutSauter;
+      keen.vy = haut ? POGO_HI : POGO;
+      keen.ground=false; keen.bounce=0.18;
+      haut ? sfxPogoHi() : sfxPogo();
+    }
+  }else{
+    if(veutSauter && keen.ground){ keen.vy=JUMP; keen.ground=false; sfxJump(); }
+    // Saut proportionnel : relâcher tôt écourte le bond, sans l'annuler.
+    // Le plancher était à -180, soit 11 px de haut : effleurer la touche ne
+    // décollait pratiquement pas. À -300 un tapotement donne une case pleine.
+    if(!veutSauter && keen.vy<-300) keen.vy=-300;
+  }
+  keen.vy=Math.min(keen.vy+GRAV*dt, 640);
+  const avant=keen.ground;
+  const t=moveBody(keen, keen.vx*dt, keen.vy*dt);
+  keen.ground=t.sol;
+  if(t.sol && !avant && !keen.pogo) sfxLand();
+  if(keen.bounce>0) keen.bounce-=dt;
+  keen.anim += Math.abs(keen.vx)*dt*0.06;
+
+  // chute hors du niveau, ou pointes
+  if(keen.y-keen.h/2 > VIEW_H+40){ loseLife(); return; }
+  // Seule la case sous son CENTRE compte. Sonder aussi ses flancs le tuait
+  // alors qu'il se tenait sur la roche voisine, une case avant les pointes.
+  if(keen.ground && hazardAt(keen.x, keen.y+keen.h/2+3)){ loseLife(); return; }
+
+  /* ── caméra ── */
+  const viseur=clamp(keen.x-W/2, 0, COLS*TS-W);
+  cam += (viseur-cam)*Math.min(1,10*dt);
+
+  /* ── tirs ── */
+  for(const s of shots){
+    s.x+=s.vx*dt; s.vie-=dt;
+    if(solidAt(s.x,s.y)) s.vie=0;
+    for(const m of mobs){
+      if(!m.alive||m.stun>0) continue;
+      if(Math.abs(m.x-s.x)<m.w/2+4 && Math.abs(m.y-s.y)<m.h/2+4){
+        s.vie=0;
+        m.hp--;
+        if(m.hp<=0){
+          if(m.type==='yorp'){ m.stun=9e9; sfxStun(); score+=MOBDEF.yorp.pts; flash('Yorp étourdi !'); }
+          else { m.alive=false; sfxKill(); score+=MOBDEF[m.type].pts; boum(m.x,m.y,'#ffd23a'); }
+        }
+        break;
+      }
+    }
+  }
+  shots=shots.filter(s=>s.vie>0);
+
+  /* ── créatures ── */
+  for(const m of mobs){
+    if(!m.alive) continue;
+    m.anim+=dt*6;
+    if(m.stun>0 && m.stun<9e8) m.stun-=dt;
+    const fige = m.stun>0;
+    const d=MOBDEF[m.type];
+    if(!fige){
+      if(m.type==='vorticon'){
+        // le vorticon bondit vers Keen
+        m.jumpCd-=dt;
+        if(m.ground && m.jumpCd<=0 && Math.abs(keen.x-m.x)<260){
+          m.vy=-430; m.vx=Math.sign(keen.x-m.x)*d.sp*1.5; m.ground=false; m.jumpCd=rng(1.1,2.0);
+        }
+      }else if(m.type==='garg'){
+        // le garg charge quand il voit Keen
+        if(Math.abs(keen.x-m.x)<220 && Math.abs(keen.y-m.y)<60) m.vx=Math.sign(keen.x-m.x)*d.sp*1.4;
+      }
+      m.vy=Math.min(m.vy+GRAV*dt,640);
+      const av=m.ground;
+      const tt=moveBody(m, m.vx*dt, m.vy*dt);
+      m.ground=tt.sol;
+      if(tt.mur) m.vx=-m.vx;
+      // demi-tour au bord du vide, pour ne pas tomber bêtement
+      if(m.ground && m.type!=='vorticon'){
+        const devant=m.x+Math.sign(m.vx)*(m.w/2+3);
+        if(!solidAt(devant,m.y+m.h/2+4) && tileAt(Math.floor(devant/TS),Math.floor((m.y+m.h/2+4)/TS))!=='=')
+          m.vx=-m.vx;
+      }
+      if(m.y-m.h/2>VIEW_H+60) m.alive=false;
+    }
+    // contact avec Keen
+    if(keen.inv<=0 && !keen.dead && !fige
+       && Math.abs(m.x-keen.x)<(m.w+keen.w)/2-4 && Math.abs(m.y-keen.y)<(m.h+keen.h)/2-4){
+      loseLife(); return;
+    }
+  }
+
+  /* ── objets ── */
+  for(const it of items){
+    if(it.taken) continue;
+    it.bob+=dt*3;
+    if(Math.abs(it.x-keen.x)<18 && Math.abs(it.y-keen.y)<22){
+      it.taken=true;
+      if(it.type==='gem'){ gems++; score+=100; sfxGem(); }
+      else if(it.type==='charge'){ charges+=5; score+=50; sfxPick(); flash('Charges +5'); }
+      else if(it.type==='pogo'){ hasPogo=true; score+=500; sfxPart(); flash('POGO ! Appuie sur X'); }
+      else if(it.type==='part'){ hasPart=true; score+=1000; sfxPart();
+        flash('Pièce du vaisseau ⚙ — rejoins la soucoupe !'); }
+    }
+  }
+
+  /* ── sortie ── */
+  if(hasPart && Math.abs(keen.x-exitX)<26 && Math.abs(keen.y-((ROWS-3)*TS))<40){
+    inter=true; sfxWin(); score+=500+gems*50+lives*250;
+  }
+}
+function boum(x,y,col){
+  for(let i=0;i<12;i++){
+    const a=Math.random()*Math.PI*2, s=rng(40,160);
+    parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-60,vie:rng(0.25,0.6),col});
+  }
+}
+
+/* ════════════════════ rendu ════════════════════ */
+function render(){
+  const th=THEMES[level-1];
+  const sx = shakeT>0 ? (Math.random()*2-1)*3 : 0;
+  const sy = shakeT>0 ? (Math.random()*2-1)*3 : 0;
+  ctx.save(); ctx.translate(sx,sy);
+
+  // ciel
+  const g=ctx.createLinearGradient(0,HUD_H,0,H);
+  g.addColorStop(0,th.ciel[0]); g.addColorStop(1,th.ciel[1]);
+  ctx.fillStyle=g; ctx.fillRect(0,HUD_H,W,VIEW_H);
+  // décor lointain : collines / structures, défilement lent
+  ctx.fillStyle=th.deco;
+  for(let i=0;i<14;i++){
+    const bx=(i*180 - cam*0.35)%(W+360)-180;
+    ctx.beginPath();
+    ctx.moveTo(bx,HUD_H+VIEW_H);
+    ctx.lineTo(bx+90,HUD_H+VIEW_H-90-((i*37)%60));
+    ctx.lineTo(bx+180,HUD_H+VIEW_H);
+    ctx.fill();
+  }
+  // étoiles pour le niveau vorticon
+  if(level===3){
+    ctx.fillStyle='rgba(255,255,255,.6)';
+    for(let i=0;i<40;i++){
+      const bx=((i*137)-cam*0.15)%(W+40)-20, by=HUD_H+((i*79)%160);
+      ctx.fillRect(bx,by,2,2);
+    }
+  }
+
+  ctx.save(); ctx.translate(-Math.round(cam), HUD_H);
+  const c0=Math.max(0,Math.floor(cam/TS)-1), c1=Math.min(COLS-1,Math.ceil((cam+W)/TS)+1);
+  for(let r=0;r<ROWS;r++) for(let c=c0;c<=c1;c++){
+    const t=MAP[r][c]; if(t==='.') continue;
+    const x=c*TS, y=r*TS;
+    if(t==='#'){
+      ctx.fillStyle=th.roche2; ctx.fillRect(x,y,TS,TS);
+      ctx.fillStyle=th.roche;  ctx.fillRect(x+1,y+1,TS-2,TS-3);
+      ctx.fillStyle=th.sol;    ctx.fillRect(x+1,y+1,TS-2,4);        // liseré éclairé
+      ctx.fillStyle='rgba(0,0,0,.16)';
+      ctx.fillRect(x+4,y+9,7,4); ctx.fillRect(x+15,y+16,8,4);
+    }else if(t==='='){
+      ctx.fillStyle=th.roche2; ctx.fillRect(x,y,TS,8);
+      ctx.fillStyle=th.sol;    ctx.fillRect(x+1,y+1,TS-2,4);
+      ctx.fillStyle='rgba(0,0,0,.25)'; ctx.fillRect(x+2,y+8,TS-4,2);
+    }else if(t==='^'){
+      ctx.fillStyle=th.roche2; ctx.fillRect(x,y+TS-6,TS,6);
+      ctx.fillStyle='#d8d8e8';
+      for(let k=0;k<3;k++){
+        ctx.beginPath();
+        ctx.moveTo(x+2+k*9, y+TS-5);
+        ctx.lineTo(x+6.5+k*9, y+6);
+        ctx.lineTo(x+11+k*9, y+TS-5);
+        ctx.fill();
+      }
+    }
+  }
+
+  // la soucoupe de sortie
+  drawShip(exitX, (ROWS-3)*TS+6, hasPart);
+
+  for(const it of items){ if(!it.taken) drawItem(it); }
+  for(const m of mobs){ if(m.alive) drawMob(m); }
+  for(const s of shots){
+    ctx.fillStyle='#8affd2'; ctx.fillRect(s.x-6,s.y-2,12,4);
+    ctx.fillStyle='#fff';    ctx.fillRect(s.x-2,s.y-1,5,2);
+  }
+  for(const p of parts){
+    ctx.globalAlpha=Math.max(0,p.vie*2);
+    ctx.fillStyle=p.col; ctx.fillRect(p.x-2,p.y-2,4,4);
+    ctx.globalAlpha=1;
+  }
+  if(!keen.dead || Math.floor(frame/3)%2===0) drawKeen();
+  ctx.restore();
+
+  drawHUD();
+  ctx.restore();
+
+  if(paused){
+    ctx.fillStyle='rgba(0,0,0,.6)'; ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#ffd23a'; ctx.textAlign='center';
+    ctx.font='bold 30px "Courier New",monospace'; ctx.fillText('PAUSE',W/2,H/2);
+  }
+}
+
+/* ── Billy Blaze : casque de football rouge, maillot vert, baskets ── */
+function drawKeen(){
+  const x=keen.x, y=keen.y, d=keen.dir;
+  const marche = keen.ground && Math.abs(keen.vx)>18;
+  const pas = marche ? Math.sin(keen.anim*6)*3 : 0;
+  ctx.save(); ctx.translate(x,y);
+  if(keen.inv>0 && Math.floor(frame/3)%2===0) ctx.globalAlpha=0.45;
+
+  if(keen.pogo){                                     // le pogo sous ses pieds
+    const comp = keen.bounce>0 ? 4 : 0;
+    ctx.fillStyle='#6a6a7a'; ctx.fillRect(-2,10-comp,4,16+comp);
+    ctx.fillStyle='#c02a1a'; ctx.fillRect(-7,24-comp,14,4);
+    ctx.fillStyle='#8a8a9a'; ctx.fillRect(-6,14-comp,12,3);
+  }
+  // jambes
+  ctx.fillStyle='#2a4ac0';
+  ctx.fillRect(-6, 6+ (marche?pas:0), 5, 8);
+  ctx.fillRect( 1, 6- (marche?pas:0), 5, 8);
+  ctx.fillStyle='#c02a1a';                            // baskets
+  ctx.fillRect(-7,13+(marche?pas:0),7,4);
+  ctx.fillRect( 1,13-(marche?pas:0),7,4);
+  // maillot
+  ctx.fillStyle='#2aa84a'; ctx.fillRect(-7,-4,14,11);
+  ctx.fillStyle='#1c7a34'; ctx.fillRect(-7,4,14,3);
+  // bras
+  ctx.fillStyle='#e8b088';
+  ctx.fillRect(d>0?6:-9,-2,3,7);
+  // tête
+  ctx.fillStyle='#e8b088'; ctx.fillRect(-6,-14,12,11);
+  ctx.fillStyle='#1a1a1a';                            // yeux
+  ctx.fillRect(d>0?1:-4,-11,3,3);
+  ctx.fillStyle='#c02a1a';                            // casque
+  ctx.beginPath(); ctx.ellipse(0,-14,8,7,0,Math.PI,0); ctx.fill();
+  ctx.fillRect(-8,-15,16,3);
+  ctx.fillStyle='#f0f0f0'; ctx.fillRect(-1,-21,2,7);  // bande du casque
+  ctx.fillStyle='#8a1a10'; ctx.fillRect(d>0?5:-8,-13,3,4);
+  ctx.globalAlpha=1; ctx.restore();
+}
+function drawMob(m){
+  const x=m.x, y=m.y, w=m.w, h=m.h;
+  ctx.save(); ctx.translate(x,y);
+  const pas=Math.sin(m.anim)*2;
+  if(m.stun>0){ ctx.globalAlpha=0.85; }
+  if(m.type==='yorp'){
+    ctx.fillStyle='#3aa84a'; ctx.beginPath(); ctx.ellipse(0,2,w/2,h/2-2,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#2a8038'; ctx.fillRect(-w/2+2,h/2-5,5,5); ctx.fillRect(w/2-7,h/2-5,5,5);
+    ctx.fillStyle='#3aa84a'; ctx.fillRect(-2,-h/2-4,4,6);                 // tige de l'œil
+    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(0,-h/2-6,5,0,Math.PI*2); ctx.fill();
+    if(m.stun>0){                                                          // étourdi : croix
+      ctx.strokeStyle='#c02a1a'; ctx.lineWidth=1.6;
+      ctx.beginPath(); ctx.moveTo(-3,-h/2-9); ctx.lineTo(3,-h/2-3);
+      ctx.moveTo(3,-h/2-9); ctx.lineTo(-3,-h/2-3); ctx.stroke();
+    }else{
+      ctx.fillStyle='#1a1a1a'; ctx.beginPath();
+      ctx.arc(Math.sign(m.vx)*1.5,-h/2-6,2.4,0,Math.PI*2); ctx.fill();
+    }
+  }else if(m.type==='garg'){
+    ctx.fillStyle='#e08a1a'; ctx.beginPath(); ctx.ellipse(0,0,w/2,h/2,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#b06a10'; ctx.fillRect(-w/2+2,h/2-6+pas,6,6); ctx.fillRect(w/2-8,h/2-6-pas,6,6);
+    ctx.fillStyle='#f4a838'; ctx.beginPath(); ctx.ellipse(0,-4,w/2-3,h/4,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#fff'; ctx.fillRect(-6,-8,4,4); ctx.fillRect(2,-8,4,4);
+    ctx.fillStyle='#1a1a1a'; ctx.fillRect(-5+Math.sign(m.vx),-7,2,2); ctx.fillRect(3+Math.sign(m.vx),-7,2,2);
+    ctx.fillStyle='#8a4a08';                                               // cornes
+    ctx.beginPath(); ctx.moveTo(-7,-h/2+2); ctx.lineTo(-10,-h/2-5); ctx.lineTo(-3,-h/2); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(7,-h/2+2); ctx.lineTo(10,-h/2-5); ctx.lineTo(3,-h/2); ctx.fill();
+  }else{
+    ctx.fillStyle='#7a3ac0'; ctx.beginPath(); ctx.ellipse(0,2,w/2,h/2-3,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#5a2a98'; ctx.fillRect(-w/2+2,h/2-6+pas,6,6); ctx.fillRect(w/2-8,h/2-6-pas,6,6);
+    ctx.fillStyle='#9a5ae0'; ctx.beginPath(); ctx.ellipse(0,-h/2+5,w/2-2,7,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#ffd23a'; ctx.fillRect(-6,-h/2+3,4,3); ctx.fillRect(2,-h/2+3,4,3);
+    ctx.fillStyle='#fff';                                                  // crocs
+    for(let i=-2;i<=2;i++) ctx.fillRect(i*3-1,-h/2+9,2,3);
+  }
+  ctx.globalAlpha=1; ctx.restore();
+}
+function drawItem(it){
+  const y=it.y+Math.sin(it.bob)*2.5;
+  ctx.save(); ctx.translate(it.x,y);
+  if(it.type==='gem'){
+    ctx.fillStyle='#3ad0ff';
+    ctx.beginPath(); ctx.moveTo(0,-7); ctx.lineTo(6,0); ctx.lineTo(0,7); ctx.lineTo(-6,0); ctx.closePath(); ctx.fill();
+    ctx.fillStyle='#bff0ff'; ctx.beginPath(); ctx.moveTo(0,-7); ctx.lineTo(3,-1); ctx.lineTo(-3,-1); ctx.fill();
+  }else if(it.type==='charge'){
+    ctx.fillStyle='#8affd2'; ctx.fillRect(-6,-4,12,8);
+    ctx.fillStyle='#1a5a44'; ctx.fillRect(-4,-2,8,4);
+    ctx.fillStyle='#fff'; ctx.fillRect(-6,-4,12,2);
+  }else if(it.type==='pogo'){
+    ctx.fillStyle='#6a6a7a'; ctx.fillRect(-2,-10,4,18);
+    ctx.fillStyle='#c02a1a'; ctx.fillRect(-8,6,16,4);
+    ctx.fillStyle='#8a8a9a'; ctx.fillRect(-7,-6,14,3);
+  }else{                                                    // pièce du vaisseau
+    ctx.fillStyle='#ffd23a';
+    ctx.beginPath(); ctx.arc(0,0,8,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#c48a10';
+    for(let i=0;i<6;i++){ const a=i*Math.PI/3+Math.sin(it.bob*0.5)*0.2;
+      ctx.fillRect(Math.cos(a)*8-2,Math.sin(a)*8-2,4,4); }
+    ctx.fillStyle='#5a4008'; ctx.beginPath(); ctx.arc(0,0,3,0,Math.PI*2); ctx.fill();
+  }
+  ctx.restore();
+}
+function drawShip(x,y,actif){
+  ctx.save(); ctx.translate(x,y);
+  ctx.fillStyle=actif?'#8affd2':'#4a5a5a';
+  ctx.beginPath(); ctx.ellipse(0,10,26,8,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle=actif?'#c8ffe8':'#6a7a7a';
+  ctx.beginPath(); ctx.ellipse(0,4,15,9,0,Math.PI,0); ctx.fill();
+  ctx.fillStyle=actif?'#ffd23a':'#3a4a4a';
+  ctx.fillRect(-20,8,6,3); ctx.fillRect(14,8,6,3);
+  if(actif && Math.floor(frame/6)%2===0){
+    ctx.globalCompositeOperation='lighter';
+    ctx.fillStyle='rgba(140,255,210,.4)';
+    ctx.beginPath(); ctx.arc(0,8,30,0,Math.PI*2); ctx.fill();
+    ctx.globalCompositeOperation='source-over';
+  }
+  ctx.restore();
+}
+function drawHUD(){
+  ctx.fillStyle='#12081e'; ctx.fillRect(0,0,W,HUD_H);
+  ctx.fillStyle='#3a2a5a'; ctx.fillRect(0,HUD_H-2,W,2);
+  ctx.textAlign='left'; ctx.font='bold 12px "Courier New",monospace';
+  ctx.fillStyle='#ffd23a'; ctx.fillText('SCORE '+score, 8, 15);
+  ctx.fillStyle='#3ad0ff'; ctx.fillText('GEMMES '+gems+'/'+gemsTotal, 8, 29);
+  // vies, en petits casques
+  for(let i=0;i<lives;i++){
+    const bx=150+i*16;
+    ctx.fillStyle='#c02a1a';
+    ctx.beginPath(); ctx.ellipse(bx,16,6,5,0,Math.PI,0); ctx.fill();
+    ctx.fillRect(bx-6,15,12,2);
+    ctx.fillStyle='#f0f0f0'; ctx.fillRect(bx-1,10,2,5);
+  }
+  ctx.fillStyle='#8affd2'; ctx.textAlign='left';
+  ctx.fillText('CHARGES '+charges, 214, 15);
+  ctx.fillStyle=keen.pogo?'#ffd23a':'#5a5a6a';
+  ctx.fillText(hasPogo?(keen.pogo?'POGO ON':'POGO'):'—', 214, 29);
+  // pièce du vaisseau
+  ctx.textAlign='right';
+  ctx.fillStyle=hasPart?'#ffd23a':'#5a5a6a';
+  ctx.fillText(hasPart?'PIÈCE ⚙ TROUVÉE':'PIÈCE ⚙ ?', W-8, 15);
+  ctx.fillStyle='#9a8ac0'; ctx.fillText('E'+level+' '+THEMES[level-1].nom, W-8, 29);
+  if(msgT>0){
+    ctx.textAlign='center'; ctx.font='bold 12px "Courier New",monospace';
+    ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(0,H-20,W,20);
+    ctx.fillStyle='#fff'; ctx.fillText(msg,W/2,H-6);
+  }
+}
+/* ── écran d'entracte ── */
+function drawInter(){
+  ctx.fillStyle='#0e0820'; ctx.fillRect(0,0,W,H);
+  ctx.textAlign='center';
+  ctx.font='bold 20px "Courier New",monospace'; ctx.fillStyle='#ffd23a';
+  ctx.fillText('SECTEUR E'+level+' TERMINÉ',W/2,60);
+  ctx.font='bold 13px "Courier New",monospace'; ctx.fillStyle='#9a8ac0';
+  ctx.fillText(THEMES[level-1].nom,W/2,84);
+  const lignes=[['GEMMES',gems+' / '+gemsTotal],
+                ['PIÈCE DU VAISSEAU','RÉCUPÉRÉE'],
+                ['VIES RESTANTES',String(lives)],
+                ['SCORE',String(score)]];
+  ctx.font='bold 14px "Courier New",monospace';
+  lignes.forEach((l,i)=>{
+    const y=140+i*30;
+    ctx.textAlign='left';  ctx.fillStyle='#c8a070'; ctx.fillText(l[0],130,y);
+    ctx.textAlign='right'; ctx.fillStyle='#ffd23a'; ctx.fillText(l[1],430,y);
+  });
+  ctx.textAlign='center'; ctx.font='bold 12px "Courier New",monospace';
+  ctx.fillStyle=(frame>>4)&1 ? '#8affd2':'#3a7a5a';
+  ctx.fillText(level>=3?'▶ Espace : décoller':'▶ Espace : cap sur E'+(level+1),W/2,H-30);
+}
+
+/* ════════════════════ boucle ════════════════════ */
+function loop(now){
+  const dt=Math.min(0.05,(now-(last||now))/1000); last=now;
+  update(dt);
+  for(const p of parts){ p.vie-=dt; p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+=900*dt; }
+  parts=parts.filter(p=>p.vie>0);
+  if(inter){ frame++; drawInter(); } else render();
+  if(window.ArcadeHi) ArcadeHi.submit(score);
+  requestAnimationFrame(loop);
+}
+// état initial : le décor tourne derrière l'écran-titre
+level=1; score=0; lives=3; gems=0; charges=8; hasPogo=false; msg=''; msgT=0; shakeT=0;
+buildLevel();
+requestAnimationFrame(loop);
+</script>
+<script src="../music/i18n-games.js?v=24"></script>
+<script src="../music/playlist.js?v=24"></script>
+<script src="../music/player.js?v=24"></script>
+</body>
+</html>
