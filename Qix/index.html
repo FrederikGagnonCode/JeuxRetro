@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Qix</title>
+<style>
+  html,body{margin:0;padding:0;height:100%;background:#000;color:#fff;
+    font-family:'Courier New',monospace;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;user-select:none;overflow:hidden}
+  h1{letter-spacing:9px;margin:0 0 8px;font-size:22px;color:#3ad0ff;
+     text-shadow:0 0 8px #3ad0ff,0 0 20px #7a2cff}
+  #wrap{position:relative}
+  canvas{background:#05050f;border:2px solid #fff;display:block;
+    box-shadow:0 0 26px rgba(58,208,255,.32);touch-action:none;image-rendering:pixelated}
+  #hint{color:#777;font-size:12px;margin-top:10px;text-align:center;line-height:1.6}
+  #overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;background:rgba(3,3,14,.88);text-align:center;cursor:pointer;padding:0 14px}
+  #overlay h2{font-size:23px;letter-spacing:4px;margin:0 0 12px;color:#3ad0ff;
+    text-shadow:0 0 10px #7a2cff}
+  #overlay p{color:#bbb;font-size:13px;margin:4px 0;line-height:1.5}
+  #overlay.ended p.ins{display:none}
+  #ovMsg{display:none;color:#ffd23a!important;font-size:14px!important;margin-top:10px!important}
+  #overlay.ended #ovMsg{display:block}
+  .blink{animation:blink 1.1s steps(2,start) infinite}
+  @keyframes blink{50%{opacity:0}}
+  a.back{color:#4ecca3;font-size:12px;margin-top:8px;text-decoration:none;letter-spacing:1px}
+  a.back:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+  <h1>Q I X</h1>
+  <div id="wrap">
+    <canvas id="game" width="560" height="420"></canvas>
+    <div id="overlay">
+      <h2 id="ovTitle">QIX</h2>
+      <p class="ins">Découpe le terrain : trace depuis le bord et referme sur ta zone pour la conquérir.</p>
+      <p class="ins">← ↑ ↓ → : se déplacer et tracer · maintiens Espace : tracé lent, points doublés</p>
+      <p class="ins">Le Qix ne doit jamais toucher ton trait · les Sparx patrouillent les bordures</p>
+      <p class="ins">Si tu t'arrêtes en traçant, une mèche remonte ton trait !</p>
+      <p class="ins">Conquiers 75 % du terrain pour passer au tableau suivant</p>
+      <p class="ins blink" style="margin-top:12px">▶ Cliquez ou Espace pour commencer</p>
+      <p id="ovMsg"></p>
+    </div>
+  </div>
+  <div id="hint">Flèches : tracer · Espace (maintenu) : tracé lent ×2 · P = pause</div>
+  <a class="back" href="../index.html">← Menu Arcade</a>
+
+<script>
+const cv=document.getElementById('game'), ctx=cv.getContext('2d');
+ctx.imageSmoothingEnabled=false;
+const W=cv.width, H=cv.height;
+const overlay=document.getElementById('overlay');
+const ovTitle=document.getElementById('ovTitle'), ovMsg=document.getElementById('ovMsg');
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const rand=n=>Math.floor(Math.random()*n);
+const rng=(a,b)=>a+Math.random()*(b-a);
+
+const HUD_H=40, CS=4, CW=140, CH=95;       // 140x95 cases de 4 px = 560x380
+const EMPTY=0, FILLED=1, TRAIL=2;
+const N4=[[1,0],[-1,0],[0,1],[0,-1]];
+const CIBLE=75;                            // pourcentage a conquerir
+
+let g, champ, champCtx, champSale;
+let p, qix, sparx, level, lives, score, pct, baseVides, msg, msgT;
+let fuse, fuseT, mortT, flashT;
+let running=false, paused=false, over=false, inter=false;
+let last=0, frame=0, moveAcc=0;
+const keys={};
+
+/* ════════════════════ sons ════════════════════
+   Qix est un jeu de bornes a synthese : bourdonnement continu pendant le trace,
+   qui monte quand on trace lentement, et impacts en bruit filtre. */
+let _ac=null, BUS=null, NOISE=null, hum=null, humG=null, humActif=false;
+function ac(){
+  if(!_ac){ _ac=new (window.AudioContext||window.webkitAudioContext)(); buildBus(); }
+  if(!BUS) buildBus();
+  if(_ac.state==='suspended' && _ac.resume) _ac.resume();
+  return _ac;
+}
+function buildBus(){
+  const a=_ac;
+  NOISE=a.createBuffer(1,Math.floor(a.sampleRate*1.5),a.sampleRate);
+  const d=NOISE.getChannelData(0);
+  for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+  const len=Math.floor(a.sampleRate*0.5);
+  const ir=a.createBuffer(2,len,a.sampleRate);
+  for(let c=0;c<2;c++){ const ch=ir.getChannelData(c);
+    for(let i=0;i<len;i++) ch[i]=(Math.random()*2-1)*Math.pow(1-i/len,3); }
+  const room=a.createConvolver(); room.buffer=ir;
+  const wet=a.createGain(); wet.gain.value=0.55;
+  const comp=a.createDynamicsCompressor();
+  comp.threshold.value=-14; comp.ratio.value=4; comp.attack.value=0.003; comp.release.value=0.2;
+  const out=a.createGain(); out.gain.value=0.8;
+  const dry=a.createGain(); dry.gain.value=1;
+  room.connect(wet); wet.connect(comp); dry.connect(comp); comp.connect(out); out.connect(a.destination);
+  BUS={dry,room};
+}
+function send(n,w){ n.connect(BUS.dry);
+  if(w>0){ const s=_ac.createGain(); s.gain.value=w; n.connect(s); s.connect(BUS.room); } }
+function envG(peak,atk,dec,t){
+  const gg=_ac.createGain();
+  gg.gain.setValueAtTime(0.0001,t);
+  gg.gain.linearRampToValueAtTime(peak,t+atk);
+  gg.gain.exponentialRampToValueAtTime(0.0001,t+atk+dec);
+  return gg;
+}
+function tn(t,type,f0,f1,dur,peak,wet){
+  const a=_ac,o=a.createOscillator(); o.type=type;
+  o.frequency.setValueAtTime(f0,t); o.frequency.exponentialRampToValueAtTime(Math.max(20,f1),t+dur);
+  const gg=envG(peak,0.003,dur,t); o.connect(gg); send(gg,wet===undefined?0.3:wet);
+  o.start(t); o.stop(t+dur+0.05);
+}
+function nz(t,dur,type,f0,f1,q,peak,wet){
+  const a=_ac,s=a.createBufferSource(); s.buffer=NOISE;
+  const f=a.createBiquadFilter(); f.type=type; f.Q.value=q||1;
+  f.frequency.setValueAtTime(f0,t); f.frequency.exponentialRampToValueAtTime(Math.max(30,f1),t+dur);
+  const gg=envG(peak,0.001,dur,t); s.connect(f); f.connect(gg); send(gg,wet===undefined?0.3:wet);
+  s.start(t,Math.random()); s.stop(t+dur+0.08);
+}
+/* bourdonnement du trace : un oscillateur maintenu, dont on ouvre le volume */
+function humOn(lent){
+  const a=ac();
+  if(!hum){
+    hum=a.createOscillator(); hum.type='sawtooth';
+    humG=a.createGain(); humG.gain.value=0.0001;
+    const f=a.createBiquadFilter(); f.type='lowpass'; f.frequency.value=1200; f.Q.value=3;
+    hum.connect(f); f.connect(humG); humG.connect(BUS.dry);
+    hum.start();
+  }
+  hum.frequency.setTargetAtTime(lent?86:150, a.currentTime, 0.05);
+  humG.gain.setTargetAtTime(lent?0.10:0.07, a.currentTime, 0.03);
+  humActif=true;
+}
+// on ne repousse une consigne au graphe audio qu'au changement d'état
+function humOff(){
+  if(!humActif||!humG) return;
+  humG.gain.setTargetAtTime(0.0001,_ac.currentTime,0.05); humActif=false;
+}
+const sfxClaim=()=>{ const t=ac().currentTime;
+  [440,660,880,1320].forEach((f,i)=>tn(t+i*0.06,'square',f,f*1.25,0.14,0.13,0.4)); };
+const sfxBig  =()=>{ const t=ac().currentTime;
+  [523,659,784,1047,1319,1568].forEach((f,i)=>tn(t+i*0.08,'square',f,f,0.18,0.14,0.5)); };
+const sfxDie  =()=>{ const t=ac().currentTime;
+  tn(t,'sawtooth',420,60,0.7,0.2,0.5); nz(t,0.5,'lowpass',1400,200,1,0.5,0.45); };
+const sfxSpark=()=>{ const t=ac().currentTime; nz(t,0.09,'bandpass',3000,1600,7,0.35,0.25); };
+const sfxFuse =()=>{ const t=ac().currentTime; nz(t,0.05,'bandpass',2200,3000,9,0.20,0.15); };
+const sfxLevel=()=>{ const t=ac().currentTime;
+  [392,523,659,784,1047].forEach((f,i)=>tn(t+i*0.11,'triangle',f,f,0.2,0.15,0.5)); };
+
+/* ════════════════════ terrain ════════════════════ */
+function idx(x,y){ return y*CW+x; }
+function cell(x,y){
+  if(x<0||y<0||x>=CW||y>=CH) return FILLED;    // hors champ = territoire
+  return g[idx(x,y)];
+}
+function frontiere(x,y){
+  if(cell(x,y)!==FILLED) return false;
+  for(const [dx,dy] of N4) if(cell(x+dx,y+dy)===EMPTY) return true;
+  return false;
+}
+function buildField(){
+  g=new Uint8Array(CW*CH);
+  for(let y=0;y<CH;y++) for(let x=0;x<CW;x++)
+    g[idx(x,y)] = (x<2||y<2||x>=CW-2||y>=CH-2) ? FILLED : EMPTY;
+  baseVides=0;
+  for(let i=0;i<g.length;i++) if(g[i]===EMPTY) baseVides++;
+  champSale=true;
+}
+function pourcent(){
+  let vides=0;
+  for(let i=0;i<g.length;i++) if(g[i]===EMPTY) vides++;
+  return Math.floor(100*(baseVides-vides)/baseVides);
+}
+
+/* ════════════════════ joueur ════════════════════ */
+function makePlayer(x,y){
+  return {x:(x===undefined?Math.floor(CW/2):x), y:(y===undefined?1:y),
+          dx:0, dy:0, drawing:false, trail:[], lent:false, lentTrace:false};
+}
+/* Où faire réapparaître le joueur après une perte : la case de frontière la
+   PLUS ÉLOIGNÉE des Sparx. Le point fixe (CW/2,1) posait deux problèmes — on
+   ressuscitait parfois sur une Sparx, et si une bande avait été conquise sous
+   la bordure du haut, cette case n'était plus une frontière : le joueur
+   réapparaissait alors incapable de bouger. */
+function pointReapparition(){
+  let best=null, bestD=-1;
+  for(let y=0;y<CH;y++) for(let x=0;x<CW;x++){
+    if(!frontiere(x,y)) continue;
+    let d=1e9;
+    for(const s of sparx) d=Math.min(d, Math.hypot(s.x-x, s.y-y));
+    if(d>bestD){ bestD=d; best=[x,y]; }
+  }
+  return best;
+}
+function annuleTrace(){
+  for(const i of p.trail) if(g[i]===TRAIL) g[i]=EMPTY;
+  p.trail=[]; p.drawing=false; fuse=0; champSale=true; humOff();
+}
+function pas(dx,dy){
+  const nx=p.x+dx, ny=p.y+dy;
+  if(nx<0||ny<0||nx>=CW||ny>=CH) return;
+  const t=cell(nx,ny);
+  if(t===TRAIL) return;                      // on ne recoupe pas son propre trait
+  if(t===FILLED){
+    // Hors tracé, on ne circule que sur la BORDURE du territoire, comme dans
+    // l'original. Sans ça on pourrait fuir au milieu d'une zone conquise et les
+    // Sparx, qui patrouillent la frontière, ne menaceraient plus rien.
+    if(!p.drawing && !frontiere(nx,ny)) return;
+    p.x=nx; p.y=ny;
+    if(p.drawing) fermeZone();
+  }else{
+    if(!p.drawing){ p.drawing=true; p.trail=[]; fuse=0; fuseT=0; p.lentTrace=p.lent; }
+    if(!p.lent) p.lentTrace=false;            // le bonus exige la lenteur du DÉBUT à la fin
+    p.x=nx; p.y=ny;
+    g[idx(nx,ny)]=TRAIL; p.trail.push(idx(nx,ny)); champSale=true;
+  }
+}
+/* Referme le trace : on inonde le vide EN PARTANT DES QIX, et tout ce que
+   l'inondation n'atteint pas revient au joueur. C'est la regle du jeu. */
+function fermeZone(){
+  for(const i of p.trail) g[i]=FILLED;
+  const vis=new Uint8Array(CW*CH), st=[];
+  for(const q of qix){
+    // on ensemence sur la case du Qix, ou la case vide la plus proche s'il
+    // chevauche une bordure : sans germe, TOUT le vide serait conquis d'un coup
+    let sx=clamp(Math.floor(q.px),0,CW-1), sy=clamp(Math.floor(q.py),0,CH-1);
+    if(g[idx(sx,sy)]!==EMPTY){
+      let best=null,bd=1e9;
+      for(let y=0;y<CH;y++) for(let x=0;x<CW;x++){
+        if(g[idx(x,y)]!==EMPTY) continue;
+        const d=(x-sx)*(x-sx)+(y-sy)*(y-sy);
+        if(d<bd){ bd=d; best=[x,y]; }
+      }
+      if(best){ sx=best[0]; sy=best[1]; }
+    }
+    const i=idx(sx,sy);
+    if(g[i]===EMPTY && !vis[i]){ vis[i]=1; st.push(i); }
+  }
+  if(!st.length){                    // aucun germe : on ne conquiert que le trait
+    p.trail=[]; p.drawing=false; fuse=0; champSale=true; humOff();
+    pct=pourcent(); return;
+  }
+  while(st.length){
+    const i=st.pop(), x=i%CW, y=(i/CW)|0;
+    for(const [dx,dy] of N4){
+      const nx=x+dx, ny=y+dy;
+      if(nx<0||ny<0||nx>=CW||ny>=CH) continue;
+      const j=idx(nx,ny);
+      if(vis[j]||g[j]!==EMPTY) continue;
+      vis[j]=1; st.push(j);
+    }
+  }
+  let gagne=0;
+  for(let i=0;i<g.length;i++) if(g[i]===EMPTY && !vis[i]){ g[i]=FILLED; gagne++; }
+  gagne+=p.trail.length;
+  const points=gagne*(p.lentTrace?20:10);
+  score+=points;
+  p.trail=[]; p.drawing=false; fuse=0; champSale=true; humOff();
+  const avant=pct; pct=pourcent();
+  flashT=0.25;
+  if(gagne>0) flash('+'+points+(p.lentTrace?'  (tracé lent ×2)':''));
+  // joueur et Sparx délogés par la nouvelle frontière : on les y ramène
+  recaleSurFrontiere(p);
+  for(const s of sparx) recaleSurFrontiere(s);
+  for(const q of qix) degageQix(q);
+  (pct-avant>=12) ? sfxBig() : sfxClaim();
+  if(pct>=CIBLE){ inter=true; sfxLevel(); score+=500+lives*250+(pct-CIBLE)*40; }
+}
+
+/* ════════════════════ Qix ════════════════════
+   Deux extremites errent dans le vide ; on relie leurs traces successives, ce
+   qui donne le ruban qui se tord, image de marque du jeu. */
+function makeQix(){
+  const q={x:CW/2, y:CH/2, a:[], b:[], ax:rng(0,6.28), bx:rng(0,6.28), sp:rng(26,34)+level*3};
+  q.px=CW/2; q.py=CH/2; q.qx=CW/2+6; q.qy=CH/2;
+  for(let i=0;i<16;i++){ q.a.push([q.px,q.py]); q.b.push([q.qx,q.qy]); }
+  return q;
+}
+function bougeBout(q,which,dt){
+  const kx = which==='a'?'px':'qx', ky = which==='a'?'py':'qy';
+  const ka = which==='a'?'ax':'bx';
+  q[ka] += rng(-2.2,2.2)*dt;
+  let nx=q[kx]+Math.cos(q[ka])*q.sp*dt;
+  let ny=q[ky]+Math.sin(q[ka])*q.sp*dt;
+  // Le Qix ne rebondit que sur le TERRITOIRE CONQUIS. Il doit pouvoir passer
+  // sur le trait en cours — c'est toute la menace du jeu. Tester "différent de
+  // vide" le faisait rebondir sur le trait, qu'il n'atteignait donc jamais.
+  if(cell(Math.floor(nx),Math.floor(q[ky]))===FILLED){ q[ka]=Math.PI-q[ka]; nx=q[kx]; }
+  if(cell(Math.floor(q[kx]),Math.floor(ny))===FILLED){ q[ka]=-q[ka]; ny=q[ky]; }
+  // les deux bouts restent solidaires
+  const ox = which==='a'?q.qx:q.px, oy = which==='a'?q.qy:q.py;
+  const d=Math.hypot(nx-ox,ny-oy);
+  if(d>14){ nx=ox+(nx-ox)/d*14; ny=oy+(ny-oy)/d*14; }
+  if(cell(Math.floor(nx),Math.floor(ny))!==FILLED){ q[kx]=nx; q[ky]=ny; }
+  else q[ka]+=Math.PI;
+}
+/* Filet : si une extrémité se retrouve hors du vide (fermeture pile sur elle,
+   recalage), les tests de rebond refusent tout mouvement et le Qix resterait
+   figé dans le territoire pour toujours — en plus de fausser le germe de
+   l'inondation. On le remet donc sur la case vide la plus proche. */
+function degageQix(q){
+  // on ne déloge que s'il est pris dans le TERRITOIRE : posé sur le trait, il
+  // doit au contraire rester là et tuer
+  if(cell(Math.floor(q.px),Math.floor(q.py))!==FILLED
+   && cell(Math.floor(q.qx),Math.floor(q.qy))!==FILLED) return;
+  let best=null,bd=1e9;
+  for(let y=1;y<CH-1;y++) for(let x=1;x<CW-1;x++){
+    if(g[idx(x,y)]!==EMPTY) continue;
+    const d=(x-q.px)*(x-q.px)+(y-q.py)*(y-q.py);
+    if(d<bd){ bd=d; best=[x,y]; }
+  }
+  if(!best) return;                          // plus aucun vide : le tableau est bouclé
+  q.px=q.qx=best[0]+0.5; q.py=q.qy=best[1]+0.5;
+  q.a=q.a.map(()=>[q.px,q.py]); q.b=q.b.map(()=>[q.qx,q.qy]);
+}
+function updateQix(dt){
+  for(const q of qix){
+    degageQix(q);
+    bougeBout(q,'a',dt); bougeBout(q,'b',dt);
+    q.a.push([q.px,q.py]); if(q.a.length>16) q.a.shift();
+    q.b.push([q.qx,q.qy]); if(q.b.length>16) q.b.shift();
+    // Le Qix tue s'il touche le trait en cours, ou le joueur qui trace.
+    // On échantillonne chaque segment tous les DEMI-CARREAUX : au pas fixe
+    // précédent, un segment long enjambait le trait, large d'une seule case.
+    for(let i=0;i<q.a.length;i++){
+      const x0=q.a[i][0], y0=q.a[i][1], x1=q.b[i][0], y1=q.b[i][1];
+      const n=Math.max(2,Math.ceil(Math.hypot(x1-x0,y1-y0)*2));
+      for(let k=0;k<=n;k++){
+        const t=k/n;
+        const cx=Math.floor(x0+(x1-x0)*t), cy=Math.floor(y0+(y1-y0)*t);
+        if(cell(cx,cy)===TRAIL){ meurt('Le Qix a coupé ton trait !'); return; }
+        if(p.drawing && Math.abs(cx-p.x)<=1 && Math.abs(cy-p.y)<=1){
+          meurt('Le Qix t\'a happé !'); return;
+        }
+      }
+    }
+  }
+}
+
+/* ════════════════════ Sparx ════════════════════
+   Elles patrouillent la frontiere : on avance de case en case parmi les cases
+   pleines bordant le vide, en privilegiant la continuite de direction. */
+function makeSparx(x,y,sens){ return {x,y,px:-1,py:-1,sens,acc:0}; }
+function recaleSurFrontiere(e){
+  if(frontiere(e.x,e.y)) return;
+  let best=null,bd=1e9;
+  for(let y=0;y<CH;y++) for(let x=0;x<CW;x++){
+    if(!frontiere(x,y)) continue;
+    const d=(x-e.x)*(x-e.x)+(y-e.y)*(y-e.y);
+    if(d<bd){ bd=d; best=[x,y]; }
+  }
+  if(best){ e.x=best[0]; e.y=best[1]; e.px=-1; e.py=-1; }
+}
+function pasSparx(s){
+  const cand=[];
+  for(const [dx,dy] of N4){
+    const nx=s.x+dx, ny=s.y+dy;
+    if(!frontiere(nx,ny)) continue;
+    if(nx===s.px && ny===s.py) continue;      // pas de demi-tour immediat
+    cand.push([nx,ny]);
+  }
+  let choix;
+  if(!cand.length){ choix=[s.px,s.py]; if(choix[0]<0) return; }
+  else if(cand.length===1) choix=cand[0];
+  else {
+    // continue tout droit si possible, sinon tire au sort
+    const dx=s.x-s.px, dy=s.y-s.py;
+    const droit=cand.find(c=>c[0]===s.x+dx && c[1]===s.y+dy);
+    choix = droit || cand[rand(cand.length)];
+  }
+  s.px=s.x; s.py=s.y; s.x=choix[0]; s.y=choix[1];
+}
+
+/* ════════════════════ partie ════════════════════ */
+function flash(m){ msg=m; msgT=2.2; }
+function endOverlay(t,s){
+  ovTitle.textContent=t; ovMsg.textContent=s;
+  overlay.classList.add('ended'); overlay.style.display='flex';
+}
+function meurt(raison){
+  if(mortT>0) return;
+  annuleTrace(); sfxDie(); mortT=1.5; lives--; flash(raison);
+}
+function startLevel(){
+  buildField();
+  p=makePlayer();
+  qix=[]; for(let i=0;i<1+Math.floor((level-1)/2);i++) qix.push(makeQix());
+  sparx=[makeSparx(2,2,1), makeSparx(CW-3,2,-1)];
+  if(level>=3) sparx.push(makeSparx(2,CH-3,1));
+  pct=0; fuse=0; fuseT=0; mortT=0; flashT=0;
+  msg='TABLEAU '+level+' — conquiers '+CIBLE+' %'; msgT=3;
+  overlay.classList.remove('ended'); overlay.style.display='none';
+}
+function newGame(){
+  level=1; score=0; lives=3;
+  over=false; paused=false; inter=false; running=true;
+  startLevel();
+}
+function nextLevel(){
+  inter=false;
+  if(level>=5){
+    running=false; over=true; humOff();
+    endOverlay('★ TERRAIN CONQUIS ★','Cinq tableaux bouclés · Score : '+score);
+    return;
+  }
+  level++; startLevel();
+}
+
+/* ── entrées ── */
+document.addEventListener('keydown',e=>{
+  const k=e.key.toLowerCase(); keys[k]=true;
+  if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)) e.preventDefault();
+  if(inter){ if(k===' '||k==='enter') nextLevel(); return; }
+  if(paused && k!=='p'){ paused=false; return; }
+  if((k===' '||k==='enter') && (!running||over)){ newGame(); return; }
+  if(k==='p' && running && !over){ paused=!paused; if(paused) humOff(); return; }
+});
+document.addEventListener('keyup',e=>{ keys[e.key.toLowerCase()]=false; });
+overlay.addEventListener('click',()=>{ if(!running||over) newGame(); });
+cv.addEventListener('mousedown',e=>{
+  e.preventDefault();
+  if(inter){ nextLevel(); return; }
+  if(!running||over){ newGame(); return; }
+  if(paused) paused=false;
+});
+cv.addEventListener('touchstart',e=>{
+  if(inter){ e.preventDefault(); nextLevel(); }
+  else if(!running||over){ e.preventDefault(); newGame(); }
+},{passive:false});
+
+/* ════════════════════ mise à jour ════════════════════ */
+function update(dt){
+  if(!running||paused||over||inter) return;
+  frame++;
+  if(msgT>0) msgT-=dt;
+  if(flashT>0) flashT-=dt;
+
+  if(mortT>0){
+    mortT-=dt;
+    if(mortT<=0){
+      if(lives<=0){ running=false; over=true; humOff();
+        endOverlay('PARTIE TERMINÉE','Tableau '+level+' · '+pct+' % · Score : '+score); return; }
+      for(const s of sparx) recaleSurFrontiere(s);
+      const pt=pointReapparition();
+      p = pt ? makePlayer(pt[0],pt[1]) : makePlayer();
+    }
+    return;
+  }
+
+  /* ── déplacement du joueur, à cadence fixe ── */
+  p.lent = !!keys[' '];
+  const vitesse = p.lent ? 26 : 52;          // cases par seconde
+  moveAcc += dt*vitesse;
+  let bouge=false;
+  while(moveAcc>=1){
+    moveAcc-=1;
+    let dx=0,dy=0;
+    if(keys['arrowleft']||keys['a']) dx=-1;
+    else if(keys['arrowright']||keys['d']) dx=1;
+    else if(keys['arrowup']||keys['w']) dy=-1;
+    else if(keys['arrowdown']||keys['s']) dy=1;
+    if(dx||dy){
+      // « bouge » doit refléter un déplacement RÉEL, pas une touche pressée :
+      // sinon rester appuyé contre son propre trait gèlerait la mèche, alors
+      // que c'est justement la situation qu'elle doit punir.
+      const ax=p.x, ay=p.y;
+      pas(dx,dy);
+      if(p.x!==ax||p.y!==ay) bouge=true;
+      if(!running||mortT>0||inter) return;
+    }
+  }
+  if(p.drawing) humOn(p.lent); else humOff();
+
+  /* ── mèche : elle ronge le trait quand on s'arrête ── */
+  if(p.drawing && !bouge){
+    fuseT+=dt;
+    if(fuseT>0.45){
+      fuse+=dt*14;
+      if(Math.floor(fuse)%3===0 && frame%7===0) sfxFuse();
+      if(fuse>=p.trail.length){ meurt('La mèche t\'a rattrapé !'); return; }
+    }
+  }else if(bouge) fuseT=0;
+
+  updateQix(dt);
+  if(mortT>0) return;
+
+  /* ── Sparx ── */
+  for(const s of sparx){
+    s.acc += dt*(16+level*3);
+    while(s.acc>=1){ s.acc-=1; pasSparx(s); }
+    // une seule règle de contact : les cases se touchent
+    if(Math.abs(s.x-p.x)<=1 && Math.abs(s.y-p.y)<=1){ meurt('Une Sparx t\'a touché !'); return; }
+  }
+}
+
+/* ════════════════════ rendu ════════════════════ */
+function initChamp(){
+  champ=document.createElement('canvas'); champ.width=CW; champ.height=CH;
+  champCtx=champ.getContext('2d');
+}
+/* Le terrain n'est redessine qu'au changement : 13 300 cases par image
+   coûteraient cher pour rien. Une image de 140x95, un pixel par case, agrandie
+   au rendu. */
+function majChamp(){
+  const img=champCtx.createImageData(CW,CH);
+  const d=img.data;
+  const teinte=[[26,18,60],[16,44,70],[46,16,64],[14,52,48],[60,26,20]][(level-1)%5];
+  for(let i=0;i<g.length;i++){
+    const o=i*4;
+    if(g[i]===FILLED){
+      const x=i%CW, y=(i/CW)|0;
+      const m=((x+y)&3)===0 ? 1.35 : 1;      // trame diagonale discrète
+      d[o]=Math.min(255,teinte[0]*m); d[o+1]=Math.min(255,teinte[1]*m); d[o+2]=Math.min(255,teinte[2]*m);
+      d[o+3]=255;
+    }else if(g[i]===TRAIL){
+      d[o]=255; d[o+1]=232; d[o+2]=120; d[o+3]=255;
+    }else{ d[o]=5; d[o+1]=5; d[o+2]=15; d[o+3]=255; }
+  }
+  champCtx.putImageData(img,0,0);
+  champSale=false;
+}
+function render(){
+  ctx.fillStyle='#05050f'; ctx.fillRect(0,0,W,H);
+  if(champSale) majChamp();
+  ctx.save(); ctx.translate(0,HUD_H);
+
+  ctx.drawImage(champ,0,0,CW,CH,0,0,CW*CS,CH*CS);
+  // liseré lumineux sur la frontière conquise
+  if(flashT>0){
+    ctx.globalAlpha=flashT*3;
+    ctx.fillStyle='#3ad0ff'; ctx.fillRect(0,0,CW*CS,CH*CS);
+    ctx.globalAlpha=1;
+  }
+
+  // mèche : la portion déjà rongée du trait
+  if(p.drawing && fuse>0){
+    const n=Math.min(p.trail.length,Math.floor(fuse));
+    for(let i=0;i<n;i++){
+      const c=p.trail[i], x=(c%CW)*CS, y=((c/CW)|0)*CS;
+      ctx.fillStyle= (i>n-4) ? '#fff' : '#ff5a1e';
+      ctx.fillRect(x,y,CS,CS);
+    }
+  }
+
+  // le Qix : rubans reliant les traces des deux extrémités
+  for(const q of qix){
+    for(let i=0;i<q.a.length;i++){
+      const t=i/q.a.length;
+      ctx.strokeStyle='hsl('+((frame*3+i*22)%360)+',100%,'+(45+t*25)+'%)';
+      ctx.lineWidth=1+t*1.4;
+      ctx.beginPath();
+      ctx.moveTo(q.a[i][0]*CS,q.a[i][1]*CS);
+      ctx.lineTo(q.b[i][0]*CS,q.b[i][1]*CS);
+      ctx.stroke();
+    }
+  }
+
+  // Sparx : étincelles qui tournoient
+  for(const s of sparx){
+    const x=s.x*CS+CS/2, y=s.y*CS+CS/2;
+    ctx.globalCompositeOperation='lighter';
+    ctx.fillStyle='rgba(255,90,200,.35)';
+    ctx.beginPath(); ctx.arc(x,y,7,0,Math.PI*2); ctx.fill();
+    ctx.globalCompositeOperation='source-over';
+    ctx.strokeStyle='#ff5ac8'; ctx.lineWidth=2;
+    const a=frame*0.35;
+    ctx.beginPath();
+    for(let k=0;k<4;k++){
+      const an=a+k*Math.PI/2;
+      ctx.moveTo(x+Math.cos(an)*2,y+Math.sin(an)*2);
+      ctx.lineTo(x+Math.cos(an)*5,y+Math.sin(an)*5);
+    }
+    ctx.stroke();
+  }
+
+  // le marqueur du joueur
+  if(mortT<=0 || Math.floor(frame/3)%2===0){
+    const x=p.x*CS+CS/2, y=p.y*CS+CS/2;
+    ctx.globalCompositeOperation='lighter';
+    ctx.fillStyle=p.drawing?'rgba(255,232,120,.4)':'rgba(58,208,255,.4)';
+    ctx.beginPath(); ctx.arc(x,y,6,0,Math.PI*2); ctx.fill();
+    ctx.globalCompositeOperation='source-over';
+    ctx.fillStyle=p.drawing?'#ffe878':'#3ad0ff';
+    ctx.fillRect(x-3,y-1,6,2); ctx.fillRect(x-1,y-3,2,6);
+  }
+  ctx.restore();
+
+  drawHUD();
+  if(paused){
+    ctx.fillStyle='rgba(0,0,0,.62)'; ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#3ad0ff'; ctx.textAlign='center';
+    ctx.font='bold 30px "Courier New",monospace'; ctx.fillText('PAUSE',W/2,H/2);
+  }
+}
+function drawHUD(){
+  ctx.fillStyle='#0a0a1c'; ctx.fillRect(0,0,W,HUD_H);
+  ctx.fillStyle='#22224a'; ctx.fillRect(0,HUD_H-2,W,2);
+  ctx.textAlign='left'; ctx.font='bold 13px "Courier New",monospace';
+  ctx.fillStyle='#ffd23a'; ctx.fillText('SCORE '+score, 8, 17);
+  ctx.font='bold 11px "Courier New",monospace';
+  ctx.fillStyle='#8a8ab0'; ctx.fillText('TABLEAU '+level+'/5', 8, 32);
+  // jauge de progression
+  const bx=140, bw=200;
+  ctx.fillStyle='#1a1a34'; ctx.fillRect(bx,10,bw,14);
+  const pl=Math.min(1,pct/CIBLE);
+  ctx.fillStyle = pct>=CIBLE ? '#5af07a' : '#3ad0ff';
+  ctx.fillRect(bx,10,bw*pl,14);
+  ctx.strokeStyle='#4a4a7a'; ctx.lineWidth=1; ctx.strokeRect(bx+.5,10.5,bw-1,13);
+  ctx.fillStyle='#fff'; ctx.font='bold 11px "Courier New",monospace'; ctx.textAlign='center';
+  ctx.fillText(pct+' % / '+CIBLE+' %', bx+bw/2, 21);
+  // vies
+  ctx.textAlign='right';
+  for(let i=0;i<lives;i++){
+    const x=W-14-i*14;
+    ctx.fillStyle='#3ad0ff';
+    ctx.fillRect(x-4,15,8,2); ctx.fillRect(x-1,12,2,8);
+  }
+  ctx.fillStyle='#8a8ab0'; ctx.font='bold 11px "Courier New",monospace';
+  ctx.fillText(p&&p.lent?'TRACÉ LENT ×2':'', W-14, 33);
+  if(msgT>0){
+    ctx.textAlign='center'; ctx.font='bold 12px "Courier New",monospace';
+    ctx.fillStyle='rgba(0,0,0,.6)'; ctx.fillRect(0,H-20,W,20);
+    ctx.fillStyle='#fff'; ctx.fillText(msg,W/2,H-6);
+  }
+}
+function drawInter(){
+  ctx.fillStyle='#05050f'; ctx.fillRect(0,0,W,H);
+  ctx.textAlign='center';
+  ctx.font='bold 21px "Courier New",monospace'; ctx.fillStyle='#3ad0ff';
+  ctx.fillText('TABLEAU '+level+' CONQUIS',W/2,70);
+  const l=[['TERRAIN PRIS',pct+' %'],['OBJECTIF',CIBLE+' %'],
+           ['VIES RESTANTES',String(lives)],['SCORE',String(score)]];
+  ctx.font='bold 14px "Courier New",monospace';
+  l.forEach((r,i)=>{
+    const y=140+i*32;
+    ctx.textAlign='left';  ctx.fillStyle='#7a9ac0'; ctx.fillText(r[0],140,y);
+    ctx.textAlign='right'; ctx.fillStyle='#ffd23a'; ctx.fillText(r[1],420,y);
+  });
+  ctx.textAlign='center'; ctx.font='bold 12px "Courier New",monospace';
+  ctx.fillStyle=(frame>>4)&1 ? '#5af07a':'#2a7a44';
+  ctx.fillText(level>=5?'▶ Espace : voir le verdict':'▶ Espace : tableau '+(level+1),W/2,H-34);
+}
+
+/* ════════════════════ boucle ════════════════════ */
+function loop(now){
+  const dt=Math.min(0.05,(now-(last||now))/1000); last=now;
+  update(dt);
+  if(inter){ frame++; drawInter(); } else render();
+  if(window.ArcadeHi) ArcadeHi.submit(score);
+  requestAnimationFrame(loop);
+}
+initChamp();
+level=1; score=0; lives=3; msg=''; msgT=0; fuse=0; fuseT=0; mortT=0; flashT=0;
+buildField(); p=makePlayer(); qix=[makeQix()];
+sparx=[makeSparx(2,2,1), makeSparx(CW-3,2,-1)];
+pct=0;
+requestAnimationFrame(loop);
+</script>
+<script src="../music/i18n-games.js?v=25"></script>
+<script src="../music/playlist.js?v=25"></script>
+<script src="../music/player.js?v=25"></script>
+</body>
+</html>

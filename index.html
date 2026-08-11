@@ -1033,6 +1033,60 @@
       </div>
     </a>
 
+    <!-- QIX -->
+    <a class="card" href="./Qix/index.html">
+      <div class="year">1981</div>
+      <div class="thumb">
+        <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
+          <rect width="80" height="60" fill="#05050f"/>
+          <!-- territoire conquis : deux blocs tramés -->
+          <rect x="2" y="2" width="24" height="56" fill="#1a123c"/>
+          <g fill="#2a1a5c">
+            <rect x="2" y="4" width="24" height="1"/><rect x="2" y="12" width="24" height="1"/>
+            <rect x="2" y="20" width="24" height="1"/><rect x="2" y="28" width="24" height="1"/>
+            <rect x="2" y="36" width="24" height="1"/><rect x="2" y="44" width="24" height="1"/>
+            <rect x="2" y="52" width="24" height="1"/>
+          </g>
+          <rect x="62" y="2" width="16" height="30" fill="#102c46"/>
+          <g fill="#1c4a6e">
+            <rect x="62" y="6" width="16" height="1"/><rect x="62" y="14" width="16" height="1"/>
+            <rect x="62" y="22" width="16" height="1"/><rect x="62" y="30" width="16" height="1"/>
+          </g>
+          <!-- cadre du terrain -->
+          <rect x="1" y="1" width="78" height="58" fill="none" stroke="#2a2a5a" stroke-width="2"/>
+          <!-- le Qix : ruban de segments colorés -->
+          <g stroke-width="1.1" fill="none">
+            <line x1="34" y1="20" x2="48" y2="30" stroke="#ff2e88"/>
+            <line x1="33" y1="24" x2="50" y2="32" stroke="#ff8a2e"/>
+            <line x1="34" y1="28" x2="51" y2="35" stroke="#ffd23a"/>
+            <line x1="36" y1="32" x2="50" y2="39" stroke="#8aff5a"/>
+            <line x1="39" y1="35" x2="47" y2="43" stroke="#3ad0ff"/>
+            <line x1="43" y1="37" x2="43" y2="46" stroke="#7a2cff"/>
+          </g>
+          <!-- trait en cours, depuis le bord droit -->
+          <polyline points="70,32 70,44 56,44" fill="none" stroke="#ffe878" stroke-width="1.6"/>
+          <!-- marqueur du joueur au bout du trait -->
+          <g transform="translate(56,44)">
+            <circle r="3.6" fill="#3ad0ff" opacity=".35"/>
+            <rect x="-3" y="-1" width="6" height="2" fill="#3ad0ff"/>
+            <rect x="-1" y="-3" width="2" height="6" fill="#3ad0ff"/>
+          </g>
+          <!-- une Sparx sur la bordure -->
+          <g transform="translate(26,7)" stroke="#ff5ac8" stroke-width="1.4">
+            <circle r="3.4" fill="#ff5ac8" opacity=".25" stroke="none"/>
+            <line x1="-3" y1="-3" x2="-1.2" y2="-1.2"/><line x1="3" y1="-3" x2="1.2" y2="-1.2"/>
+            <line x1="-3" y1="3" x2="-1.2" y2="1.2"/><line x1="3" y1="3" x2="1.2" y2="1.2"/>
+          </g>
+          <text x="40" y="56" fill="#3ad0ff" font-family="monospace" font-weight="bold" font-size="6" text-anchor="middle">75 %</text>
+        </svg>
+        <div class="play"><span>▶ JOUER</span></div>
+      </div>
+      <div class="meta">
+        <p class="title">Qix</p>
+        <p class="tag">Conquête · Abstrait</p>
+      </div>
+    </a>
+
     <!-- ZAXXON -->
     <a class="card" href="./Zaxxon/index.html">
       <div class="year">1982</div>
@@ -2672,17 +2726,29 @@
     // ── filtres par décennie + recherche ──
     let curDec = 'all';
     const searchEl = document.getElementById('search');
+    // On compare des chaînes NORMALISÉES : accents retirés, ponctuation et
+    // espaces supprimés. Sans ça « pacman » ne trouvait pas « Pac-Man »,
+    // « outrun » ne trouvait pas « Out Run » et « quete » ne trouvait pas
+    // « La Quête du Roi » — c'est-à-dire la façon dont on tape réellement.
+    const norm = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                       .toLowerCase().replace(/[^a-z0-9]/g, '');
+    // La botte de foin est calculée une fois par carte : titre, étiquette,
+    // année et nom de dossier (« commanderkeen », « queteduroi »…).
+    document.querySelectorAll('.grid .card').forEach(card => {
+      const dossier = (card.getAttribute('href') || '').replace(/^\.\//, '').replace(/\/index\.html$/i, '');
+      card.dataset.q = norm(card.querySelector('.title').textContent + ' ' +
+                            card.querySelector('.tag').textContent + ' ' +
+                            card.querySelector('.year').textContent + ' ' + dossier);
+    });
     function applyFilters() {
-      const q = searchEl.value.trim().toLowerCase();
+      const q = norm(searchEl.value);
       document.querySelectorAll('.grid .card').forEach(card => {
         const year = parseInt(card.querySelector('.year').textContent, 10) || 0;
-        const txt = (card.querySelector('.title').textContent + ' ' +
-                     card.querySelector('.tag').textContent).toLowerCase();
         let ok = true;
         if (curDec === '70') ok = year < 1980;
         else if (curDec === '80') ok = year >= 1980 && year < 1990;
         else if (curDec === '90') ok = year >= 1990;
-        if (ok && q) ok = txt.includes(q);
+        if (ok && q) ok = card.dataset.q.includes(q);
         card.classList.toggle('hidden', !ok);
       });
       const visible = document.querySelectorAll('.grid .card:not(.hidden)').length;
@@ -2724,7 +2790,7 @@
       r.readAsText(f);
     });
   </script>
-  <script src="music/playlist.js?v=24"></script>
-  <script src="music/player.js?v=24"></script>
+  <script src="music/playlist.js?v=25"></script>
+  <script src="music/player.js?v=25"></script>
 </body>
 </html>
